@@ -1,9 +1,11 @@
 {
-  "name": "my_node_app",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "my_server",
+  "version": "1.0",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node dist/server.js",
+    "build": "tsc",
+    "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +16,15 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.1",
-    "mongoose": "^8.7.2",
-    "nodemon": "^3.1.7"
+    "mongoose": "^8.9.5",
+    "nodemon": "^3.1.9"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   }
 }

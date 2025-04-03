@@ -1,5 +1,8 @@
-const mongoose = require('mongoose');
-require('dotenv').config({ path: '../.env' }); // Adjust path to locate .env
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config({ path: './.env' });
 
 // MongoDB URI from .env
 const mongoURI = process.env.MONGO_URI;
@@ -9,7 +12,7 @@ if (!mongoURI) {
 }
 
 // Function to connect to MongoDB
-async function connectDB() {
+export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(mongoURI);
     console.log('Connected to MongoDB successfully!');
@@ -17,6 +20,4 @@ async function connectDB() {
     console.error('MongoDB connection error:', error);
     throw error;
   }
-}
-
-module.exports = { connectDB };
+};

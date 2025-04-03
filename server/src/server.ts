@@ -1,11 +1,11 @@
-// Import dependencies
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config({ path: '../.env' }); // Adjust path to locate .env
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
+import { connectDB } from './db/db';
 
-// Import database connection
-const { connectDB } = require('./db/db.js');
+// Load environment variables
+dotenv.config({ path: './.env' });
 
 // Create an instance of Express
 const app = express();
@@ -25,12 +25,13 @@ connectDB()
   });
 
 // Define routes
-app.get('/', (req, res) => {
+// ROOT Routes
+app.get('/home', (req: Request, res: Response) => {
   res.send('Welcome to the AI Model API');
 });
 
 // Example route for API
-app.post('/api/model', async (req, res) => {
+app.post('/api/model', async (req: Request, res: Response) => {
   try {
     const inputData = req.body; // Get data from the request body
 
