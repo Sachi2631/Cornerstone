@@ -35,6 +35,7 @@ function App() {
             value={email}
             onChange={handleEmailChange}
             required
+            style={{ width: '50%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px', maxWidth: '200px' }}
           />
           <input
             type="password"
@@ -43,16 +44,18 @@ function App() {
             value={password}
             onChange={handlePasswordChange}
             required
+            style={{ width: '50%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px', maxWidth: '200px' }}
           />
           <label>
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={handleRememberMeChange}
+              style={{fontSize: '10px'}}
             />
             Remember me
           </label>
-          <button type="submit" id="login">Login!</button>
+          <button type="submit" id="login" style={{ backgroundColor: 'lightgray', color: 'black', padding: '14px 20px', margin: '20px 0', border: 'none', cursor: 'pointer', width: '160px', borderRadius: '17px', transitionDuration: '0.5s' }} >Login!</button>
         </div>
 
         <div id="bottom" style={{ backgroundColor: '#f1f1f1' }}>

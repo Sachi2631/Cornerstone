@@ -24,9 +24,9 @@ const SignupForm = () => {
 
   return (
     <div>
-      <div id="top" style={{ display: 'flex', flexDirection: 'row', width: '75%', padding: '50px', height: '15vh', paddingLeft: '20vw' }}>
+      <div id="top" style={{ display: 'flex', flexDirection: 'row', padding: '50px', height: '15vh', paddingLeft: '20vw', paddingRight: '20vw' }}>
         <img id="cat" src="https://cdn-icons-png.flaticon.com/512/9288/9288684.png" alt="cat" style={{ height: '15vh' }} />
-        <div id="cat-text" style={{ textAlign: 'left', marginTop: '-3vh', paddingLeft: '10px', paddingRight: '15px' }}>
+        <div id="cat-text" style={{ textAlign: 'left', paddingLeft: '10px', paddingRight: '15px', alignItems: 'center' }}>
           <h4>Welcome!</h4>
           <p>It's good to see a new face! Let's create a new account.</p>
         </div>
@@ -41,7 +41,7 @@ const SignupForm = () => {
             value={formData.email}
             onChange={handleChange}
             required
-            style={{ width: '80%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px' }}
+            style={{ width: '50%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px', maxWidth: '200px' }}
           />
           <input
             type="text"
@@ -50,7 +50,7 @@ const SignupForm = () => {
             value={formData.uname}
             onChange={handleChange}
             required
-            style={{ width: '80%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px' }}
+            style={{ width: '50%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px', maxWidth: '200px' }}
           />
           <input
             type="password"
@@ -59,23 +59,24 @@ const SignupForm = () => {
             value={formData.psw}
             onChange={handleChange}
             required
-            style={{ width: '80%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px' }}
+            style={{ width: '50%', padding: '12px 20px', margin: '8px 0', border: '1px solid #ccc', boxSizing: 'border-box', borderRadius: '5px', maxWidth: '200px' }}
           />
           <label>
             <input
               type="checkbox"
               name="remember"
+              style={{fontSize: '10px'}}
               checked={formData.remember}
               onChange={handleChange}
             />
             Remember me
           </label>
-          <button type="submit" style={{ backgroundColor: 'gray', color: 'black', padding: '14px 20px', margin: '8px 0', border: 'none', cursor: 'pointer', width: '160px', borderRadius: '4px', transitionDuration: '0.5s' }}>
+          <button type="submit" style={{ backgroundColor: 'lightgray', color: 'black', padding: '14px 20px', margin: '20px 0', border: 'none', cursor: 'pointer', width: '160px', borderRadius: '17px', transitionDuration: '0.5s' }}>
             Create!
           </button>
         </div>
         <div id="bottom" style={{ padding: '16px', backgroundColor: '#f1f1f1' }}>
-          <button type="button" className="cancelbtn" style={{ width: 'auto', padding: '10px 18px', backgroundColor: '#f44336' }}>Cancel</button>
+          <button type="button" className="cancelbtn" style={{ width: 'auto', padding: '10px 18px', backgroundColor: '#f44336', fontSize: '10px',}}>Cancel</button>
         </div>
       </form>
     </div>

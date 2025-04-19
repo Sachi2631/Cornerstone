@@ -37,67 +37,62 @@
   }
 }
 
-
-
-
-
 body {
   text-align:center;
 }
 
 
 form {
-border: 3px solid #f1f1f1;
-display:flex;
-justify-content:center;
-align-content:center;
-flex-direction:column;
+  border: 3px solid #f1f1f1;
+  display:flex;
+  justify-content:center;
+  align-content:center;
+  flex-direction:column;
 }
 
 input[type=text], input[type=password] {
-width: 80%;
-padding: 12px 20px;
-margin: 8px 0;
-display: inline-block;
-border: 1px solid #ccc;
-box-sizing: border-box;
-border-radius:5px;
-}
+  width: 80%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  border-radius:5px;
+  }
 
 button {
-/*background-color: #04AA6D;*/
-background-color:gray;
-color: black;
-padding: 14px 20px;
-margin: 8px 0;
-border: none;
-cursor: pointer;
-width: 160px;
-border-radius:4px;
-transition-duration:0.5s;
+  /*background-color: #04AA6D;*/
+  background-color:gray;
+  color: black;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 160px;
+  border-radius:4px;
+  transition-duration:0.5s;
 }
 
 button:hover {
-opacity: 0.7;
-border-radius:17px;
-border:2px solid black;
+  border-radius: 17px;
+  border: 2px solid navy;
 }
 
 
 .cancelbtn {
-width: auto;
-padding: 10px 18px;
-background-color: #f44336;
+  width: auto;
+  padding: 10px 18px;
+  background-color: #f44336;
 }
 
 
 .container {
-padding: 16px;
-display:flex;
-justify-content:center;
-align-items:center;
-align-content:center;
-flex-direction:column;
+  padding: 16px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  align-content:center;
+  flex-direction:column;
 }
 
 #bottom{
@@ -105,9 +100,9 @@ flex-direction:column;
 }
 
 span.psw {
-float: right;
-padding-top: 16px;
-margin-right:5vw;
+  float: right;
+  padding-top: 16px;
+  margin-right:5vw;
 }
 
 /* Change styles for span and cancel button on extra small screens */
@@ -132,15 +127,72 @@ height:15vh;
   padding-right:15px;
 }
 
+#fact {
+  padding:10px;
+  margin-top:20vh;
+  display:flex;
+  flex-direction:row;
+  margin-left:-5vw;
+  width:50vw;
+  min-width:300px;
+  background-color:#f8a89f;
+}
+
 #top {
-display:flex;
-flex-direction:row;
-width:75%;
-padding:50px;
-height:15vh;
-padding-left:20vw;
+  display:flex;
+  flex-direction:row;
+  height:10vh;
+  padding-left:20vw;
 }
 
 #login{
   margin-top:8vh;
+}
+
+#center{
+  /* background-image:url('https://d3e1m60ptf1oym.cloudfront.net/4750a364-c109-11df-bf6f-00270e1b481a/JW_020108_0065_xgaplus.jpg');
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:cover; */
+  background-color:#b76e79;
+  margin:auto;
+  height:90vh;
+  display:flex;
+  justify-content:center;
+  align-content:center;
+  flex-direction:column;
+  padding-left:8vw;
+  color:white;
+  text-align:left;
+}
+
+#jump{
+  border-color:white;
+  color:white;
+  border-style:solid;
+  border-width:2px;
+  border-radius:18px;
+  background-color:transparent;
+  margin-right:20px;
+}
+
+.box {
+  margin:100px;
+  text-align:left;
+  padding:50px;
+  background-color:rgba(255,255, 255, 0.8);
+}
+
+#info {
+  background-image:url('https://www.uniquejapantours.com/wp-content/uploads/2022/06/Japan-Japan-Discovered-7-kinkakuji-temple-the-golden-pavilion-in-kyoto-SH9TX8L-square.jpg');
+  background-size:cover;
+  line-height:1.4;
+}
+
+.header {
+  font-size:25px;
+}
+
+#map {
+  width:100vw;
 }

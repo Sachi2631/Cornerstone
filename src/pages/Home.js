@@ -6,8 +6,8 @@ import Navigation from "../components/navigation";
 function App() {
   return (
     <div>
-      <div component="navigation" id="top">
-        
+      <div component="navigation">
+        <h1>to-be-navigation bar</h1>
       </div>
 
       <div id="center">
@@ -42,11 +42,15 @@ function App() {
         <div className="box">
           <h3 className="header">About us!</h3>
           <p>
-            Many language learning programs exist – but many aren’t fun,
-            interesting, engaging, and don't teach necessary and real-world useful
-            topics or phrases. In fact, some even teach very unpractical phrases
-            that you might never use. Therefore, our goal is
-            to create a website or guide that teaches you how to learn Japanese.
+          Many language learning programs exist – but many aren’t fun,
+          interesting, engaging, and don't teach necessary and real-world useful
+          topics or phrases. In fact, some even teach very unpractical phrases
+          that you might never use. Our goal is
+          to create a website or guide that teaches you how to learn 
+          practical Japanese that will be useful to you in everyday life, 
+          and will enable you to live comforably and thrive in Japan. You can 
+          learn emergency medical, finance, or law-related terminology, 
+        as well as everyday and work phrases.  
           </p>
           <br />
           <p>
@@ -65,12 +69,16 @@ function App() {
           <h3 className="header">Contact us!</h3>
           <p>
             Don't hesitate to reach out if you have any feedback, questions,
-            concerns, or new ideas! We're Sara and Sachi (sophomores)! Thanks!!
+            concerns, or new ideas! Thanks!!
           </p>
         </div>
 
         <br />
         <br />
+      </div>
+
+      <div component="footer">
+        <h1>to-be-footer bar</h1>
       </div>
     </div>
   );
