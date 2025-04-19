@@ -6,9 +6,10 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.0",
-    "@mui/material": "^6.4.0",
+    "@mui/material": "^6.4.11",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
+    "d3": "^7.9.0",
     "react": "^19.0.0",
     "react-calendar": "^5.1.0",
     "react-dom": "^19.0.0",
@@ -41,6 +42,7 @@
     ]
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.1",
     "@types/react-router-dom": "^5.3.3",

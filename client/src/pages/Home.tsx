@@ -9,8 +9,8 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
+import { Link } from 'react-router-dom'; // ✅ Add this
 import Header from '../components/Header';
-
 
 const Home = (): React.ReactElement => {
   const theme = useTheme();
@@ -18,7 +18,7 @@ const Home = (): React.ReactElement => {
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-
+      {/* Navigation/Header */}
       <Header />
 
       {/* Hero Section */}
@@ -30,12 +30,23 @@ const Home = (): React.ReactElement => {
         my={6}
         borderRadius={4}
       >
-        <Typography variant={isMobile ? "h3" : "h2"} fontWeight="bold" gutterBottom>Nihon-go!</Typography>
-        <Typography variant="h6" mb={4}>Learn Japanese in a fun, effective, and cultural way!</Typography>
+        <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="bold" gutterBottom>
+          Nihon-go!
+        </Typography>
+        <Typography variant="h6" mb={4}>
+          Learn Japanese in a fun, effective, and cultural way!
+        </Typography>
+
+        {/* ✅ Use Link from React Router */}
         <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
-          <Button variant="contained" color="primary">Log in</Button>
-          <Button variant="outlined" color="primary" href="#info">Learn more</Button>
+          <Link to="/signup" style={{ textDecoration: 'none' }}>
+            <Button variant="outlined" color="primary">Sign Up</Button>
+          </Link>
+          <Link to="/login" style={{ textDecoration: 'none' }}>
+            <Button variant="contained" color="primary">Log in</Button>
+          </Link>
         </Box>
+
         <img
           src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png"
           alt="Cat"
@@ -48,14 +59,17 @@ const Home = (): React.ReactElement => {
       {/* About Section */}
       <Box id="info" bgcolor="#f3f0fc" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} borderRadius={4}>
         <Container maxWidth="md">
-          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>About Us</Typography>
-          <Typography paragraph align="center">
-            Many language learning programs exist – but many aren’t fun, interesting, or teach useful real-world phrases.
-            Our mission is to make Japanese learning efficient, enjoyable, and cultural.
+          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
+            About Us
           </Typography>
           <Typography paragraph align="center">
-            We’re Sara and Sachi, sophomores at KLS, and our goal is to help language learners like you thrive while having fun.
-            Explore Japanese language, culture, music, games, and more – all in one place.
+            Many language learning programs exist – but many aren’t fun, interesting, or teach useful real-world phrases.
+            Our goal is to build a website that helps you learn practical Japanese for everyday life, emergencies, and work.
+          </Typography>
+          <Typography paragraph align="center">
+            We are Sara and Sachi, sophomores at KLS, and we built this platform for curious, passionate learners who want
+            to enjoy Japanese language and culture. Here, you’ll find music, games, history, events, and more to help you
+            thrive in Japan.
           </Typography>
         </Container>
       </Box>
@@ -63,12 +77,12 @@ const Home = (): React.ReactElement => {
       {/* Testimonials Section */}
       <Box bgcolor="#e6f9f8" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} my={6} borderRadius={4}>
         <Container>
-          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>Testimonials</Typography>
+          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
+            Testimonials
+          </Typography>
           <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} gap={2} flexWrap="wrap">
-            {/* Left nav arrow */}
             <Button size="large">{'<'}</Button>
 
-            {/* Testimonials Cards */}
             <Box
               display="flex"
               flexWrap="wrap"
@@ -98,7 +112,6 @@ const Home = (): React.ReactElement => {
               ))}
             </Box>
 
-            {/* Right nav arrow */}
             <Button size="large">{'>'}</Button>
           </Box>
         </Container>

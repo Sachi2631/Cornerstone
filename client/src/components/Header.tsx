@@ -30,7 +30,7 @@ const Header = (): React.ReactElement => {
         <Button href="/watch" fullWidth={isMobile}>Watch</Button>
         <Button href="/talk" fullWidth={isMobile}>Talk</Button>
         <Button href="/learn" fullWidth={isMobile}>Learn</Button>
-        <Button variant="outlined" href="/register" fullWidth={isMobile}>Register</Button>
+        <Button variant="outlined" href="/signup" fullWidth={isMobile}>Sign Up</Button>
         <Button variant="contained" color="primary" href="/login" fullWidth={isMobile}>Log In</Button>
       </Box>
     </Box>

@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import Learn from './pages/Learn';
 import Watch from './pages/Watch';
 import Talk from './pages/Talk';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 const App: React.FC = () => {
   return (
@@ -15,6 +17,8 @@ const App: React.FC = () => {
         <Route path="/learn" element={<Learn />} />
         <Route path="/watch" element={<Watch />} />
         <Route path="/talk" element={<Talk />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </Router>
   );
