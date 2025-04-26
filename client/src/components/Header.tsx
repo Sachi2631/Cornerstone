@@ -1,13 +1,23 @@
 // src/components/Header.tsx
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, useTheme, useMediaQuery, IconButton, Avatar, Menu, MenuItem } from '@mui/material';
-import { useLocation } from 'react-router-dom';  // 👈 import this to know where you are
+import {
+  Box,
+  Typography,
+  Button,
+  useTheme,
+  useMediaQuery,
+  IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
+} from '@mui/material';
+import { useLocation } from 'react-router-dom';
 
 const Header = (): React.ReactElement => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const location = useLocation();  // 👈 get current URL path
+  const location = useLocation();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -19,7 +29,14 @@ const Header = (): React.ReactElement => {
     setAnchorEl(null);
   };
 
-  const isHomePage = location.pathname === "/";  // 👈 check if current page is home
+  const isHomePage = location.pathname === '/';
+
+  const navButtons = [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Watch', path: '/watch' },
+    { label: 'Talk', path: '/talk' },
+    { label: 'Learn', path: '/learn' },
+  ];
 
   return (
     <Box
@@ -37,26 +54,60 @@ const Header = (): React.ReactElement => {
     >
       {/* Logo */}
       <Typography variant="h6" fontWeight="bold">
-        <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>Nihon-Go!</a>
+        <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+          Nihon-Go!
+        </a>
       </Typography>
 
       {/* Navigation + Buttons */}
-      <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={1} mt={isMobile ? 1 : 0} alignItems="center">
-        <Button href="/dashboard" fullWidth={isMobile}>Dashboard</Button>
-        <Button href="/watch" fullWidth={isMobile}>Watch</Button>
-        <Button href="/talk" fullWidth={isMobile}>Talk</Button>
-        <Button href="/learn" fullWidth={isMobile}>Learn</Button>
+      <Box
+        display="flex"
+        flexDirection={isMobile ? 'column' : 'row'}
+        gap={1}
+        mt={isMobile ? 1 : 0}
+        alignItems="center"
+      >
+        {navButtons.map(({ label, path }) => (
+          <Button
+            key={label}
+            href={path}
+            fullWidth={isMobile}
+            variant={location.pathname === path ? 'contained' : 'text'}
+            color={location.pathname === path ? 'primary' : 'inherit'}
+            sx={{
+              fontWeight: location.pathname === path ? 'bold' : 'normal',
+              textTransform: 'none',
+            }}
+          >
+            {label}
+          </Button>
+        ))}
 
-        {/* CONDITIONAL */}
+        {/* Auth/Menu Buttons */}
         {isHomePage ? (
           <>
-            <Button variant="outlined" href="/signup" fullWidth={isMobile}>Sign Up</Button>
-            <Button variant="contained" color="primary" href="/login" fullWidth={isMobile}>Log In</Button>
+            <Button
+              variant="outlined"
+              href="/signup"
+              fullWidth={isMobile}
+              sx={{ textTransform: 'none' }}
+            >
+              Sign Up
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              href="/login"
+              fullWidth={isMobile}
+              sx={{ textTransform: 'none' }}
+            >
+              Log In
+            </Button>
           </>
         ) : (
           <Box>
             <IconButton onClick={handleMenuOpen} size="large" sx={{ p: 0 }}>
-              <Avatar sx={{ bgcolor: '#FF6700' }}>U</Avatar> {/* Placeholder initial */}
+              <Avatar sx={{ bgcolor: '#FF6700' }}>U</Avatar>
             </IconButton>
             <Menu
               anchorEl={anchorEl}

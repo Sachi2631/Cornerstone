@@ -1,218 +1,171 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, Typography } from '@mui/material';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import * as d3 from 'd3';
-import Footer from '../components/Footer';
-import Header from '../components/Header';
-import { createRoot } from 'react-dom/client';
+import React, { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+
+type CardData = {
+  id: number;
+  front: string;
+  back: string;
+  audio?: string;
+};
+
+const cards: CardData[] = [
+  {
+    id: 1,
+    front: 'Looks like an apple',
+    back: 'あ',
+  },
+  {
+    id: 2,
+    front: 'Looks like an ear',
+    back: 'い',
+  },
+  {
+    id: 3,
+    front: 'Looks like someone being punched',
+    back: 'う',
+  },
+];
 
 const Learn = (): React.ReactElement => {
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [flipped, setFlipped] = useState<{ [key: number]: boolean }>({});
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  useEffect(() => {
-    const handleResize = () => {
-      const width = Math.min(window.innerWidth * 0.9, 1200);
-      const height = width * 0.625; // 16:10 ratio
-      setContainerSize({ width, height });
-    };
+  const toggleFlip = (id: number) => {
+    setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!svgRef.current) return;
-
-    const { width, height } = containerSize;
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove(); // Clear previous drawings
-
-    const g = svg.append('g');
-
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 8])
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform);
-      });
-
-    svg.call(zoom as any);
-
-    d3.json('/japan.geojson').then((data: any) => {
-      if (!data?.features) {
-        console.error('Invalid GeoJSON structure');
-        return;
-      }
-
-      // 🧭 Match Okinawa-visible map projection
-      const projection = d3.geoMercator()
-        .center([137.5, 32.5]) // Includes Okinawa
-        .scale((width / 1000) * 2200) // Responsive zoom level
-        .translate([width / 2, height / 2]);
-
-      const path = d3.geoPath().projection(projection);
-
-      projection.fitExtent(
-        [[60, 40], [width - 20, height - 20]],
-        data
-      );
-
-      // Draw prefectures
-      g.selectAll('path')
-        .data(data.features)
-        .enter()
-        .append('path')
-        .attr('d', path as any)
-        .attr('fill', '#e0e0e0')
-        .attr('stroke', '#333')
-        .attr('stroke-width', 0.5)
-        .on('mouseover', function () {
-          d3.select(this).attr('fill', '#90caf9');
-        })
-        .on('mouseout', function () {
-          d3.select(this).attr('fill', '#e0e0e0');
-        })
-        .on('click', function (event: MouseEvent, d: any) {
-          event.stopPropagation();
-          const [[x0, y0], [x1, y1]] = path.bounds(d);
-          const dx = x1 - x0;
-          const dy = y1 - y0;
-          const x = (x0 + x1) / 2;
-          const y = (y0 + y1) / 2;
-          const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height)));
-          const translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-          svg.transition()
-            .duration(1250)
-            .call(
-              zoom.transform as any,
-              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-            );
-
-          const name = d.properties?.nam_ja || d.properties?.nam || 'Unknown Prefecture';
-          setSelectedPrefecture(name);
-        });
-
-      // Add MUI pins at prefecture centroids
-      data.features.forEach((d: any) => {
-        const [x, y] = projection(d3.geoCentroid(d)) || [0, 0];
-
-        const foreignObject = g.append('foreignObject')
-          .attr('x', x - 10)
-          .attr('y', y - 30)
-          .attr('width', 20)
-          .attr('height', 30)
-          .style('pointer-events', 'none');
-
-        const div = document.createElement('div');
-        div.style.width = '20px';
-        div.style.height = '30px';
-
-        foreignObject.node()?.appendChild(div);
-
-        const root = createRoot(div);
-        root.render(
-          <LocationOnIcon sx={{ fontSize: 20, color: 'red' }} />
-        );
-      });
-    });
-
-    // Initial zoom and translation
-    const initialScale = 1.3;    
-    const initialTranslate = [
-      (width * (1.05 - initialScale)) / 2,
-      (height * (1.125 - initialScale)) / 2,
-    ];
-
-    svg.transition()
-      .duration(0)
-      .call(
-        zoom.transform as any,
-        d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
-      );
-
-      svg.on('click', () => {
-        const initialScale = 1.3;
-        const initialTranslate = [
-          (width * (1.05 - initialScale)) / 2,
-          (height * (1.125 - initialScale)) / 2,
-        ];
-      
-        svg.transition()
-          .duration(1250)
-          .call(
-            zoom.transform as any,
-            d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
-          );
-      
-        setSelectedPrefecture(null);
-      });      
-  }, [containerSize]);
-
-  return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
-
+  const renderCard = (card: CardData) => (
+    <Box
+      key={card.id}
+      onClick={() => toggleFlip(card.id)}
+      sx={{
+        perspective: '1000px',
+        width: isMobile ? '100%' : 250,
+        height: 160,
+      }}
+    >
       <Box
-        component="main"
-        flexGrow={1}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        width="100%"
-        px={2}
-        py={2}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          transition: 'transform 0.6s',
+          transformStyle: 'preserve-3d',
+          transform: flipped[card.id] ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}
       >
         <Box
           sx={{
-            width: '90%',
-            maxWidth: '1200px',
-            aspectRatio: '16/11',
-            position: 'relative',
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backfaceVisibility: 'hidden',
+            display: 'flex',
+            textAlign: 'center',
+            alignItems: 'center',
+            justifyContent: 'center',
             border: '2px solid #ccc',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            background: '#70c8e2', // sea color
+            borderRadius: 3,
+            bgcolor: '#fff',
+            boxShadow: 3,
+            fontSize: '1.2rem',
+            fontWeight: '500',
+            userSelect: 'none',
           }}
         >
-          <svg
-            ref={svgRef}
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
-            preserveAspectRatio="xMidYMid meet"
-          />
+          {card.front}
         </Box>
-
         <Box
-          mt={4}
-          minHeight="50px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
           sx={{
-            opacity: selectedPrefecture ? 1 : 0,
-            transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.5s ease',
-            color: '#1976d2',
-            fontWeight: 'bold',
-            fontSize: '1.5rem',
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backfaceVisibility: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #ccc',
+            borderRadius: 3,
+            bgcolor: '#fff',
+            boxShadow: 3,
+            fontSize: '1.2rem',
+            fontWeight: '500',
+            userSelect: 'none',
+            transform: 'rotateY(180deg)',
           }}
         >
-          {selectedPrefecture && (
-            <Typography variant="h5">
-              {selectedPrefecture}
-            </Typography>
-          )}
+          {card.back}
         </Box>
       </Box>
-
-      <Footer />
     </Box>
   );
+
+  return (
+    <Box display="flex" flexDirection="column" px={3} py={2}>
+  {/* Header */}
+  <Box textAlign="center" mb={2} position="relative">
+    <Typography variant="h5" fontWeight="bold">Lesson 1</Typography>
+    <Button
+      variant="contained"
+      color="secondary"
+      sx={{ position: 'absolute', right: 0, top: 0 }}
+    >
+      Save + exit
+    </Button>
+  </Box>
+
+  {/* Cards */}
+  <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
+    {/* Top Card */}
+    <Box display="flex" flexDirection="column" alignItems="center">
+      {renderCard(cards[0])}
+      <IconButton sx={{ mt: 1 }}>
+        <VolumeUpIcon color="primary" />
+      </IconButton>
+    </Box>
+
+    {/* Bottom Cards */}
+    <Grid container spacing={2} justifyContent="center">
+      {cards.slice(1).map((card) => (
+        <Grid item key={card.id}>
+          <Box display="flex" flexDirection="column" alignItems="center">
+            {renderCard(card)}
+            <IconButton sx={{ mt: 1 }}>
+              <VolumeUpIcon color="primary" />
+            </IconButton>
+          </Box>
+        </Grid>
+      ))}
+    </Grid>
+  </Box>
+
+  {/* Next Button */}
+  <Box mt={4} textAlign="center">
+    <Button
+      variant="contained"
+      sx={{
+        bgcolor: '#e6d6f6',
+        color: '#000',
+        fontSize: '1.5rem',
+        px: 4,
+      }}
+    >
+      →
+    </Button>
+  </Box>
+</Box>
+
+  );  
 };
 
 export default Learn;

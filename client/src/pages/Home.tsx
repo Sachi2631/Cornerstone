@@ -9,8 +9,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { Link } from 'react-router-dom'; // ✅ Add this
-import Header from '../components/Header';
+import { Link } from 'react-router-dom';
 
 const Home = (): React.ReactElement => {
   const theme = useTheme();
@@ -18,16 +17,12 @@ const Home = (): React.ReactElement => {
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      {/* Navigation/Header */}
-      <Header />
-
       {/* Hero Section */}
       <Box
         py={10}
         textAlign="center"
         border="4px dashed black"
         mx={isMobile ? 2 : 6}
-        my={6}
         borderRadius={4}
       >
         <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="bold" gutterBottom>
@@ -37,13 +32,12 @@ const Home = (): React.ReactElement => {
           Learn Japanese in a fun, effective, and cultural way!
         </Typography>
 
-        {/* ✅ Use Link from React Router */}
         <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
           <Link to="/signup" style={{ textDecoration: 'none' }}>
             <Button variant="outlined" color="primary">Sign Up</Button>
           </Link>
           <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button variant="contained" color="primary">Log in</Button>
+            <Button variant="contained" color="primary">Log In</Button>
           </Link>
         </Box>
 
@@ -57,7 +51,7 @@ const Home = (): React.ReactElement => {
       </Box>
 
       {/* About Section */}
-      <Box id="info" bgcolor="#f3f0fc" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} borderRadius={4}>
+      <Box id="info" bgcolor="#f3f0fc" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={6} borderRadius={4}>
         <Container maxWidth="md">
           <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
             About Us
@@ -74,8 +68,84 @@ const Home = (): React.ReactElement => {
         </Container>
       </Box>
 
+      {/* Feature Section */}
+      <Box bgcolor="#e6f9f8" py={8} px={{ xs: 3, md: 6 }} mx={{ xs: 2, md: 6 }} mt={6} borderRadius={4}>
+        <Container maxWidth="lg">
+          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
+            Features
+          </Typography>
+          <Box
+            display="flex"
+            flexWrap="wrap"
+            gap={4}
+            justifyContent="center"
+            mt={4}
+          >
+            {/* Feature 1 */}
+            <Box
+              sx={{
+                flex: '1 1 280px',
+                maxWidth: '320px',
+                bgcolor: 'white',
+                borderRadius: 3,
+                boxShadow: 3,
+                p: 3,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" mb={2}>
+                Interactive Learning Journey
+              </Typography>
+              <Typography variant="body2">
+                Explore Japanese language and culture through rich, dynamic visualizations that track your learning path.
+              </Typography>
+            </Box>
+
+            {/* Feature 2 */}
+            <Box
+              sx={{
+                flex: '1 1 280px',
+                maxWidth: '320px',
+                bgcolor: 'white',
+                borderRadius: 3,
+                boxShadow: 3,
+                p: 3,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" mb={2}>
+                Task Manager & Reminders
+              </Typography>
+              <Typography variant="body2">
+                Stay on top of your goals with to-do lists, task checklists, and gentle reminders to keep you progressing.
+              </Typography>
+            </Box>
+
+            {/* Feature 3 */}
+            <Box
+              sx={{
+                flex: '1 1 280px',
+                maxWidth: '320px',
+                bgcolor: 'white',
+                borderRadius: 3,
+                boxShadow: 3,
+                p: 3,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" mb={2}>
+                All-in-One Learning Platform
+              </Typography>
+              <Typography variant="body2">
+                Integrate your Learn, Watch, and Talk activities seamlessly in one comprehensive and accessible platform.
+              </Typography>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
       {/* Testimonials Section */}
-      <Box bgcolor="#e6f9f8" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} my={6} borderRadius={4}>
+      <Box bgcolor="#e6f9f8" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={6} borderRadius={4}>
         <Container>
           <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
             Testimonials
@@ -114,7 +184,7 @@ const Home = (): React.ReactElement => {
       </Box>
 
       {/* Contact Section */}
-      <Box bgcolor="#fdf6f9" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} borderRadius={4}>
+      <Box bgcolor="#fdf6f9" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={6} borderRadius={4}>
         <Container maxWidth="md">
           <Box textAlign="center">
             <Typography variant="h4" fontWeight="bold" gutterBottom>Contact Us</Typography>
@@ -129,19 +199,6 @@ const Home = (): React.ReactElement => {
             </Box>
           </Box>
         </Container>
-      </Box>
-
-      {/* Footer */}
-      <Box mt="auto" py={4} px={2} borderTop="2px solid #ddd" textAlign="center">
-        <Typography variant="body2" mb={1}>© 2025 Nihon-go! All Rights Reserved</Typography>
-        <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
-          <Button size="small">About Us</Button>
-          <Button size="small">Donate</Button>
-          <Button size="small">FAQs</Button>
-          <Button size="small">Help Center</Button>
-          <Button size="small">Contact</Button>
-          <Button size="small">Mobile App</Button>
-        </Box>
       </Box>
     </Box>
   );

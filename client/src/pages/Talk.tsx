@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import Footer from '../components/Footer';
-import Header from '../components/Header';
 
 const Talk = (): React.ReactElement => {
   const [isRecording, setIsRecording] = useState(false);
@@ -121,7 +119,6 @@ const Talk = (): React.ReactElement => {
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
       <Box
         component="main"
         flexGrow={1}
@@ -182,7 +179,6 @@ const Talk = (): React.ReactElement => {
           Back to Dashboard
         </Button>
       </Box>
-      <Footer />
     </Box>
   );
 };

@@ -1,12 +1,9 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import Footer from '../components/Footer';
-import Header from '../components/Header';
 
 const Watch = (): React.ReactElement  => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
       <Box
         component="main"
         flexGrow={1}
@@ -31,7 +28,6 @@ const Watch = (): React.ReactElement  => {
           Start
         </Button>
       </Box>
-      <Footer />
     </Box>
   );
 };
