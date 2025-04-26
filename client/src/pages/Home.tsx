@@ -81,8 +81,6 @@ const Home = (): React.ReactElement => {
             Testimonials
           </Typography>
           <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} gap={2} flexWrap="wrap">
-            <Button size="large">{'<'}</Button>
-
             <Box
               display="flex"
               flexWrap="wrap"
@@ -111,8 +109,6 @@ const Home = (): React.ReactElement => {
                 </Card>
               ))}
             </Box>
-
-            <Button size="large">{'>'}</Button>
           </Box>
         </Container>
       </Box>

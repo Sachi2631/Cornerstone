@@ -1,23 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Box,
-  Typography,
-  Container,
-  Button
-} from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import * as d3 from 'd3';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+import { createRoot } from 'react-dom/client';
 
 const Learn = (): React.ReactElement => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
-    const width = 600;
-    const height = 600;
+    const handleResize = () => {
+      const width = Math.min(window.innerWidth * 0.9, 1200);
+      const height = width * 0.625; // 16:10 ratio
+      setContainerSize({ width, height });
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+
+    const { width, height } = containerSize;
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
+    svg.selectAll('*').remove(); // Clear previous drawings
 
     const g = svg.append('g');
 
@@ -29,16 +40,26 @@ const Learn = (): React.ReactElement => {
 
     svg.call(zoom as any);
 
-    // ✅ Correct file path
     d3.json('/japan.geojson').then((data: any) => {
-      if (!data || !data.features) {
+      if (!data?.features) {
         console.error('Invalid GeoJSON structure');
         return;
       }
 
-      const projection = d3.geoMercator().fitSize([width, height], data);
+      // 🧭 Match Okinawa-visible map projection
+      const projection = d3.geoMercator()
+        .center([137.5, 32.5]) // Includes Okinawa
+        .scale((width / 1000) * 2200) // Responsive zoom level
+        .translate([width / 2, height / 2]);
+
       const path = d3.geoPath().projection(projection);
 
+      projection.fitExtent(
+        [[60, 40], [width - 20, height - 20]],
+        data
+      );
+
+      // Draw prefectures
       g.selectAll('path')
         .data(data.features)
         .enter()
@@ -64,27 +85,71 @@ const Learn = (): React.ReactElement => {
           const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
           svg.transition()
-            .duration(750)
+            .duration(1250)
             .call(
               zoom.transform as any,
               d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
             );
 
-          // ✅ Correct property access
           const name = d.properties?.nam_ja || d.properties?.nam || 'Unknown Prefecture';
           setSelectedPrefecture(name);
-          alert(`You clicked on ${name}`);
         });
+
+      // Add MUI pins at prefecture centroids
+      data.features.forEach((d: any) => {
+        const [x, y] = projection(d3.geoCentroid(d)) || [0, 0];
+
+        const foreignObject = g.append('foreignObject')
+          .attr('x', x - 10)
+          .attr('y', y - 30)
+          .attr('width', 20)
+          .attr('height', 30)
+          .style('pointer-events', 'none');
+
+        const div = document.createElement('div');
+        div.style.width = '20px';
+        div.style.height = '30px';
+
+        foreignObject.node()?.appendChild(div);
+
+        const root = createRoot(div);
+        root.render(
+          <LocationOnIcon sx={{ fontSize: 20, color: 'red' }} />
+        );
+      });
     });
 
-    // ✅ Reset map when clicking outside
-    svg.on('click', () => {
-      svg.transition()
-        .duration(750)
-        .call(zoom.transform as any, d3.zoomIdentity);
-      setSelectedPrefecture(null);
-    });
-  }, []);
+    // Initial zoom and translation
+    const initialScale = 1.3;    
+    const initialTranslate = [
+      (width * (1.05 - initialScale)) / 2,
+      (height * (1.125 - initialScale)) / 2,
+    ];
+
+    svg.transition()
+      .duration(0)
+      .call(
+        zoom.transform as any,
+        d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+      );
+
+      svg.on('click', () => {
+        const initialScale = 1.3;
+        const initialTranslate = [
+          (width * (1.05 - initialScale)) / 2,
+          (height * (1.125 - initialScale)) / 2,
+        ];
+      
+        svg.transition()
+          .duration(1250)
+          .call(
+            zoom.transform as any,
+            d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+          );
+      
+        setSelectedPrefecture(null);
+      });      
+  }, [containerSize]);
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
@@ -97,29 +162,52 @@ const Learn = (): React.ReactElement => {
         flexDirection="column"
         alignItems="center"
         justifyContent="center"
-        px={3}
-        textAlign="center"
+        width="100%"
+        px={2}
+        py={2}
       >
-        <Typography variant="h3" mb={3}>
-          Explore Japan!
-        </Typography>
-        <Typography variant="h6" mb={4}>
-          Click on a prefecture to learn more. Click outside to reset.
-        </Typography>
-
-        <Container maxWidth="md">
+        <Box
+          sx={{
+            width: '90%',
+            maxWidth: '1200px',
+            aspectRatio: '16/11',
+            position: 'relative',
+            border: '2px solid #ccc',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            background: '#70c8e2', // sea color
+          }}
+        >
           <svg
             ref={svgRef}
             width="100%"
-            height="600"
-            viewBox="0 0 600 600"
-            style={{ border: '1px solid #ccc', borderRadius: '8px' }}
+            height="100%"
+            viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+            preserveAspectRatio="xMidYMid meet"
           />
-        </Container>
+        </Box>
 
-        <Button variant="contained" color="primary" href="/dashboard" sx={{ mt: 4 }}>
-          Go to Dashboard
-        </Button>
+        <Box
+          mt={4}
+          minHeight="50px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            opacity: selectedPrefecture ? 1 : 0,
+            transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.5s ease',
+            color: '#1976d2',
+            fontWeight: 'bold',
+            fontSize: '1.5rem',
+          }}
+        >
+          {selectedPrefecture && (
+            <Typography variant="h5">
+              {selectedPrefecture}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       <Footer />

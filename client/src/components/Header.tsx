@@ -1,11 +1,25 @@
 // src/components/Header.tsx
 
-import React from 'react';
-import { Box, Typography, Button, useTheme, useMediaQuery } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Button, useTheme, useMediaQuery, IconButton, Avatar, Menu, MenuItem } from '@mui/material';
+import { useLocation } from 'react-router-dom';  // 👈 import this to know where you are
 
 const Header = (): React.ReactElement => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const location = useLocation();  // 👈 get current URL path
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const isHomePage = location.pathname === "/";  // 👈 check if current page is home
 
   return (
     <Box
@@ -21,17 +35,48 @@ const Header = (): React.ReactElement => {
       top={0}
       zIndex={1000}
     >
+      {/* Logo */}
       <Typography variant="h6" fontWeight="bold">
         <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>Nihon-Go!</a>
       </Typography>
 
-      <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={1} mt={isMobile ? 1 : 0}>
+      {/* Navigation + Buttons */}
+      <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={1} mt={isMobile ? 1 : 0} alignItems="center">
         <Button href="/dashboard" fullWidth={isMobile}>Dashboard</Button>
         <Button href="/watch" fullWidth={isMobile}>Watch</Button>
         <Button href="/talk" fullWidth={isMobile}>Talk</Button>
         <Button href="/learn" fullWidth={isMobile}>Learn</Button>
-        <Button variant="outlined" href="/signup" fullWidth={isMobile}>Sign Up</Button>
-        <Button variant="contained" color="primary" href="/login" fullWidth={isMobile}>Log In</Button>
+
+        {/* CONDITIONAL */}
+        {isHomePage ? (
+          <>
+            <Button variant="outlined" href="/signup" fullWidth={isMobile}>Sign Up</Button>
+            <Button variant="contained" color="primary" href="/login" fullWidth={isMobile}>Log In</Button>
+          </>
+        ) : (
+          <Box>
+            <IconButton onClick={handleMenuOpen} size="large" sx={{ p: 0 }}>
+              <Avatar sx={{ bgcolor: '#FF6700' }}>U</Avatar> {/* Placeholder initial */}
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              <MenuItem onClick={handleMenuClose}>Account</MenuItem>
+              <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
+              <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+            </Menu>
+          </Box>
+        )}
       </Box>
     </Box>
   );
