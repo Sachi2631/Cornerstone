@@ -150,61 +150,120 @@ const Dashboard = (): React.ReactElement => {
   }, [containerSize]);
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Box
-        component="main"
-        flexGrow={1}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        width="100%"
-        px={2}
-        py={2}
-      >
+    <Box display="flex" flexDirection="row" justifyContent="space-around" minHeight="100vh" bgcolor="#f3f0fc">
+      <Box display="flex" flexDirection="column" alignItems="center" bgcolor="white" minWidth="70vw" borderRadius="10px">
         <Box
-          sx={{
-            width: '90%',
-            maxWidth: '1200px',
-            aspectRatio: '16/11',
-            position: 'relative',
-            border: '2px solid #ccc',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            background: '#70c8e2', // sea color
-          }}
-        >
-          <svg
-            ref={svgRef}
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
-            preserveAspectRatio="xMidYMid meet"
-          />
-        </Box>
-
-        <Box
-          mt={4}
-          minHeight="50px"
+          component="main"
+          flexGrow={1}
           display="flex"
+          flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          sx={{
-            opacity: selectedPrefecture ? 1 : 0,
-            transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.5s ease',
-            color: '#1976d2',
-            fontWeight: 'bold',
-            fontSize: '1.5rem',
-          }}
+          width="100%"
+          px={2}
+          py={2}
         >
-          {selectedPrefecture && (
-            <Typography variant="h5">
-              {selectedPrefecture}
-            </Typography>
-          )}
+          <Box
+            sx={{
+              width: '90%',
+              maxWidth: '1200px',
+              aspectRatio: '16/11',
+              position: 'relative',
+              border: '2px solid #ccc',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              background: '#70c8e2', // sea color
+            }}
+          >
+            <svg
+              ref={svgRef}
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          </Box>
+
+          <Box
+            mt={4}
+            minHeight="50px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              opacity: selectedPrefecture ? 1 : 0,
+              transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.5s ease',
+              color: '#1976d2',
+              fontWeight: 'bold',
+              fontSize: '1.5rem',
+            }}
+          >
+            {selectedPrefecture && (
+              <Typography variant="h5">
+                {selectedPrefecture}
+              </Typography>
+            )}
+          </Box>         
         </Box>
+        
       </Box>
+      <Box
+          sx={{
+            width: "24vw",
+            bgcolor:"cerulean",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-around",
+            bgColor:"red",
+            alignItems: "center",
+          }}
+          >
+
+          <Box
+          sx={{
+            padding: "10px",
+            position: "fixed",
+            width: "20vw",
+            top: "15vh",
+            borderRadius: "10px",
+            // borderStyle: "solid",
+            // borderWidth: "3px",
+            // borderColor: "lightgray",
+            bgcolor: "white",
+            paddingLeft: "20px",
+            boxShadow: 3,
+          }}
+          >
+            <Typography variant="h6" style={{fontWeight:"600"}}>To-Do List!</Typography>
+            <Typography>1. Lesson 1</Typography>
+            <Typography>2. Lesson 2</Typography>
+            <Typography>3. Lesson 3</Typography>
+            <Typography>4. Lesson 4</Typography>
+          </Box>
+
+          <Box
+          sx={{
+            padding: "10px",
+            position: "fixed",
+            width: "20vw",
+            top: "60vh",
+            borderRadius: "10px",
+            // borderStyle: "solid",
+            // borderWidth: "3px",
+            // borderColor: "lightgray",
+            bgcolor: "white",
+            paddingLeft: "20px",
+            boxShadow: 3,
+          }}
+          >
+            <Typography variant="h6" style={{fontWeight:"600"}} >To-Review List!</Typography>
+            <Typography>1. Lesson 1</Typography>
+            <Typography>2. Lesson 2</Typography>
+            <Typography>3. Lesson 3</Typography>
+          </Box>
+      </Box>
+      
     </Box>
   );
 };

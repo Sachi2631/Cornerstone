@@ -7,8 +7,6 @@ import {
   Paper,
   Container
 } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const Signup = (): React.ReactElement => {
   const [name, setName] = useState<string>('');
@@ -22,8 +20,6 @@ const Signup = (): React.ReactElement => {
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
-
       <Box
         component="main"
         flexGrow={1}
@@ -78,8 +74,6 @@ const Signup = (): React.ReactElement => {
           </Paper>
         </Container>
       </Box>
-
-      <Footer />
     </Box>
   );
 };

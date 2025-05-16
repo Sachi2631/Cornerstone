@@ -16,42 +16,43 @@ const Home = (): React.ReactElement => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
-      {/* Hero Section */}
-      <Box
-        py={10}
+    <Box
+        py={20}
         textAlign="center"
-        border="4px dashed black"
-        mx={isMobile ? 2 : 6}
-        borderRadius={4}
+        mx={isMobile ? 3 : 6}
+        my={5}
+        // bgcolor="#CCCCFF"
+        bgcolor="#fffbed"
       >
-        <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="bold" gutterBottom>
-          Nihon-go!
-        </Typography>
-        <Typography variant="h6" mb={4}>
-          Learn Japanese in a fun, effective, and cultural way!
-        </Typography>
+       <Box
+        sx={{
+          // bgcolor: "orange",
+        }}
+        >
+                 
 
-        <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
-          <Link to="/signup" style={{ textDecoration: 'none' }}>
-            <Button variant="outlined" color="primary">Sign Up</Button>
-          </Link>
-          <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button variant="contained" color="primary">Log In</Button>
-          </Link>
+          <Typography variant={isMobile ? "h3" : "h2"} fontWeight="bold" gutterBottom>Nihon-go!</Typography>
+          <Typography variant="h6" mb={4}>Learn Japanese in a fun, effective, and cultural way!</Typography>
+          <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
+            <Button variant="contained" color="primary">Start Now!</Button>
+            <Button variant="outlined" color="primary" href="#info" >Learn more</Button>
+          </Box>
+
+          <Box textAlign="left" display="flex" flexDirection="row" marginBottom={-5}>
+            <img
+              src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png"
+              alt="Cat"
+              style={{ width: 100, marginBottom: 16 }}
+            />
+            <Box alignItems="center" paddingTop={2}>
+              <Typography variant="h5" gutterBottom style={{fontWeight:"600"}}>Shinjuku</Typography>
+              <Typography variant="h6">This is Shinjuku! It's the capital of Tokyo Prefecture. </Typography>
+            </Box>
+          </Box>
         </Box>
 
-        <img
-          src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png"
-          alt="Cat"
-          style={{ width: 100, marginBottom: 16 }}
-        />
-        <Typography variant="h5" gutterBottom>Shinjuku</Typography>
-        <Typography>This is Shinjuku! It's the capital of Tokyo Prefecture.</Typography>
-      </Box>
-
       {/* About Section */}
-      <Box id="info" bgcolor="#f3f0fc" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={6} borderRadius={4}>
+      <Box id="info" bgcolor="#f3f0fc" py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={10} borderRadius={4}>
         <Container maxWidth="md">
           <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
             About Us
@@ -94,10 +95,12 @@ const Home = (): React.ReactElement => {
               }}
             >
               <Typography variant="h6" fontWeight="bold" mb={2}>
-                Interactive Learning Journey
+                Learn Useful Japanese
               </Typography>
               <Typography variant="body2">
-                Explore Japanese language and culture through rich, dynamic visualizations that track your learning path.
+                Learn practical Japanese for your daily life. After completing the basics, 
+                you can choose between multiple routes, including learning financial or emergency medical 
+                terminology, work culture, navigating places, and more!
               </Typography>
             </Box>
 
@@ -114,10 +117,12 @@ const Home = (): React.ReactElement => {
               }}
             >
               <Typography variant="h6" fontWeight="bold" mb={2}>
-                Task Manager & Reminders
+                Gamified  Learning
               </Typography>
               <Typography variant="body2">
-                Stay on top of your goals with to-do lists, task checklists, and gentle reminders to keep you progressing.
+                Our app is gamefied to increase motivation. There is a reward system of collecting points and objects, you can 
+                choose to have a character to represent you -- such as Japanese mythical creatures or animals only unique to Japan -- 
+                and travel around the country as you advance!
               </Typography>
             </Box>
 
@@ -134,10 +139,10 @@ const Home = (): React.ReactElement => {
               }}
             >
               <Typography variant="h6" fontWeight="bold" mb={2}>
-                All-in-One Learning Platform
+                All-Encompassing
               </Typography>
               <Typography variant="body2">
-                Integrate your Learn, Watch, and Talk activities seamlessly in one comprehensive and accessible platform.
+                Integrate your language aquisition with lessons of Japanese history, geography, society, folklore, and culture! 
               </Typography>
             </Box>
           </Box>
@@ -191,7 +196,7 @@ const Home = (): React.ReactElement => {
             <Typography mb={2}>
               Don't hesitate to reach out if you have feedback, questions, or new ideas!
             </Typography>
-            <Typography fontWeight="medium" color="primary">nihonog@gmail.com</Typography>
+            <Typography fontWeight="medium" color="primary">nihongo@gmail.com</Typography>
 
             <Box mt={5}>
               <Typography variant="h6" gutterBottom>Support our website!</Typography>
