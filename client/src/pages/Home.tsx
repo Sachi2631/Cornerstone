@@ -27,6 +27,7 @@ const Home = (): React.ReactElement => {
       >
        <Box
         sx={{
+          // hello
           bgcolor:"cerulean",
           height:"65vh",
           marginTop:"0px",
