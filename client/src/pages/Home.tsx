@@ -39,10 +39,10 @@ const Home = (): React.ReactElement => {
                  
           <Box sx={{paddingTop:"20vh"}}>
             <Typography variant={isMobile ? "h3" : "h2"} fontWeight="bold" gutterBottom>Nihon-go!</Typography>
-            <Typography variant="h6" mb={4}>Learn Japanese in a fun, effective, and cultural way!</Typography>
+            <Typography variant="h6" mb={4}>Learn Japanese in a fun, effective, and cultural way</Typography>
             <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
-              <Button variant="contained" sx={{ backgroundColor: '#b43d20', color: '#dfe2e5', height:"5vh", width:"10vw"}}> Start Now! </Button>
-              <Button variant="outlined" sx={{ color: '#b43d20', borderColor: '#b43d20', borderWidth:"5px", height:"5vh", width:"10vw"}} href="#info"> Learn more </Button>
+              <Button variant="contained" sx={{ backgroundColor: '#b43d20', color: '#dfe2e5', height:"7vh", width:"15vw", borderRadius:"10px"}}> Start Now! </Button>
+              <Button variant="outlined" sx={{ color: '#b43d20', borderColor: '#b43d20', borderWidth:"3px", height:"7vh", width:"15vw", borderRadius:"10px"}} href="#info"> Learn more </Button>
             </Box>
           </Box>
 

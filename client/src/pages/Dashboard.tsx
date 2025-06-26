@@ -63,14 +63,14 @@ const Dashboard = (): React.ReactElement => {
         .enter()
         .append('path')
         .attr('d', path as any)
-        .attr('fill', '#e0e0e0')
+        .attr('fill', '#b4441d')
         .attr('stroke', '#333')
         .attr('stroke-width', 0.5)
         .on('mouseover', function () {
           d3.select(this).attr('fill', '#90caf9');
         })
         .on('mouseout', function () {
-          d3.select(this).attr('fill', '#e0e0e0');
+          d3.select(this).attr('fill', '#b4441d');
         })
         .on('click', function (event: MouseEvent, d: any) {
           event.stopPropagation();
@@ -162,7 +162,7 @@ const Dashboard = (): React.ReactElement => {
           // px={2}
           // py={2}
         >
-          <Box display="flex" flexDirection="row"
+          <Box display="flex" flexDirection="row" justifyContent="flex-end"
             sx={{
               width: '100vw',
               // maxWidth: '1200px',
@@ -171,35 +171,35 @@ const Dashboard = (): React.ReactElement => {
               border: '2px solid #ccc',
               borderRadius: '8px',
               overflow: 'hidden',
-              background: '#dfe2e5', // sea color
+              background: '#dee2e4'
+              // background: '#dfe2e5', // sea color
 
             }}
           >
             <svg
               ref={svgRef}
-              width="80%"
+              width="100%"
               height="100%"
-              viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+              z-index="-1"
+              viewBox={`200 0 ${containerSize.width} ${containerSize.height}`}
               preserveAspectRatio="xMidYMid meet"
             />
 
-          </Box>
+          
           
           {/* next up box */}
             <Box
               sx={{
                 padding: "10px",
-                marginRight:"10px",
-                position: "fixed",
-                width: "20vw",
-                top: "15vh",
+                width: "15vw",
                 borderRadius: "10px",
-                // borderStyle: "solid",
-                // borderWidth: "3px",
-                // borderColor: "lightgray",
+                marginRight: "5vw",
                 bgcolor: "#d3d3d3",
                 paddingLeft: "20px",
                 boxShadow: 3,
+                zindex:1,
+                marginTop:"5vh",
+                position:"absolute",
               }}
               >
                 <Typography variant="h6" style={{fontWeight:"600"}}>Up Next:</Typography>
@@ -212,6 +212,8 @@ const Dashboard = (): React.ReactElement => {
                 </Box>
                 
             </Box>
+
+          </Box>
 
             {/* prefecture name */}
           <Box
