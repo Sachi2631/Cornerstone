@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import * as d3 from 'd3';
 import { createRoot } from 'react-dom/client';
-import Bart from '../components/Menut'; // ✅ Import your hamburger menu component
+import Bart from '../components/Menut';
 
 const Dashboard = (): React.ReactElement => {
   const svgRef = useRef<SVGSVGElement | null>(null);
