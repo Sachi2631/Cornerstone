@@ -8,41 +8,37 @@ const columnsData: string[][] = [
 const styles = {
   container: {
     position: 'relative' as const,
+    zIndex: 10,
   },
   open: {
-    position: 'absolute' as const,
-    top: '15px',
-    left: '-49vw',
+    position: 'fixed' as const,
+    top: '20px',
+    left: '10px',
     width: '50px',
     height: '50px',
     cursor: 'pointer',
-    zIndex: 1,
+    zIndex: 1000,
     display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'space-between',
-    backgroundColor:'orange',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: '50%',
+    boxShadow: '0 0 5px rgba(0,0,0,0.3)'
   },
-
   close: {
     position: 'absolute' as const,
-    top: '20px',
-    left: '-30vw',
-    width: '50px',
-    height: '50px',
+    top: '10px',
+    right: '10px',
+    width: '30px',
+    height: '30px',
     cursor: 'pointer',
-    zIndex: 200,
     display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'space-between',
-    backgroundColor:'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: '50%',
   },
 
-  barLine: {
-    width: '100%',
-    height: '4px',
-    backgroundColor: '#333',
-    borderRadius: '2px',
-  },
   menu: {
     backgroundColor: '#92a6ba',
     display: 'flex',
@@ -51,10 +47,12 @@ const styles = {
     height: '100vh',
     transition: 'transform 0.3s ease',
     position: 'fixed' as const,
-    top: 70,
+    top: 0,
     left: 0,
-    zIndex: 2,
-    paddingTop:'10px',
+    zIndex: 999,
+    paddingTop: '60px',
+    boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
+    overflowY: 'auto'  as const
   },
   menuHidden: {
     transform: 'translateX(-100%)',
@@ -74,28 +72,38 @@ const styles = {
     backgroundColor: '#d9d9d9',
     height: '14vh',
     borderRadius: '10px',
-    marginRight: '5px',
-  }
+    marginBottom: '5px',
+  },
 };
 
-const Bar: React.FC = () => {
+const Bart: React.FC = () => {
   const [open, setOpen] = useState(false);
 
   return (
     <div style={styles.container}>
-      {/* Hamburger icon */}
-      <div style={styles.open} onClick={() => setOpen(!open)}>
-        {/* <div style={styles.barLine}></div>
-        <div style={styles.barLine}></div>
-        <div style={styles.barLine}></div> */}
-        <img src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"></img>
-      
-      </div>
-
-      
+      {/* Hamburger icon (when menu is closed) */}
+      {!open && (
+        <div style={styles.open} onClick={() => setOpen(true)}>
+          <img
+            src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"
+            alt="Open Menu"
+            style={{ width: '30px', height: '30px' }}
+          />
+        </div>
+      )}
 
       {/* Slide-out menu */}
       <div style={{ ...styles.menu, ...(open ? {} : styles.menuHidden) }}>
+        {/* Close button */}
+        <div style={styles.close} onClick={() => setOpen(false)}>
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/109/109618.png"
+            alt="Close"
+            style={{ width: '20px', height: '20px' }}
+          />
+        </div>
+
+        {/* Menu columns */}
         {columnsData.map((columnItems, colIndex) => (
           <div style={styles.column} key={colIndex}>
             {columnItems.map((title, itemIndex) => (
@@ -106,12 +114,9 @@ const Bar: React.FC = () => {
             ))}
           </div>
         ))}
-        
       </div>
-
-      
     </div>
   );
 };
 
-export default Bar;
+export default Bart;

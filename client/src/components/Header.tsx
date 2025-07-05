@@ -51,6 +51,8 @@ const Header = (): React.ReactElement => {
       position="sticky"
       top={0}
       zIndex={1000}
+      marginTop="-10px"
+      marginLeft="-10px"
     >
       {/* Logo */}
       <Typography variant="h6" fontWeight="bold">

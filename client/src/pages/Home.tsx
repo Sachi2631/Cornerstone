@@ -16,6 +16,8 @@ const Home = (): React.ReactElement => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
+
+    
     <Box
         // py={20}
         textAlign="center"
@@ -25,6 +27,7 @@ const Home = (): React.ReactElement => {
         // bgcolor="#fffbed"
         bgcolor="#dfe2e5"
       >
+        
        <Box
         sx={{
           // hello

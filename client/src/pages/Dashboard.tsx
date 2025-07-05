@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import * as d3 from 'd3';
 import { createRoot } from 'react-dom/client';
+import Bart from '../components/Menut'; // ✅ Import your hamburger menu component
 
 const Dashboard = (): React.ReactElement => {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -12,7 +13,7 @@ const Dashboard = (): React.ReactElement => {
   useEffect(() => {
     const handleResize = () => {
       const width = Math.min(window.innerWidth * 0.9, 1200);
-      const height = width * 0.625; // 16:10 ratio
+      const height = width * 0.625;
       setContainerSize({ width, height });
     };
 
@@ -26,7 +27,7 @@ const Dashboard = (): React.ReactElement => {
 
     const { width, height } = containerSize;
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove(); // Clear previous drawings
+    svg.selectAll('*').remove();
 
     const g = svg.append('g');
 
@@ -39,25 +40,17 @@ const Dashboard = (): React.ReactElement => {
     svg.call(zoom as any);
 
     d3.json('/japan.geojson').then((data: any) => {
-      if (!data?.features) {
-        console.error('Invalid GeoJSON structure');
-        return;
-      }
+      if (!data?.features) return;
 
-      // 🧭 Match Okinawa-visible map projection
       const projection = d3.geoMercator()
-        .center([67.5, 32.5]) // Includes Okinawa
-        .scale((width / 1000) * 2200) // Responsive zoom level
+        .center([67.5, 32.5])
+        .scale((width / 1000) * 2200)
         .translate([width / 2, height / 2]);
 
       const path = d3.geoPath().projection(projection);
 
-      projection.fitExtent(
-        [[60, 40], [width - 20, height - 20]],
-        data
-      );
+      projection.fitExtent([[60, 40], [width - 20, height - 20]], data);
 
-      // Draw prefectures
       g.selectAll('path')
         .data(data.features)
         .enter()
@@ -93,7 +86,6 @@ const Dashboard = (): React.ReactElement => {
           setSelectedPrefecture(name);
         });
 
-      // Add MUI pins at prefecture centroids
       data.features.forEach((d: any) => {
         const [x, y] = projection(d3.geoCentroid(d)) || [0, 0];
 
@@ -112,13 +104,12 @@ const Dashboard = (): React.ReactElement => {
 
         const root = createRoot(div);
         root.render(
-          <LocationOnIcon sx={{ fontSize: 20, color: 'red' }} />
+          <LocationOnIcon sx={{ fontSize: 20, color: 'black' }} />
         );
       });
     });
 
-    // Initial zoom and translation
-    const initialScale = 1.3;    
+    const initialScale = 1.3;
     const initialTranslate = [
       (width * (1.05 - initialScale)) / 2,
       (height * (1.125 - initialScale)) / 2,
@@ -131,153 +122,144 @@ const Dashboard = (): React.ReactElement => {
         d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
       );
 
-      svg.on('click', () => {
-        const initialScale = 1.3;
-        const initialTranslate = [
-          (width * (1.05 - initialScale)) / 2,
-          (height * (1.125 - initialScale)) / 2,
-        ];
-      
-        svg.transition()
-          .duration(1250)
-          .call(
-            zoom.transform as any,
-            d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
-          );
-      
-        setSelectedPrefecture(null);
-      });      
+    svg.on('click', () => {
+      svg.transition()
+        .duration(1250)
+        .call(
+          zoom.transform as any,
+          d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+        );
+      setSelectedPrefecture(null);
+    });
   }, [containerSize]);
 
   return (
-      <Box display="flex" flexDirection="column" alignItems="center" bgcolor="white" minWidth="100vw">
-        <Box
-          component="main"
-          flexGrow={1}
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          width="100vw"
-          bgcolor="orange"
-          // px={2}
-          // py={2}
-        >
-          <Box display="flex" flexDirection="row" justifyContent="flex-end"
-            sx={{
-              width: '100vw',
-              // maxWidth: '1200px',
-              aspectRatio: '16/11',
-              position: 'relative',
-              border: '2px solid #ccc',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              background: '#dee2e4'
-              // background: '#dfe2e5', // sea color
-
-            }}
-          >
-            <svg
-              ref={svgRef}
-              width="100%"
-              height="100%"
-              z-index="-1"
-              viewBox={`200 0 ${containerSize.width} ${containerSize.height}`}
-              preserveAspectRatio="xMidYMid meet"
-            />
-
-          
-          
-          {/* next up box */}
-            <Box
-              sx={{
-                padding: "10px",
-                width: "15vw",
-                borderRadius: "10px",
-                marginRight: "5vw",
-                bgcolor: "#d3d3d3",
-                paddingLeft: "20px",
-                boxShadow: 3,
-                zindex:1,
-                marginTop:"5vh",
-                position:"absolute",
-              }}
-              >
-                <Typography variant="h6" style={{fontWeight:"600"}}>Up Next:</Typography>
-                <Box
-                  sx={{
-                    textAlign:"center",
-                  }}
-                >
-                  <Typography>1. Lesson 1</Typography>
-                </Box>
-                
-            </Box>
-
-          </Box>
-
-            {/* prefecture name */}
-          <Box
-            mt={4}
-            minHeight="50px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            sx={{
-              opacity: selectedPrefecture ? 1 : 0,
-              transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
-              transition: 'all 0.5s ease',
-              color: 'orange',
-              fontWeight: 'bold',
-              fontSize: '1.5rem',
-            }}
-          >
-            {selectedPrefecture && (
-              <Typography variant="h5">
-                {selectedPrefecture}
-              </Typography>
-            )}
-          </Box>
-          
-
-          
-        </Box>
-{/*         
-      
+    <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
+      {/* ✅ HAMBURGER MENU FIXED IN SAFE POSITION */}
       <Box
-          sx={{
-            width: "24vw",
-            bgcolor:"cerulean",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-around",
-            bgColor:"red",
-            alignItems: "center",
-          }}
-          > */}
-
-          
-          {/* <Box
-          sx={{
-            padding: "10px",
-            position: "fixed",
-            width: "20vw",
-            top: "60vh",
-            borderRadius: "10px",
-            // borderStyle: "solid",
-            // borderWidth: "3px",
-            // borderColor: "lightgray",
-            bgcolor: "white",
-            paddingLeft: "20px",
-            boxShadow: 3,
-          }}
-          >
-            <Typography variant="h6" style={{fontWeight:"600"}} >To-Review List!</Typography>
-            <Typography>1. Lesson 1</Typography>
-            <Typography>2. Lesson 2</Typography>
-            <Typography>3. Lesson 3</Typography>
-          </Box> */}
+        sx={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          zIndex: 10,
+        }}
+      >
+        <Bart />
       </Box>
-    // </Box>
+
+      <Box
+        component="main"
+        flexGrow={1}
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        width="100vw"
+      >
+        <Box
+          display="flex"
+          flexDirection="row"
+          justifyContent="flex-end"
+          sx={{
+            width: '100vw',
+            aspectRatio: '16/11',
+            position: 'relative',
+            border: '2px solid #ccc',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            background: '#dee2e4'
+          }}
+        >
+          <svg
+            ref={svgRef}
+            width="100%"
+            height="100%"
+            viewBox={`200 0 ${containerSize.width} ${containerSize.height}`}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ display: 'block' }}
+          />
+
+          {/* Info Panel */}
+          <Box
+            sx={{
+              padding: "20px",
+              width: "20vw",
+              borderRadius: "10px",
+              marginRight: "5vw",
+              bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
+              boxShadow: 3,
+              zIndex: 1,
+              marginTop: "5vh",
+              position: "absolute",
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Up next:</Typography>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Unit 1 Lesson 1</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                Goal: Learn the first three letters of the Japanese alphabet
+              </Typography>
+              <div>
+                <img src="https://www.svgrepo.com/show/528478/play-circle.svg" alt="Open" style={{ width: '60px', height: '60px' }} />
+              </div>
+              <Typography variant="body1" sx={{ fontWeight: 600, mt: 3, mb: 1 }}>Grammar Lesson 1</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                Goal: Learn how to use これ、それ、は
+              </Typography>
+              <div>
+                <img src="https://www.svgrepo.com/show/528478/play-circle.svg" alt="Open" style={{ width: '60px', height: '60px' }} />
+              </div>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              padding: "20px",
+              width: "20vw",
+              borderRadius: "10px",
+              marginRight: "5vw",
+              bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
+              boxShadow: 3,
+              zIndex: 1,
+              position: "absolute",
+              marginTop: "60vh"
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Stories:</Typography>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Unit 1 Lesson 1</Typography>
+              <Typography variant="subtitle2">
+                Goal: Learn the first three letters of the Japanese alphabet
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Prefecture name display */}
+        <Box
+          mt={4}
+          minHeight="50px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            opacity: selectedPrefecture ? 1 : 0,
+            transform: selectedPrefecture ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.5s ease',
+            color: 'orange',
+            fontWeight: 'bold',
+            fontSize: '1.5rem',
+          }}
+        >
+          {selectedPrefecture && (
+            <Typography variant="h5">
+              {selectedPrefecture}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

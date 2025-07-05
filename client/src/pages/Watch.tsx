@@ -1,9 +1,11 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
+import Bart from '../components/Menut'; // ✅ Import your hamburger menu component
 
 const Watch = (): React.ReactElement  => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
+      <Bart />
       <Box
         component="main"
         flexGrow={1}
