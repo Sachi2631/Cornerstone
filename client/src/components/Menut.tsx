@@ -12,12 +12,12 @@ const styles = {
   },
   open: {
     position: 'fixed' as const,
-    top: '20px',
-    left: '10px',
+    top: '100px',
+    left: '30px',
     width: '50px',
     height: '50px',
     cursor: 'pointer',
-    zIndex: 1000,
+    zIndex: 100000,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -29,8 +29,8 @@ const styles = {
     position: 'absolute' as const,
     top: '10px',
     right: '10px',
-    width: '30px',
-    height: '30px',
+    width: '50px',
+    height: '50px',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'center',
@@ -99,7 +99,7 @@ const Bart: React.FC = () => {
           <img
             src="https://cdn-icons-png.flaticon.com/512/109/109618.png"
             alt="Close"
-            style={{ width: '20px', height: '20px' }}
+            style={{ width: '30px', height: '30px' }}
           />
         </div>
 

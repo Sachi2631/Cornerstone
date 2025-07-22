@@ -50,7 +50,7 @@ const Header = (): React.ReactElement => {
       bgcolor="white"
       position="sticky"
       top={0}
-      zIndex={1000}
+      zIndex={2}
       marginTop="-10px"
       marginLeft="-10px"
     >
