@@ -7,8 +7,6 @@ import {
   Paper,
   Container
 } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const Signup = (): React.ReactElement => {
   const [name, setName] = useState<string>('');
@@ -78,8 +76,6 @@ const Signup = (): React.ReactElement => {
           </Paper>
         </Container>
       </Box>
-
-      <Footer />
     </Box>
   );
 };
