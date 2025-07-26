@@ -110,10 +110,17 @@ const Bart: React.FC = () => {
                 </div>
               );
 
-              // Only "Fun Facts" is wrapped with <Link>
               if (title === 'Fun Facts') {
                 return (
                   <Link to="/funfacts" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
+              if (title === 'Watch') {
+                return (
+                  <Link to="/watch" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
                     {boxContent}
                   </Link>
                 );
