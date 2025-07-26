@@ -9,8 +9,6 @@ import {
   Paper,
   Container
 } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const Login = (): React.ReactElement => {
   const [email, setEmail] = useState<string>('');
@@ -96,8 +94,6 @@ const Login = (): React.ReactElement => {
           </Paper>
         </Container>
       </Box>
-
-      <Footer />
     </Box>
   );
 };

@@ -20,9 +20,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     justifyContent: 'space-between',
-    backgroundColor:'orange',
+    backgroundColor: 'orange',
   },
-
   close: {
     position: 'absolute' as const,
     top: '20px',
@@ -34,9 +33,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     justifyContent: 'space-between',
-    backgroundColor:'red',
+    backgroundColor: 'red',
   },
-
   barLine: {
     width: '100%',
     height: '4px',
@@ -54,7 +52,7 @@ const styles = {
     top: 70,
     left: 0,
     zIndex: 2,
-    paddingTop:'10px',
+    paddingTop: '10px',
   },
   menuHidden: {
     transform: 'translateX(-100%)',
@@ -88,11 +86,11 @@ const Bar: React.FC = () => {
         {/* <div style={styles.barLine}></div>
         <div style={styles.barLine}></div>
         <div style={styles.barLine}></div> */}
-        <img src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"></img>
-      
+        <img
+          src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"
+          alt="Open menu icon"
+        />
       </div>
-
-      
 
       {/* Slide-out menu */}
       <div style={{ ...styles.menu, ...(open ? {} : styles.menuHidden) }}>
@@ -106,10 +104,7 @@ const Bar: React.FC = () => {
             ))}
           </div>
         ))}
-        
       </div>
-
-      
     </div>
   );
 };
