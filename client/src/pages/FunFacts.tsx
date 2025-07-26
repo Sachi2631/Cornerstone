@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import Bart from '../components/Menut'; // ✅ Your hamburger menu
+import Bart from '../components/Menut';
 
 const FunFacts = (): React.ReactElement => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const catBtnRef = useRef<HTMLButtonElement>(null);
 
-  const toggleDropdown = () => {
-    setDropdownOpen((prev) => !prev);
-  };
+  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -30,33 +28,42 @@ const FunFacts = (): React.ReactElement => {
   const styles = {
     main: {
       backgroundColor: '#b4441d',
-      padding: '50px',
+      padding: '40px',
       width: '70vw',
       marginLeft: '15vw',
+      marginTop: '80px',
       borderRadius: '25px',
-      color: '#dee2e4',
+      color: '#fff',
+      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
     },
     h3: {
       textAlign: 'center' as const,
+      marginBottom: '20px',
     },
-    link: {
-      color: '#dee2e4',
+    learnMoreBtn: {
+      marginTop: '15px',
+      display: 'inline-block',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      backgroundColor: '#fff',
+      color: '#b4441d',
+      fontWeight: 600,
+      textDecoration: 'none',
+      transition: 'all 0.3s ease',
     },
     hr: {
       height: '1px',
       border: 'none',
       borderTop: '1px solid #333',
-      marginLeft: '17vw',
-      marginRight: '17vw',
-      marginTop: '50px',
+      margin: '40px auto',
+      width: '70vw',
     },
     but: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      position: 'relative' as const,
-      paddingTop: '50px',
-      gap: '8px',
+      gap: '12px',
+      marginBottom: '40px',
     },
     divider: {
       width: '1px',
@@ -66,12 +73,12 @@ const FunFacts = (): React.ReactElement => {
     button: {
       backgroundColor: 'transparent',
       border: 'none',
-      fontSize: '20px',
+      fontSize: '18px',
       cursor: 'pointer',
     },
     dropdown: {
       position: 'absolute' as const,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: '#fff',
       minWidth: '160px',
       boxShadow: '0px 8px 16px rgba(0,0,0,0.2)',
       zIndex: 1,
@@ -88,43 +95,45 @@ const FunFacts = (): React.ReactElement => {
     },
     scroll: {
       display: 'flex',
-      marginTop: '50px',
       justifyContent: 'space-evenly',
+      flexWrap: 'wrap' as const,
+      gap: '20px',
+      padding: '0 40px',
     },
     column: {
       display: 'flex',
       flexDirection: 'column' as const,
+      gap: '20px',
     },
     facts: {
-      width: '23vw',
-      padding: '10px',
-      borderRadius: '20px',
-      backgroundColor: '#d9d9d9',
-      marginTop: '20px',
-      color: 'black',
+      width: '260px',
+      padding: '20px',
+      borderRadius: '16px',
+      backgroundColor: '#ffffff',
+      color: '#000',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      transition: 'transform 0.3s ease',
     },
   };
 
   return (
-    <Box sx={{ backgroundColor: '#dee2e4', minHeight: '100vh', paddingBottom: '50px', position: 'relative' }}>
-      {/* ✅ HAMBURGER MENU FLOATING ON TOP */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 20,
-          left: 20,
-          zIndex: 10,
-        }}
-      >
+    <Box sx={{
+      backgroundColor: '#dee2e4',
+      minHeight: '100vh',
+      paddingBottom: '50px',
+      position: 'relative',
+      paddingTop: '5px'
+    }}>
+      <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
         <Bart />
       </Box>
+
       <Box sx={styles.main}>
         <Typography variant="h3" sx={styles.h3}>Fun Fact of the Day:</Typography>
         <Typography variant="body1">
-          During Japan’s self-isolation period (sakoku), there was an island called Dejima in Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s only main trading partners because they weren’t focused on spreading Christianity.
-          So, the Nagasaki area has a lot of European influence!
+          During Japan’s self-isolation period (sakoku), there was an island called Dejima in Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s only main trading partners because they weren’t focused on spreading Christianity. So, the Nagasaki area has a lot of European influence!
         </Typography>
-        <a href="#" style={styles.link}><Typography variant="body2">Learn more</Typography></a>
+        <a href="#" style={styles.learnMoreBtn}>Learn more</a>
       </Box>
 
       <hr style={styles.hr} />
@@ -132,14 +141,18 @@ const FunFacts = (): React.ReactElement => {
       <Box sx={styles.but}>
         <button style={styles.button}>All</button>
         <div style={styles.divider}></div>
-        <button style={styles.button} onClick={toggleDropdown} ref={catBtnRef}>Categories</button>
-        {dropdownOpen && (
-          <div style={styles.dropdown} ref={dropdownRef}>
-            {['History', 'Food', 'Places', 'Urban Legends', 'Culture', 'Random'].map((item) => (
-              <a key={item} href="#" style={styles.dropdownItem}>{item}</a>
-            ))}
-          </div>
-        )}
+        <Box sx={{ position: 'relative' }}>
+          <button style={styles.button} onClick={toggleDropdown} ref={catBtnRef}>
+            Categories <span style={{ marginLeft: '4px' }}>▼</span>
+          </button>
+          {dropdownOpen && (
+            <div style={styles.dropdown} ref={dropdownRef}>
+              {['History', 'Food', 'Places', 'Urban Legends', 'Culture', 'Random'].map((item) => (
+                <a key={item} href="#" style={styles.dropdownItem}>{item}</a>
+              ))}
+            </div>
+          )}
+        </Box>
       </Box>
 
       <Box sx={styles.scroll}>
@@ -160,9 +173,9 @@ const FunFacts = (): React.ReactElement => {
           <Box key={i} sx={styles.column}>
             {column.map((fact, j) => (
               <Box key={j} sx={styles.facts}>
-                <Typography variant="h6">{fact.title}</Typography>
-                <Typography>{fact.text}</Typography>
-                <a href="#">Learn more</a>
+                <Typography variant="h6" gutterBottom>{fact.title}</Typography>
+                <Typography variant="body2">{fact.text}</Typography>
+                <a href="#" style={styles.learnMoreBtn}>Learn more</a>
               </Box>
             ))}
           </Box>
