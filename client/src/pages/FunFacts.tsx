@@ -106,7 +106,18 @@ const FunFacts = (): React.ReactElement => {
   };
 
   return (
-    <Box sx={{ backgroundColor: '#dee2e4', minHeight: '100vh', paddingBottom: '50px' }}>
+    <Box sx={{ backgroundColor: '#dee2e4', minHeight: '100vh', paddingBottom: '50px', position: 'relative' }}>
+      {/* ✅ HAMBURGER MENU FLOATING ON TOP */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          zIndex: 10,
+        }}
+      >
+        <Bart />
+      </Box>
       <Box sx={styles.main}>
         <Typography variant="h3" sx={styles.h3}>Fun Fact of the Day:</Typography>
         <Typography variant="body1">

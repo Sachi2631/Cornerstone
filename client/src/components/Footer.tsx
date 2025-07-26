@@ -1,5 +1,6 @@
 // src/components/Footer.tsx
 
+//Need to remove the overflow x axis
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom'; // ✅ import Link
 
 const columnsData: string[][] = [
   ['Stories', 'Gallery', 'Resources', 'Talk'],
@@ -38,7 +39,6 @@ const styles = {
     backgroundColor: '#fff',
     borderRadius: '50%',
   },
-
   menu: {
     backgroundColor: '#92a6ba',
     display: 'flex',
@@ -52,7 +52,7 @@ const styles = {
     zIndex: 999,
     paddingTop: '60px',
     boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
-    overflowY: 'auto'  as const
+    overflowY: 'auto' as const
   },
   menuHidden: {
     transform: 'translateX(-100%)',
@@ -81,7 +81,6 @@ const Bart: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Hamburger icon (when menu is closed) */}
       {!open && (
         <div style={styles.open} onClick={() => setOpen(true)}>
           <img
@@ -92,9 +91,7 @@ const Bart: React.FC = () => {
         </div>
       )}
 
-      {/* Slide-out menu */}
       <div style={{ ...styles.menu, ...(open ? {} : styles.menuHidden) }}>
-        {/* Close button */}
         <div style={styles.close} onClick={() => setOpen(false)}>
           <img
             src="https://cdn-icons-png.flaticon.com/512/109/109618.png"
@@ -103,15 +100,27 @@ const Bart: React.FC = () => {
           />
         </div>
 
-        {/* Menu columns */}
         {columnsData.map((columnItems, colIndex) => (
           <div style={styles.column} key={colIndex}>
-            {columnItems.map((title, itemIndex) => (
-              <div style={styles.box} key={itemIndex}>
-                <div style={styles.img}></div>
-                <h4>{title}</h4>
-              </div>
-            ))}
+            {columnItems.map((title, itemIndex) => {
+              const boxContent = (
+                <div style={styles.box} key={itemIndex}>
+                  <div style={styles.img}></div>
+                  <h4>{title}</h4>
+                </div>
+              );
+
+              // Only "Fun Facts" is wrapped with <Link>
+              if (title === 'Fun Facts') {
+                return (
+                  <Link to="/funfacts" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
+              return boxContent;
+            })}
           </div>
         ))}
       </div>
