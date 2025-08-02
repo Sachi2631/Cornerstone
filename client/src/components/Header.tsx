@@ -1,5 +1,3 @@
-// src/components/Header.tsx
-
 import React, { useState } from 'react';
 import {
   Box,
@@ -27,6 +25,12 @@ const Header = (): React.ReactElement => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    console.log('🔒 Logging out...');
+    localStorage.removeItem('token');
+    window.location.href = '/login';
   };
 
   const isHomePage = location.pathname === '/';
@@ -126,7 +130,14 @@ const Header = (): React.ReactElement => {
             >
               <MenuItem onClick={handleMenuClose}>Account</MenuItem>
               <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  handleLogout();
+                }}
+              >
+                Logout
+              </MenuItem>
             </Menu>
           </Box>
         )}

@@ -5,8 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Learn from './pages/Learn';
 import Watch from './pages/Watch';
 import Talk from './pages/Talk';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import AuthForm from './pages/AuthForm';
 import FunFacts from './pages/FunFacts';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -14,11 +13,12 @@ import { Box } from '@mui/material';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const hideFooter = location.pathname === '/dashboard';
-
+  const path = location.pathname;
+  const hideFooter = path === '/dashboard';
+  
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
+      {<Header />}
 
       <Box component="main" flexGrow={1}>
         <Routes>
@@ -27,8 +27,8 @@ const AppContent: React.FC = () => {
           <Route path="/learn" element={<Learn />} />
           <Route path="/watch" element={<Watch />} />
           <Route path="/talk" element={<Talk />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<AuthForm />} />
+          <Route path="/signup" element={<AuthForm />} />
           <Route path="/funfacts" element={<FunFacts />} />
         </Routes>
       </Box>
