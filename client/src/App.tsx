@@ -6,9 +6,13 @@ import Learn from './pages/Learn';
 import Watch from './pages/Watch';
 import Talk from './pages/Talk';
 import AuthForm from './pages/AuthForm';
+import Resources from './pages/Resources';
 import FunFacts from './pages/FunFacts';
+import Gallery from './pages/Gallery';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
+
 import { Box } from '@mui/material';
 
 const AppContent: React.FC = () => {
@@ -30,6 +34,8 @@ const AppContent: React.FC = () => {
           <Route path="/login" element={<AuthForm />} />
           <Route path="/signup" element={<AuthForm />} />
           <Route path="/funfacts" element={<FunFacts />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/gallery" element={<Gallery />} />
         </Routes>
       </Box>
 

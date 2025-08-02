@@ -1,6 +1,8 @@
-
-
 import React, { useState } from 'react';
+
+import { Box, Typography, Button } from '@mui/material';
+import Bart from '../components/Menut'; // ✅ Your hamburger menu
+
 
 const Gallery: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'characters' | 'items'>('characters');
@@ -56,6 +58,10 @@ const Gallery: React.FC = () => {
           }
         `}
       </style>
+
+      <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+        <Bart />
+      </Box>
 
       <h1>Gallery</h1>
 

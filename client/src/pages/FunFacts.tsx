@@ -109,9 +109,9 @@ const FunFacts = (): React.ReactElement => {
       width: '260px',
       padding: '20px',
       borderRadius: '16px',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#d9d9d9',
       color: '#000',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      boxShadow: '0px 4px 5px gray',
       transition: 'transform 0.3s ease',
     },
   };

@@ -118,6 +118,22 @@ const Bart: React.FC = () => {
                 );
               }
 
+              if (title === 'Resources') {
+                return (
+                  <Link to="/resources" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
+              if (title === 'Gallery') {
+                return (
+                  <Link to="/gallery" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
               if (title === 'Watch') {
                 return (
                   <Link to="/watch" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
