@@ -78,7 +78,7 @@ const FunFacts = (): React.ReactElement => {
     },
     dropdown: {
       position: 'absolute' as const,
-      backgroundColor: '#fff',
+      backgroundColor: '#92a6ba',
       minWidth: '160px',
       boxShadow: '0px 8px 16px rgba(0,0,0,0.2)',
       zIndex: 1,

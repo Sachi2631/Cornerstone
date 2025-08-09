@@ -4,9 +4,14 @@ import Bart from '../components/Menut'; // ✅ Your hamburger menu
 
 const Resources = (): React.ReactElement => {
   const categories = {
-    News: ['History', 'Food', 'Places', 'Places', 'Places'],
-    Textbooks: ['Urban Legends', 'Culture', 'Random'],
-    Videos: ['Urban Legends', 'Culture', 'Random'],
+    News: ['NHK', 'Ohayo Nihon', 'Asahi', 'NHK News Web Easy', 'Places'],
+    Textbooks: ['Genki', 'Japanese for Busy People', 'Random'],
+    Videos: ['NHK for School', 'Youtube channel', 'Doraemon', 'Some youtube'],
+    Shows: ['Some anime', 'Gegege no Kitaro', 'Doraemon', 'Some youtube'],
+    Organizations: ['Japan Society of Northern California', 'Culture', 'Random'],
+    Writing: ['Exercise sheets', 'More practice', 'Exercise 3'],
+    Podcasts: ['Example 1', 'Example 2', 'Example 3'],
+    Reading: ['Ame nimo makezu', 'Book 2', 'Poem 3'],
   };
 
   const styles = {

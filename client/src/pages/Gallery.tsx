@@ -56,6 +56,9 @@ const Gallery: React.FC = () => {
             width: 200px;
             margin-top: 10px;
           }
+
+          h1{
+          padding: 40px;}
         `}
       </style>
 

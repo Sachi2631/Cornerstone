@@ -9,6 +9,7 @@ import AuthForm from './pages/AuthForm';
 import Resources from './pages/Resources';
 import FunFacts from './pages/FunFacts';
 import Gallery from './pages/Gallery';
+import Stories from './pages/Stories';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -36,6 +37,7 @@ const AppContent: React.FC = () => {
           <Route path="/funfacts" element={<FunFacts />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/stories" element={<Stories />} />
         </Routes>
       </Box>
 
