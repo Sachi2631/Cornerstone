@@ -133,6 +133,7 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
+
               if (title === 'Gallery') {
                 return (
                   <Link to="/gallery" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -141,9 +142,25 @@ const Bart: React.FC = () => {
                 );
               }
 
+              if (title === 'Games') {
+                return (
+                  <Link to="/games" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
               if (title === 'Watch') {
                 return (
                   <Link to="/watch" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+
+              if (title === 'Talk') {
+                return (
+                  <Link to="/talk" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
                     {boxContent}
                   </Link>
                 );
