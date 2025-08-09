@@ -100,6 +100,8 @@ const FunFacts = (): React.ReactElement => {
       gap: '20px',
       padding: '0 40px',
     },
+
+    
     column: {
       display: 'flex',
       flexDirection: 'column' as const,
