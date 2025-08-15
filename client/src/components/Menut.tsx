@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // ✅ import Link
+import { Link } from 'react-router-dom';
+
+const HEADER_HEIGHT = 73; // ← match your Header/AppBar height (56 mobile, 64/72 desktop)
 
 const columnsData: string[][] = [
   ['Stories', 'Gallery', 'Resources', 'Talk'],
@@ -13,7 +15,7 @@ const styles = {
   },
   open: {
     position: 'fixed' as const,
-    top: '100px',
+    top: `${HEADER_HEIGHT + 20}px`, // ← keep the opener below the header
     left: '30px',
     width: '50px',
     height: '50px',
@@ -44,13 +46,13 @@ const styles = {
     display: 'flex',
     flexDirection: 'row' as const,
     width: '290px',
-    height: '100vh',
+    height: `calc(100vh - ${HEADER_HEIGHT}px)`, // ← don’t go behind the header
     transition: 'transform 0.3s ease',
     position: 'fixed' as const,
-    top: 0,
+    top: `${HEADER_HEIGHT}px`, // ← start *below* the header
     left: 0,
-    zIndex: 999,
-    paddingTop: '60px',
+    zIndex: 999, // if your Header uses MUI AppBar (zIndex ~1100), this will sit under it visually
+    paddingTop: '20px',
     boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
     overflowY: 'auto' as const
   },
@@ -117,7 +119,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Resources') {
                 return (
                   <Link to="/resources" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -125,7 +126,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Stories') {
                 return (
                   <Link to="/stories" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -133,7 +133,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Gallery') {
                 return (
                   <Link to="/gallery" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -141,7 +140,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Games') {
                 return (
                   <Link to="/games" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -149,7 +147,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Watch') {
                 return (
                   <Link to="/watch" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -157,7 +154,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Talk') {
                 return (
                   <Link to="/talk" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>

@@ -53,7 +53,7 @@ const Header = (): React.ReactElement => {
       alignItems="center"
       px={{ xs: 2, sm: 4 }}
       py={2}
-      borderBottom="2px solid #ddd"
+      borderBottom="1px solid #ddd"
       bgcolor="white"
       position="sticky"
       top={0}
