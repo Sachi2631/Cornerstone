@@ -9,6 +9,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 type CardData = {
   id: number;
@@ -131,6 +132,9 @@ const Learn = (): React.ReactElement => {
       {renderCard(cards[0])}
       <IconButton sx={{ mt: 1 }}>
         <VolumeUpIcon color="primary" />
+      </IconButton>
+      <IconButton sx={{ mt: 1 }}>
+        <ArrowForwardIosIcon color="primary" />
       </IconButton>
     </Box>
 
