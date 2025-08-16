@@ -15,44 +15,45 @@ const styles = {
   },
   open: {
     position: 'fixed' as const,
-    top: `${HEADER_HEIGHT + 20}px`, // ← keep the opener below the header
+    top: `${HEADER_HEIGHT + 20}px`, // keep opener below header
     left: '30px',
-    width: '50px',
-    height: '50px',
+    minWidth: '80px',   // wider, horizontal button
+    height: '40px',
     cursor: 'pointer',
     zIndex: 100000,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: '50%',
+    borderRadius: '8px', // soft rectangle
+    padding: '0 10px',
     boxShadow: '0 0 5px rgba(0,0,0,0.3)'
   },
   close: {
     position: 'absolute' as const,
     top: '10px',
     right: '10px',
-    width: '50px',
-    height: '50px',
+    width: '40px',
+    height: '40px',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: '50%',
+    borderRadius: '8px',
   },
   menu: {
     backgroundColor: '#92a6ba',
     display: 'flex',
     flexDirection: 'row' as const,
     width: '290px',
-    height: `calc(100vh - ${HEADER_HEIGHT}px)`, // ← don’t go behind the header
+    height: `calc(100vh - ${HEADER_HEIGHT}px)`,
     transition: 'transform 0.3s ease',
     position: 'fixed' as const,
-    top: `${HEADER_HEIGHT}px`, // ← start *below* the header
+    top: `${HEADER_HEIGHT}px`,
     left: 0,
-    zIndex: 999, // if your Header uses MUI AppBar (zIndex ~1100), this will sit under it visually
-    paddingTop: '20px',
+    zIndex: 999,
+    paddingTop: '60px', // ⬅️ push content down inside
     boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
     overflowY: 'auto' as const
   },
@@ -77,6 +78,7 @@ const styles = {
     marginBottom: '5px',
   },
 };
+
 
 const Bart: React.FC = () => {
   const [open, setOpen] = useState(false);
