@@ -1,5 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Learn from './pages/Learn';
@@ -17,14 +18,23 @@ import Footer from './components/Footer';
 
 import { Box } from '@mui/material';
 
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+  return null;
+};
+
 const AppContent: React.FC = () => {
   const location = useLocation();
   const path = location.pathname;
   const hideFooter = path === '/dashboard';
-  
+
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      {<Header />}
+      <Header />
+      <ScrollToTop />
 
       <Box component="main" flexGrow={1}>
         <Routes>
@@ -39,7 +49,15 @@ const AppContent: React.FC = () => {
           <Route path="/resources" element={<Resources />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/stories" element={<Stories />} />
-          <Route path="/charinfo" element={<CharInfo />} />
+
+          {/* NEW: dynamic character detail route */}
+          <Route path="/characters/:id" element={<CharInfo />} />
+
+          {/* Optional: keep old /charinfo route working by redirecting to gallery */}
+          <Route path="/charinfo" element={<Navigate to="/gallery" replace />} />
+
+          {/* Optional: 404 fallback */}
+          {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
         </Routes>
       </Box>
 
