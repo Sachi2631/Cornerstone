@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // ✅ import Link
+import { Link } from 'react-router-dom';
+
+const HEADER_HEIGHT = 73; // ← match your Header/AppBar height (56 mobile, 64/72 desktop)
 
 const columnsData: string[][] = [
   ['Stories', 'Gallery', 'Resources', 'Talk'],
@@ -13,44 +15,45 @@ const styles = {
   },
   open: {
     position: 'fixed' as const,
-    top: '100px',
+    top: `${HEADER_HEIGHT + 20}px`, // keep opener below header
     left: '30px',
-    width: '50px',
-    height: '50px',
+    minWidth: '80px',   // wider, horizontal button
+    height: '40px',
     cursor: 'pointer',
     zIndex: 100000,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: '50%',
+    borderRadius: '8px', // soft rectangle
+    padding: '0 10px',
     boxShadow: '0 0 5px rgba(0,0,0,0.3)'
   },
   close: {
     position: 'absolute' as const,
     top: '10px',
     right: '10px',
-    width: '50px',
-    height: '50px',
+    width: '40px',
+    height: '40px',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: '50%',
+    borderRadius: '8px',
   },
   menu: {
     backgroundColor: '#92a6ba',
     display: 'flex',
     flexDirection: 'row' as const,
     width: '290px',
-    height: '100vh',
+    height: `calc(100vh - ${HEADER_HEIGHT}px)`,
     transition: 'transform 0.3s ease',
     position: 'fixed' as const,
-    top: 0,
+    top: `${HEADER_HEIGHT}px`,
     left: 0,
     zIndex: 999,
-    paddingTop: '60px',
+    paddingTop: '60px', // ⬅️ push content down inside
     boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
     overflowY: 'auto' as const
   },
@@ -75,6 +78,7 @@ const styles = {
     marginBottom: '5px',
   },
 };
+
 
 const Bart: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -117,7 +121,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Resources') {
                 return (
                   <Link to="/resources" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -125,7 +128,6 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
               if (title === 'Stories') {
                 return (
                   <Link to="/stories" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -140,10 +142,23 @@ const Bart: React.FC = () => {
                   </Link>
                 );
               }
-
+              if (title === 'Games') {
+                return (
+                  <Link to="/games" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
               if (title === 'Watch') {
                 return (
                   <Link to="/watch" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    {boxContent}
+                  </Link>
+                );
+              }
+              if (title === 'Talk') {
+                return (
+                  <Link to="/talk" key={itemIndex} style={{ textDecoration: 'none', color: 'inherit' }}>
                     {boxContent}
                   </Link>
                 );

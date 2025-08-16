@@ -1,87 +1,82 @@
 import React, { useState } from 'react';
-
-import { Box, Typography, Button } from '@mui/material';
-import Bart from '../components/Menut'; // ✅ Your hamburger menu
-
+import { Box } from '@mui/material';
+import Bart from '../components/Menut';
 
 const Gallery: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'characters' | 'items'>('characters');
 
+  const styles = {
+    body: {
+      textAlign: 'center' as const,
+      backgroundColor: '#dee2e4',
+      minHeight: '100dvh',          // better on mobile than 100vh
+      paddingBottom: '50px',
+      position: 'relative' as const,
+      margin: 0,                    // ensure no outer margin
+    },
+    topRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative' as const,
+      gap: '100px',
+      marginTop: '20px',            // was 40px; reduce to something intentional
+    },
+    divider: {
+      width: '1px',
+      height: '35px',
+      backgroundColor: '#333',
+    },
+    row: {
+      display: 'flex',
+      flexDirection: 'row' as const,
+      justifyContent: 'space-around',
+      margin: 'auto',
+      width: '600px',
+      padding: '30px',
+    },
+    part: {
+      width: '200px',
+      marginTop: '10px',
+    },
+    box: {
+      height: '30vh',
+      backgroundColor: '#989291',
+      borderRadius: '17px',
+    },
+    tabBtn: {
+      backgroundColor: 'transparent',
+      border: 'none',
+      fontSize: '20px',
+      cursor: 'pointer',
+    },
+    tabBtnActive: {
+      textDecoration: 'underline',
+    },
+  };
+
   return (
-    <div style={{ textAlign: 'center', backgroundColor: '#dee2e4', minHeight: '100vh' }}>
-      <style>
-        {`
-          #top {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin-top: 40px;
-            gap: 100px;
-          }
-
-          #two {
-            width: 1px;
-            height: 35px;
-            background-color: #333;
-          }
-
-          button {
-            background-color: transparent;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-          }
-
-          .active {
-            text-decoration: underline;
-          }
-
-          .row {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            margin: auto;
-            width: 600px;
-            padding: 30px;
-          }
-
-          .box {
-            height: 30vh;
-            background-color: #989291;
-            border-radius: 17px;
-          }
-
-          .part {
-            width: 200px;
-            margin-top: 10px;
-          }
-
-          h1{
-          padding: 40px;}
-        `}
-      </style>
-
+    <Box sx={styles.body}>
+      {/* place menu button */}
       <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
         <Bart />
       </Box>
 
-      <h1>Gallery</h1>
+      {/* Kill default h1 margin; add our own spacing */}
+      <h1 style={{ margin: 0, paddingTop: 30, paddingBottom: 10 }}>Gallery</h1>
 
-      <div id="top">
+      <div style={styles.topRow}>
         <button
-          id="chaBtn"
-          className={activeTab === 'characters' ? 'active' : ''}
+          style={{ ...styles.tabBtn, ...(activeTab === 'characters' ? styles.tabBtnActive : {}) }}
           onClick={() => setActiveTab('characters')}
         >
           Characters
         </button>
 
-        <div id="two"></div>
+        <div style={styles.divider} />
 
         <button
-          id="iteBtn"
-          className={activeTab === 'items' ? 'active' : ''}
+          style={{ ...styles.tabBtn, ...(activeTab === 'items' ? styles.tabBtnActive : {}) }}
           onClick={() => setActiveTab('items')}
         >
           Items
@@ -90,13 +85,11 @@ const Gallery: React.FC = () => {
 
       {activeTab === 'characters' && (
         <div id="char">
-          <div className="row">
-            <a href="/charinfo">
-              <GalleryCard title="Momotaro" />
-            </a>
+          <div style={styles.row as any}>
+            <GalleryCard title="Momotaro" />
             <GalleryCard title="???" />
           </div>
-          <div className="row">
+          <div style={styles.row as any}>
             <GalleryCard title="???" />
             <GalleryCard title="???" />
           </div>
@@ -105,17 +98,17 @@ const Gallery: React.FC = () => {
 
       {activeTab === 'items' && (
         <div id="itemsContent">
-          <div className="row">
+          <div style={styles.row as any}>
             <GalleryCard title="Simple Katana" />
             <GalleryCard title="???" />
           </div>
-          <div className="row">
+          <div style={styles.row as any}>
             <GalleryCard title="???" />
             <GalleryCard title="???" />
           </div>
         </div>
       )}
-    </div>
+    </Box>
   );
 };
 
@@ -124,9 +117,9 @@ interface GalleryCardProps {
 }
 
 const GalleryCard: React.FC<GalleryCardProps> = ({ title }) => (
-  <div className="part">
-    <div className="box"></div>
-    <h3>{title}</h3>
+  <div style={{ width: 200, marginTop: 10 }}>
+    <div style={{ height: '30vh', backgroundColor: '#989291', borderRadius: 17 }} />
+    <h3 style={{ marginTop: 8 }}>{title}</h3>
   </div>
 );
 
