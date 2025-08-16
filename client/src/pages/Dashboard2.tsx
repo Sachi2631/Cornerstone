@@ -1,16 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import { Button } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import * as d3 from 'd3';
 import { createRoot } from 'react-dom/client';
 import Bart from '../components/Menut';
 
-const Dashboard = (): React.ReactElement => {
+const Dashboard2 = (): React.ReactElement => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
-  const [popup, setPopup] = useState<{ x: number; y: number; name: string } | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -94,15 +92,9 @@ const Dashboard = (): React.ReactElement => {
         const foreignObject = g.append('foreignObject')
           .attr('x', x - 10)
           .attr('y', y - 30)
-          .attr('width', 30)
+          .attr('width', 20)
           .attr('height', 30)
-          .style('pointer-events', 'auto')
-          .style('cursor', 'pointer')
-          .on('click', (event) => {
-            event.stopPropagation();
-            const name = d.properties?.nam_ja || d.properties?.nam || 'Unknown Prefecture';
-            setPopup({ x, y, name });
-          });
+          .style('pointer-events', 'none');
 
         const div = document.createElement('div');
         div.style.width = '20px';
@@ -138,7 +130,6 @@ const Dashboard = (): React.ReactElement => {
           d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
         );
       setSelectedPrefecture(null);
-      setPopup(null);
     });
   }, [containerSize]);
 
@@ -178,7 +169,6 @@ const Dashboard = (): React.ReactElement => {
             background: '#dee2e4'
           }}
         >
-          {/* ✅ MAP SVG */}
           <svg
             ref={svgRef}
             width="100%"
@@ -188,75 +178,7 @@ const Dashboard = (): React.ReactElement => {
             style={{ display: 'block' }}
           />
 
-        {popup && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: popup.y,
-              left: popup.x,
-              transform: 'translate(-50%, -100%)',
-              bgcolor: '#d9d9d9',
-              borderRadius: '40px',
-              padding: '12px',
-              boxShadow: 3,
-              zIndex: 20,
-              pointerEvents: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              width:'270px',
-              paddingTop: '20px',
-              paddingBottom: '20px',
-              textAlign: 'center',
-            }}
-          >
-          
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center' }}> Unit 1: Lesson 1</Typography>
-            <Typography variant="body1" sx={{ textAlign: 'center' }}>あ、い、う</Typography>
-            <Typography variant="body1" sx={{ textAlign: 'center' }}>Items Collected</Typography>
-            {/* <button className="lesson" onClick={() => alert(`Lesson A for ${popup.name}`)}> Lesson A </button> */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row'}}>
-              <Button 
-                sx={{ 
-                  color: 'black', 
-                  backgroundColor:'black',
-                  height: '50px', 
-                  width:'50px',
-                  borderRadius: '50%',
-                  borderStyle: 'solid',
-                  marginRight: '5px',
-                  marginLeft: '5px',
-                }} 
-                onClick={() => alert(`Lesson A for ${popup.name}`)}
-              >
-                Lesson A
-              </Button>
-              <button onClick={() => alert(`Lesson B for ${popup.name}`)}> </button>
-              <button onClick={() => alert(`Lesson C for ${popup.name}`)}> </button>
-            </Box>
-
-            <Button
-            sx={{ 
-              height: '40px',
-              width: '140px',
-              borderRadius: '30px',
-              backgroundColor: '#92a6ba',
-              border: 'none',
-              fontWeight: 900,
-              mt: '50px',
-              textTransform: 'none',
-              margin: '0 auto',
-              color: '#000',
-              '&:hover': {
-                backgroundColor: '#7a92a8', 
-              }} }
-              
-            >Learn!</Button>
-          </Box>
-        )}
-
-
-          {/* ✅ INFO PANELS */}
+          {/* Info Panel */}
           <Box
             sx={{
               padding: "20px",
@@ -305,21 +227,13 @@ const Dashboard = (): React.ReactElement => {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Stories:</Typography>
-            <Button sx={{
-              width: '19vw',
-              height: '80px',
-              borderRadius: '10px',
-              backgroundColor: '#92a6ba',
-              border: 'none',
-              fontWeight: 900,
-              mt: '50px',
-              textTransform: 'none',
-              margin: '0 auto',
-              color: '#000',
-              '&:hover': {
-                backgroundColor: '#7a92a8', 
-              }} }>
-              Momotaro </Button>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Unit 1 Lesson 1</Typography>
+              <Typography variant="subtitle2">
+                Goal: Learn the first three letters of the Japanese alphabet
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
         {/* Prefecture name display */}
@@ -345,9 +259,8 @@ const Dashboard = (): React.ReactElement => {
           )}
         </Box>
       </Box>
-      </Box>
     </Box>
   );
 };
 
-export default Dashboard;
+export default Dashboard2;

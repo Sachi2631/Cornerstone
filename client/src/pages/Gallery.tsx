@@ -91,7 +91,9 @@ const Gallery: React.FC = () => {
       {activeTab === 'characters' && (
         <div id="char">
           <div className="row">
-            <GalleryCard title="Momotaro" />
+            <a href="/charinfo">
+              <GalleryCard title="Momotaro" />
+            </a>
             <GalleryCard title="???" />
           </div>
           <div className="row">

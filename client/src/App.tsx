@@ -10,6 +10,7 @@ import Resources from './pages/Resources';
 import FunFacts from './pages/FunFacts';
 import Gallery from './pages/Gallery';
 import Stories from './pages/Stories';
+import CharInfo from './pages/CharInfo';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -38,6 +39,7 @@ const AppContent: React.FC = () => {
           <Route path="/resources" element={<Resources />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/stories" element={<Stories />} />
+          <Route path="/charinfo" element={<CharInfo />} />
         </Routes>
       </Box>
 
