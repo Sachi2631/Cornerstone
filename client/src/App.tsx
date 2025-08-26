@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
-import Learn from './pages/Learn';
+import Lesson from './pages/Lesson';
 import Watch from './pages/Watch';
 import Talk from './pages/Talk';
 import AuthForm from './pages/AuthForm';
@@ -41,7 +41,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/learn" element={<Learn />} />
+          <Route path="/lesson" element={<Lesson />} />
           <Route path="/watch" element={<Watch />} />
           <Route path="/talk" element={<Talk />} />
           <Route path="/login" element={<AuthForm />} />

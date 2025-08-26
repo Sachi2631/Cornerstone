@@ -36,7 +36,7 @@ const cards: CardData[] = [
   },
 ];
 
-const Learn = (): React.ReactElement => {
+const Lesson = (): React.ReactElement => {
   const [flipped, setFlipped] = useState<{ [key: number]: boolean }>({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -172,4 +172,4 @@ const Learn = (): React.ReactElement => {
   );  
 };
 
-export default Learn;
+export default Lesson;

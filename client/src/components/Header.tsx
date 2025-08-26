@@ -62,7 +62,7 @@ const Header = (): React.ReactElement => {
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Watch', path: '/watch' },
     { label: 'Talk', path: '/talk' },
-    { label: 'Learn', path: '/learn' },
+    { label: 'Lesson', path: '/lesson' },
   ];
 
   useEffect(() => {
@@ -319,13 +319,6 @@ const Header = (): React.ReactElement => {
                       onClick={() => setDrawerOpen(false)}
                     >
                       <ListItemText primary="Profile" />
-                    </ListItemButton>
-                    <ListItemButton
-                      component={Link}
-                      to="/dashboard"
-                      onClick={() => setDrawerOpen(false)}
-                    >
-                      <ListItemText primary="Dashboard" />
                     </ListItemButton>
                     <ListItemButton
                       onClick={() => {
