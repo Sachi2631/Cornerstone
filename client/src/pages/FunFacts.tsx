@@ -28,29 +28,32 @@ const FunFacts = (): React.ReactElement => {
   const styles = {
     main: {
       backgroundColor: '#b4441d',
-      padding: '40px',
-      width: '70vw',
-      marginLeft: '15vw',
+      padding: '50px',
+      width: '55vw',
+      marginLeft: '22.5vw',
       marginTop: '80px',
       borderRadius: '25px',
-      color: '#fff',
+      color: '#dee2e4',
       boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
     },
+
     h3: {
       textAlign: 'center' as const,
       marginBottom: '20px',
     },
+
     learnMoreBtn: {
       marginTop: '15px',
       display: 'inline-block',
       padding: '8px 16px',
       borderRadius: '8px',
       backgroundColor: '#fff',
-      color: '#b4441d',
+      color: 'black',
       fontWeight: 600,
       textDecoration: 'none',
       transition: 'all 0.3s ease',
     },
+    
     hr: {
       height: '1px',
       border: 'none',
@@ -95,10 +98,12 @@ const FunFacts = (): React.ReactElement => {
     },
     scroll: {
       display: 'flex',
-      justifyContent: 'space-evenly',
+      justifyContent: 'center',
       flexWrap: 'wrap' as const,
-      gap: '20px',
-      padding: '0 40px',
+      gap: '10px',
+      // padding: '0 40px',
+      width:'70vw',
+      marginLeft:'15vw',
     },
 
     
@@ -131,9 +136,10 @@ const FunFacts = (): React.ReactElement => {
       </Box>
 
       <Box sx={styles.main}>
-        <Typography variant="h3" sx={styles.h3}>Fun Fact of the Day:</Typography>
+        <Typography variant="h4" sx={styles.h3}>Fun Fact of the Day:</Typography>
         <Typography variant="body1">
-          During Japan’s self-isolation period (sakoku), there was an island called Dejima in Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s only main trading partners because they weren’t focused on spreading Christianity. So, the Nagasaki area has a lot of European influence!
+        During Japan’s self-isolation period (sakoku), there was an island called Dejima (it’s still there and has been restored if you’d like to visit!) in Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s only main trading partners because they weren’t focused on spreading Christianity (unlike other European visitors). 
+        So, the Nagasaki area has a lot of European influence! If you ever go there now, there are lots of churches and stained glass windows in public buildings as well!
         </Typography>
         <a href="#" style={styles.learnMoreBtn}>Learn more</a>
       </Box>
@@ -160,11 +166,11 @@ const FunFacts = (): React.ReactElement => {
       <Box sx={styles.scroll}>
         {[
           [
-            { title: 'Places Fact #1', text: 'Japan has a rabbit island called Ookunoshima, near Hiroshima.' },
-            { title: 'Places Fact #2', text: 'Tokyo is the "east capital", east of Kyoto.' },
+            { title: 'Places Fact #1', text: 'Did you know that Japan has a rabbit island? It’s called Ookunoshima and it’s located near Hiroshima prefecture. ' },
+            { title: 'Places Fact #2', text: 'Did you know that Tokyo is written as the “east capital” because it’s to the East of the previous capital, Kyoto. ' },
           ],
           [
-            { title: 'Culture Fact #1', text: 'Dorodango means shiny mud ball in Japanese!' },
+            { title: 'Culture Fact #1', text: 'Did you know that Dorodango means mud ball? It’s very shiny and fun to make!' },
             { title: 'Culture Fact #2', text: 'Many celebrate holidays across multiple religions in Japan.' },
           ],
           [
