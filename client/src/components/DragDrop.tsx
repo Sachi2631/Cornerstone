@@ -1,4 +1,15 @@
 import React, { useMemo, useRef, useState } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+
 
 type DragSource = "bank" | "drop";
 type DragPayload =
@@ -38,6 +49,7 @@ const styles: { [k: string]: React.CSSProperties } = {
     display: "flex",
     gap: 16,
     alignItems: "center",
+    flexDirection:"column",
     flexWrap: "wrap",
     justifyContent: "center",
     marginTop: 8,
@@ -55,6 +67,7 @@ const styles: { [k: string]: React.CSSProperties } = {
     borderRadius: 12,
     background: "#f9fafb",
     border: "1px solid #e5e7eb",
+    alignItems:"center",
   },
   slot: {
     width: 64,
@@ -279,12 +292,21 @@ const DragDrop: React.FC<Props> = ({
       {caption ? <p style={styles.sub}>{caption}</p> : null}
 
       <div style={styles.mediaRow}>
-        <img src={hintImageSrc} alt="Visual hint" style={styles.image} />
-        <img src={audioIconSrc} alt="Audio icon" style={styles.image} />
+        <Box sx={{
+          height: 180,
+          width: 180,
+          borderStyle: 'solid',
+          borderWidth: '1px',
+          borderRadius:'12px',
+        }}>
+
+        </Box>
+        <IconButton sx={{ mt: 1 }}>
+          <VolumeUpIcon color="primary" />
+        </IconButton>
       </div>
 
       <div style={{ ...styles.row, marginTop: 8 }}>
-        <div style={styles.rowLabel}>Your answer</div>
         <div style={styles.dropStrip} onDrop={(e) => e.preventDefault()}>
           {slots.map((char, i) => {
             const isOver = dragOverIndex === i;
@@ -314,6 +336,8 @@ const DragDrop: React.FC<Props> = ({
                   ...(char ? styles.slotFilled : {}),
                   outline: isOver ? "2px solid #60a5fa" : "none",
                   boxShadow: isOver ? "0 0 0 4px rgba(96,165,250,.25)" : "none",
+                  textAlign: "center",
+                  alignItems:"center",
                   borderColor:
                     checked && char !== null
                       ? correct
@@ -336,7 +360,6 @@ const DragDrop: React.FC<Props> = ({
       </div>
 
       <div style={styles.row}>
-        <div style={styles.rowLabel}>Letter bank (drag onto a slot)</div>
         <div
           style={styles.bank}
           onDragOver={(e) => e.preventDefault()}
@@ -357,14 +380,14 @@ const DragDrop: React.FC<Props> = ({
         </div>
       </div>
 
-      <div style={styles.controls}>
+      {/* <div style={styles.controls}>
         <button style={{ ...styles.btn, ...styles.btnPrimary }} onClick={handleCheck}>
           Check
         </button>
         <button style={styles.btn} onClick={reset}>
           Reset
         </button>
-      </div>
+      </div> */}
 
       <div style={styles.feedback}>
         {checked && (isCorrect ? "✅ Correct!" : "❌ Not quite—keep trying.")}

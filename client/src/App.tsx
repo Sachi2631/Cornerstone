@@ -30,11 +30,14 @@ const ScrollToTop: React.FC = () => {
 const AppContent: React.FC = () => {
   const location = useLocation();
   const path = location.pathname;
+
+  // Define routes where the header or footer should be hidden
+  const hideHeader = path === '/lesson';
   const hideFooter = path === '/dashboard';
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      <Header />
+      {!hideHeader && <Header />}
       <ScrollToTop />
 
       <Box component="main" flexGrow={1}>
@@ -51,15 +54,8 @@ const AppContent: React.FC = () => {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/stories" element={<Stories />} />
           <Route path="/profile" element={<Profile />} />
-
-          {/* NEW: dynamic character detail route */}
           <Route path="/characters/:id" element={<CharInfo />} />
-
-          {/* Optional: keep old /charinfo route working by redirecting to gallery */}
           <Route path="/charinfo" element={<Navigate to="/gallery" replace />} />
-
-          {/* Optional: 404 fallback */}
-          {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
         </Routes>
       </Box>
 

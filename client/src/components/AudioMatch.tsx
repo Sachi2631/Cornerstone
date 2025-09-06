@@ -133,7 +133,7 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
   },
   container: {
     display: 'flex',
