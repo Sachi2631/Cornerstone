@@ -5,7 +5,7 @@ import {
   IconButton, Snackbar, Alert, TextField, Tooltip, Typography, useTheme, Paper,
 } from "@mui/material";
 import { deepPurple } from "@mui/material/colors";
-import { Edit, Save, LogOut, Key, Delete, RefreshCcw, Mail } from "lucide-react";
+import { Edit, Save, Key, Delete, RefreshCcw, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface UserProfile {
@@ -105,12 +105,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    setToken(null);
-    navigate("/auth");
-  };
-
   // Change Password
   const [pwOpen, setPwOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
@@ -179,11 +173,6 @@ const Profile: React.FC = () => {
             </Box>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
-          <Tooltip title="Logout">
-            <IconButton onClick={handleLogout} color="inherit">
-              <LogOut />
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
 

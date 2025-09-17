@@ -279,7 +279,17 @@ const AuthForm = (): React.ReactElement => {
         onClose={() => setNotifOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={() => setNotifOpen(false)} severity={notifSeverity} variant="filled" sx={{ width: '100%' }}>
+        <Alert
+          onClose={() => setNotifOpen(false)}
+          severity={notifSeverity}
+          variant="filled"
+          sx={{
+            width: '100%',
+            // Make colors explicit: green for success, red for error
+            ...(notifSeverity === 'success' && { bgcolor: 'success.main', color: 'success.contrastText' }),
+            ...(notifSeverity === 'error' && { bgcolor: 'error.main', color: 'error.contrastText' }),
+          }}
+        >
           {notifMsg}
         </Alert>
       </Snackbar>
