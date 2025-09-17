@@ -1,51 +1,29 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  Grid,
-  IconButton,
-  Snackbar,
-  Alert,
-  TextField,
-  Tooltip,
-  Typography,
-  useTheme,
-  Paper,
+  Avatar, Box, Button, Card, CardActions, CardContent, CardHeader, Chip,
+  CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid,
+  IconButton, Snackbar, Alert, TextField, Tooltip, Typography, useTheme, Paper,
 } from "@mui/material";
 import { deepPurple } from "@mui/material/colors";
 import { Edit, Save, LogOut, Key, Delete, RefreshCcw, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// --- Types ---
 interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
   rememberMe?: boolean;
-  createdAt?: string; // ISO
-  lastLogin?: string; // ISO
+  createdAt?: string;
+  lastLogin?: string;
 }
 
-// Convenience: derive initials for avatar
 const initials = (firstName?: string, lastName?: string) =>
   `${(firstName?.[0] || "").toUpperCase()}${(lastName?.[0] || "").toUpperCase()}`;
 
-// Format a date nicely in the user's locale
 const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : "—");
 
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5000/api";
+const AUTH_TOKEN_KEY = "authToken";
 
 const Profile: React.FC = () => {
   const theme = useTheme();
@@ -60,16 +38,14 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<UserProfile | null>(null);
 
-  const token = useMemo(() => localStorage.getItem("token"), []);
+  // token in state so it can react to changes
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(AUTH_TOKEN_KEY));
 
-  // Redirect to login if missing token
+  // Redirect if missing token
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-    }
+    if (!token) navigate("/auth");
   }, [token, navigate]);
 
-  // Fetch current user profile
   const fetchMe = async () => {
     if (!token) return;
     try {
@@ -78,11 +54,13 @@ const Profile: React.FC = () => {
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 404) {
+        throw new Error("Profile endpoint not found. Did you add /api/auth/me on the server?");
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load profile");
 
-      // Expecting shape { user: { firstName, lastName, email, createdAt, lastLogin, rememberMe? } }
-      const u: UserProfile = data.user || data; // support both shapes
+      const u: UserProfile = data.user || data;
       setUser(u);
       setDraft(u);
     } catch (err: any) {
@@ -95,7 +73,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     fetchMe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [token]);
 
   const onChange = (field: keyof UserProfile) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -108,15 +86,11 @@ const Profile: React.FC = () => {
       setError(null);
       const res = await fetch(`${API_BASE}/users/me`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           firstName: draft.firstName,
           lastName: draft.lastName,
-          // email updates are commonly restricted; include if your backend allows it
-          email: draft.email,
+          email: draft.email, // allow if BE permits
         }),
       });
       const data = await res.json();
@@ -132,22 +106,21 @@ const Profile: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    setToken(null);
+    navigate("/auth");
   };
 
-  // Change Password Dialog
+  // Change Password
   const [pwOpen, setPwOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
+
   const submitPassword = async () => {
     if (!token) return;
     try {
       const res = await fetch(`${API_BASE}/auth/change-password`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(pwForm),
       });
       const data = await res.json();
@@ -160,7 +133,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Delete Account Dialog
+  // Delete Account
   const [delOpen, setDelOpen] = useState(false);
   const confirmDelete = async () => {
     if (!token) return;
@@ -173,8 +146,8 @@ const Profile: React.FC = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Delete failed");
       }
-      // Hard logout after deletion
-      localStorage.removeItem("token");
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      setToken(null);
       navigate("/");
     } catch (err: any) {
       setError(err.message || "Account deletion failed");
@@ -186,14 +159,7 @@ const Profile: React.FC = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default }}>
       {/* Header / Cover */}
-      <Box
-        sx={{
-          px: { xs: 2, sm: 4 },
-          py: { xs: 3, sm: 6 },
-          background: gradientBg,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}
-      >
+      <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 6 }, background: gradientBg, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar sx={{ bgcolor: deepPurple[500], width: 64, height: 64 }}>
             {initials(user?.firstName, user?.lastName) || "?"}
@@ -301,11 +267,7 @@ const Profile: React.FC = () => {
               </CardContent>
               {!loading && (
                 <CardActions sx={{ justifyContent: "flex-end", px: 3, pb: 3 }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Key />}
-                    onClick={() => setPwOpen(true)}
-                  >
+                  <Button variant="outlined" startIcon={<Key />} onClick={() => setPwOpen(true)}>
                     Change Password
                   </Button>
                 </CardActions>
@@ -330,13 +292,7 @@ const Profile: React.FC = () => {
               <Divider sx={{ my: 2 }} />
               <Box display="flex" gap={1}>
                 <Button fullWidth variant="outlined" onClick={fetchMe}>Refresh</Button>
-                <Button
-                  fullWidth
-                  color="error"
-                  variant="contained"
-                  startIcon={<Delete />}
-                  onClick={() => setDelOpen(true)}
-                >
+                <Button fullWidth color="error" variant="contained" startIcon={<Delete />} onClick={() => setDelOpen(true)}>
                   Delete Account
                 </Button>
               </Box>
@@ -377,9 +333,7 @@ const Profile: React.FC = () => {
       <Dialog open={delOpen} onClose={() => setDelOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Delete Account</DialogTitle>
         <DialogContent>
-          <Typography>
-            This action is irreversible. Your account and related data will be permanently removed.
-          </Typography>
+          <Typography>This action is irreversible. Your account and related data will be permanently removed.</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDelOpen(false)}>Cancel</Button>

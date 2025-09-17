@@ -33,9 +33,9 @@ return (
                 Save + exit
             </Button>
         </Box>
-        {/* <div>
+        <div>
             <AudioMatch />
-        </div> */}
+        </div>
 
         {/* <div>
             <Flips />
@@ -49,9 +49,9 @@ return (
             <MatchDots />
         </div> */}
 
-        <div>
+        {/* <div>
             <Fact />
-        </div>
+        </div> */}
 
     {/* Next Button */}
       <Box mt={4} textAlign="center">

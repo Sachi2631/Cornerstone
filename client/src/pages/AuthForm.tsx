@@ -10,10 +10,19 @@ import {
   Container,
   ToggleButton,
   ToggleButtonGroup,
+  Snackbar,
+  Alert,
+  AlertColor,
 } from '@mui/material';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+const AUTH_TOKEN_KEY = 'authToken';
 
 const AuthForm = (): React.ReactElement => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,6 +30,20 @@ const AuthForm = (): React.ReactElement => {
     password: '',
     rememberMe: true,
   });
+
+  // Snackbar state
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifMsg, setNotifMsg] = useState('');
+  const [notifSeverity, setNotifSeverity] = useState<AlertColor>('info');
+
+  const navigate = useNavigate();
+  const location = useLocation() as any;
+
+  const notify = (msg: string, severity: AlertColor) => {
+    setNotifMsg(msg);
+    setNotifSeverity(severity);
+    setNotifOpen(true);
+  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -30,19 +53,28 @@ const AuthForm = (): React.ReactElement => {
     }));
   };
 
+  const resetFieldsForMode = (nextMode: 'login' | 'signup') => {
+    setMode(nextMode);
+    setFormData((prev) => ({
+      firstName: nextMode === 'signup' ? '' : prev.firstName,
+      lastName: nextMode === 'signup' ? '' : prev.lastName,
+      email: nextMode === 'signup' ? '' : prev.email,
+      password: '',
+      rememberMe: true,
+    }));
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      const endpoint = mode === 'login' ? '/login' : '/signup';
-      const url = `http://localhost:5000/api/auth${endpoint}`;
+      const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup';
+      const url = `${API_BASE}${endpoint}`;
 
       const payload =
         mode === 'login'
-          ? {
-              email: formData.email,
-              password: formData.password,
-            }
+          ? { email: formData.email, password: formData.password }
           : {
               firstName: formData.firstName,
               lastName: formData.lastName,
@@ -50,30 +82,49 @@ const AuthForm = (): React.ReactElement => {
               password: formData.password,
             };
 
-      console.log('🟡 Submitting to:', url);
-      console.log('📦 Payload:', payload);
-
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
-      console.log('✅ Server Response:', data);
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        console.error('❌ Server returned error status:', response.status);
-        throw new Error(data.message || 'Something went wrong');
+        // Prefer BE message; fallback generic
+        const message = data?.message || `Request failed (${response.status})`;
+        notify(message, 'error');
+        return;
       }
 
-      localStorage.setItem('token', data.token);
-      console.log('🔐 Token saved to localStorage');
-      window.location.href = '/dashboard';
-    } catch (error: any) {
-      console.error('🔥 Submission failed:', error);
-      alert(error.message);
+      if (mode === 'signup') {
+        // Success path for SIGNUP:
+        // 1) Do NOT auto-login (as requested)
+        // 2) Switch to login view
+        // 3) Carry over the email and clear password
+        const emailFromServer = data?.user?.email || formData.email;
+        setMode('login');
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: emailFromServer || '',
+          password: '',
+          rememberMe: true,
+        });
+        notify('Account created. Please log in with your password.', 'success');
+        return;
+      }
+
+      // Success path for LOGIN:
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      notify('Login successful. Redirecting…', 'success');
+
+      const redirectTo = location.state?.from?.pathname || '/dashboard';
+      navigate(redirectTo, { replace: true });
+    } catch (err: any) {
+      notify(err?.message || 'Network error', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,21 +166,30 @@ const AuthForm = (): React.ReactElement => {
               exclusive
               onChange={(_, newMode) => {
                 if (newMode) {
-                  setMode(newMode);
-                  setFormData({
-                    firstName: '',
-                    lastName: '',
-                    email: '',
-                    password: '',
-                    rememberMe: true,
-                  });
+                  // Switching modes manually clears password; keeps email only if going to login
+                  if (newMode === 'login') {
+                    setMode('login');
+                    setFormData((prev) => ({
+                      firstName: '',
+                      lastName: '',
+                      email: prev.email, // keep email if user switches back to login
+                      password: '',
+                      rememberMe: true,
+                    }));
+                  } else {
+                    resetFieldsForMode('signup');
+                  }
                 }
               }}
               fullWidth
               sx={{ mb: 2 }}
             >
-              <ToggleButton value="login" sx={{ textTransform: 'none' }}>Login</ToggleButton>
-              <ToggleButton value="signup" sx={{ textTransform: 'none' }}>Sign Up</ToggleButton>
+              <ToggleButton value="login" sx={{ textTransform: 'none' }}>
+                Login
+              </ToggleButton>
+              <ToggleButton value="signup" sx={{ textTransform: 'none' }}>
+                Sign Up
+              </ToggleButton>
             </ToggleButtonGroup>
 
             <form onSubmit={handleSubmit}>
@@ -176,6 +236,7 @@ const AuthForm = (): React.ReactElement => {
                 onChange={handleInputChange}
                 required
               />
+
               {mode === 'login' && (
                 <FormControlLabel
                   control={
@@ -189,14 +250,17 @@ const AuthForm = (): React.ReactElement => {
                   label="Remember me"
                 />
               )}
+
               <Button
                 type="submit"
                 variant="contained"
                 fullWidth
                 sx={{ mt: 2, borderRadius: 2 }}
+                disabled={loading}
               >
-                {mode === 'login' ? 'Login' : 'Sign Up'}
+                {loading ? (mode === 'login' ? 'Logging in…' : 'Signing up…') : mode === 'login' ? 'Login' : 'Sign Up'}
               </Button>
+
               {mode === 'login' && (
                 <Box mt={2} textAlign="center">
                   <Button variant="text" size="small">
@@ -208,6 +272,17 @@ const AuthForm = (): React.ReactElement => {
           </Paper>
         </Container>
       </Box>
+
+      <Snackbar
+        open={notifOpen}
+        autoHideDuration={4000}
+        onClose={() => setNotifOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setNotifOpen(false)} severity={notifSeverity} variant="filled" sx={{ width: '100%' }}>
+          {notifMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

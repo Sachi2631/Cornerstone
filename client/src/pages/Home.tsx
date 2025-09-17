@@ -1,12 +1,21 @@
 import React from 'react';
 import {
-  Box, Typography, Button, Container, Card, CardContent,
-  useTheme, useMediaQuery
+  Box, Card, CardContent, Typography, Button, Container
 } from '@mui/material';
+import { useTheme, useMediaQuery } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const Home = (): React.ReactElement => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+
+  // TODO: Replace with your real auth state (e.g., context/store selector)
+  const isAuthed = Boolean(localStorage.getItem('authToken'));
+
+  const go = (loggedInPath: string, publicPath: string) => {
+    navigate(isAuthed ? loggedInPath : publicPath);
+  };
 
   const sectionBox = (bgcolor: string, content: React.ReactNode, mt = 6) => (
     <Box bgcolor={bgcolor} py={8} px={isMobile ? 3 : 6} mx={isMobile ? 2 : 6} mt={mt} borderRadius={4}>
@@ -37,11 +46,17 @@ const Home = (): React.ReactElement => {
           <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="bold" gutterBottom>Nihon-go!</Typography>
           <Typography variant="h6" mb={4}>Learn Japanese in a fun, effective, and cultural way</Typography>
           <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap" mb={4}>
-            <Button variant="contained" sx={{ backgroundColor: '#b43d20', color: '#dfe2e5', height: "7vh", width: "15vw", borderRadius: "10px" }}>Start Now!</Button>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: '#b43d20', color: '#dfe2e5', height: "7vh", width: isMobile ? "60vw" : "15vw", borderRadius: "10px" }}
+              onClick={() => go('/dashboard', '/auth')}
+            >
+              Start Now!
+            </Button>
             <Button
               variant="outlined"
-              href="#info"
-              sx={{ color: '#b43d20', borderColor: '#b43d20', borderWidth: 3, height: "7vh", width: "15vw", borderRadius: "10px" }}
+              sx={{ color: '#b43d20', borderColor: '#b43d20', borderWidth: 3, height: "7vh", width: isMobile ? "60vw" : "15vw", borderRadius: "10px" }}
+              onClick={() => go('/lesson', '/auth')}
             >
               Learn more
             </Button>
