@@ -100,7 +100,7 @@ d3.json('/japan.geojson').then((data: any) => {
 
     const foreignObject = g.append('foreignObject')
       .attr('x', x - 10)
-      .attr('y', y - 30)
+      .attr('y', y - 18)
       .attr('width', 30)
       .attr('height', 30)
       .style('pointer-events', 'auto')
@@ -202,7 +202,7 @@ zIndex: 10,
       <Box
         sx={{
           position: 'absolute',
-          top: popup.y,
+          top: popup.y - 50,
           left: popup.x,
           transform: 'translate(-50%, -100%)',
           bgcolor: '#d9d9d9',
