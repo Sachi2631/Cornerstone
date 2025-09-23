@@ -1,23 +1,13 @@
+// src/pages/AuthForm.tsx
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  Container,
-  ToggleButton,
-  ToggleButtonGroup,
-  Snackbar,
-  Alert,
-  AlertColor,
+  Box, Typography, TextField, Button, Checkbox, FormControlLabel,
+  Paper, Container, ToggleButton, ToggleButtonGroup, Snackbar, Alert, AlertColor,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { setToken } from '../services/api'; // <-- ADD THIS
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
-const AUTH_TOKEN_KEY = 'authToken';
 
 const AuthForm = (): React.ReactElement => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -31,7 +21,6 @@ const AuthForm = (): React.ReactElement => {
     rememberMe: true,
   });
 
-  // Snackbar state
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifMsg, setNotifMsg] = useState('');
   const [notifSeverity, setNotifSeverity] = useState<AlertColor>('info');
@@ -82,6 +71,7 @@ const AuthForm = (): React.ReactElement => {
               password: formData.password,
             };
 
+      console.log('[AUTHFORM] POST', url, payload);
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,19 +79,16 @@ const AuthForm = (): React.ReactElement => {
       });
 
       const data = await response.json().catch(() => ({}));
+      console.log('[AUTHFORM] response', response.status, data);
 
       if (!response.ok) {
-        // Prefer BE message; fallback generic
         const message = data?.message || `Request failed (${response.status})`;
         notify(message, 'error');
         return;
       }
 
       if (mode === 'signup') {
-        // Success path for SIGNUP:
-        // 1) Do NOT auto-login (as requested)
-        // 2) Switch to login view
-        // 3) Carry over the email and clear password
+        // Do not auto-login; switch to login screen and carry email over
         const emailFromServer = data?.user?.email || formData.email;
         setMode('login');
         setFormData({
@@ -115,13 +102,21 @@ const AuthForm = (): React.ReactElement => {
         return;
       }
 
-      // Success path for LOGIN:
-      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-      notify('Login successful. Redirecting…', 'success');
+      // LOGIN success -> store token the way api.ts expects (access_token)
+      if (!data?.token) {
+        notify('No token returned from server', 'error');
+        return;
+      }
 
+      setToken(data.token); // <-- THIS FIXES isAuthed()
+      console.log('[AUTHFORM] token stored via setToken (access_token)');
+
+      // optional: rememberMe handling (nothing to do if using localStorage)
+      notify('Login successful. Redirecting…', 'success');
       const redirectTo = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectTo, { replace: true });
+      window.location.assign(redirectTo);
     } catch (err: any) {
+      console.error('[AUTHFORM] error', err);
       notify(err?.message || 'Network error', 'error');
     } finally {
       setLoading(false);
@@ -166,13 +161,12 @@ const AuthForm = (): React.ReactElement => {
               exclusive
               onChange={(_, newMode) => {
                 if (newMode) {
-                  // Switching modes manually clears password; keeps email only if going to login
                   if (newMode === 'login') {
                     setMode('login');
                     setFormData((prev) => ({
                       firstName: '',
                       lastName: '',
-                      email: prev.email, // keep email if user switches back to login
+                      email: prev.email,
                       password: '',
                       rememberMe: true,
                     }));
@@ -285,7 +279,6 @@ const AuthForm = (): React.ReactElement => {
           variant="filled"
           sx={{
             width: '100%',
-            // Make colors explicit: green for success, red for error
             ...(notifSeverity === 'success' && { bgcolor: 'success.main', color: 'success.contrastText' }),
             ...(notifSeverity === 'error' && { bgcolor: 'error.main', color: 'error.contrastText' }),
           }}

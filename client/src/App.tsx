@@ -1,5 +1,7 @@
+// src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Box } from '@mui/material';
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -16,10 +18,12 @@ import Profile from './pages/Profile';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { Box } from '@mui/material';
 
-// ----- Simple auth check (swap with your real selector/context) -----
-const isAuthed = () => Boolean(localStorage.getItem('authToken'));
+// ⬇️ use the same helper as api.ts
+import { getToken } from './services/api';
+
+// ----- Auth helpers -----
+const isAuthed = () => Boolean(getToken());
 
 // ----- Route guards -----
 const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -37,6 +41,7 @@ const PublicOnly: React.FC<{ children: React.ReactElement }> = ({ children }) =>
   return children;
 };
 
+// ----- Scroll restoration -----
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -45,11 +50,12 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
+// ----- Layout -----
 const AppContent: React.FC = () => {
   const location = useLocation();
   const path = location.pathname;
 
-  // Hide rules (unchanged)
+  // Hide rules
   const hideHeader = path === '/lesson';
   const hideFooter = path === '/dashboard';
 
