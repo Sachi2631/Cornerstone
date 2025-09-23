@@ -1,79 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
-const columnsData: string[][] = [
-  ['Stories', 'Gallery', 'Resources', 'Talk'],
-  ['Fun Facts', 'Games', 'Watch']
+const HEADER_HEIGHT = 73;
+
+// Unified config: title, route, and image path (public/assets)
+const menuConfig = [
+  [
+    { title: "Stories", path: "/stories", img: "/assets/stories.png" },
+    { title: "Gallery", path: "/gallery", img: "/assets/gallery.png" },
+    { title: "Resources", path: "/resources", img: "/assets/resources.png" },
+    { title: "Talk", path: "/talk", img: "/assets/talk.png" },
+  ],
+  [
+    { title: "Fun Facts", path: "/funfacts", img: "/assets/fun-facts.png" },
+    { title: "Games", path: "/games", img: "/assets/games.png" },
+    { title: "Watch", path: "/watch", img: "/assets/watch.png" },
+  ],
 ];
 
 const styles = {
   container: {
-    position: 'relative' as const,
+    position: "relative" as const,
+    zIndex: 10,
   },
   open: {
-    position: 'absolute' as const,
-    top: '15px',
-    left: '-49vw',
-    width: '50px',
-    height: '50px',
-    cursor: 'pointer',
-    zIndex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'space-between',
-    backgroundColor: 'orange',
+    position: "fixed" as const,
+    top: `${HEADER_HEIGHT + 20}px`,
+    left: "30px",
+    minWidth: "80px",
+    height: "40px",
+    cursor: "pointer",
+    zIndex: 100000,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    padding: "0 10px",
+    boxShadow: "0 0 5px rgba(0,0,0,0.3)",
   },
   close: {
-    position: 'absolute' as const,
-    top: '20px',
-    left: '-30vw',
-    width: '50px',
-    height: '50px',
-    cursor: 'pointer',
-    zIndex: 200,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'space-between',
-    backgroundColor: 'red',
-  },
-  barLine: {
-    width: '100%',
-    height: '4px',
-    backgroundColor: '#333',
-    borderRadius: '2px',
+    position: "absolute" as const,
+    top: "10px",
+    right: "10px",
+    width: "40px",
+    height: "40px",
+    cursor: "pointer",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: "8px",
   },
   menu: {
-    backgroundColor: '#92a6ba',
-    display: 'flex',
-    flexDirection: 'row' as const,
-    width: '290px',
-    height: '100vh',
-    transition: 'transform 0.3s ease',
-    position: 'fixed' as const,
-    top: 70,
+    backgroundColor: "#92a6ba",
+    display: "flex",
+    flexDirection: "row" as const,
+    width: "290px",
+    height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+    transition: "transform 0.3s ease",
+    position: "fixed" as const,
+    top: `${HEADER_HEIGHT}px`,
     left: 0,
-    zIndex: 2,
-    paddingTop: '10px',
+    zIndex: 999,
+    paddingTop: "60px",
+    boxShadow: "2px 0 10px rgba(0,0,0,0.2)",
+    overflowY: "auto" as const,
   },
   menuHidden: {
-    transform: 'translateX(-100%)',
+    transform: "translateX(-100%)",
   },
   column: {
-    width: '135px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'flex-start',
+    width: "135px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-start",
   },
   box: {
-    marginTop: '10px',
-    marginLeft: '20px',
-    textAlign: 'center' as const,
+    marginTop: "10px",
+    marginLeft: "20px",
+    textAlign: "center" as const,
   },
   img: {
-    backgroundColor: '#d9d9d9',
-    height: '14vh',
-    borderRadius: '10px',
-    marginRight: '5px',
-  }
+    backgroundColor: "#d9d9d9",
+    height: "14vh",
+    borderRadius: "10px",
+    marginBottom: "5px",
+    objectFit: "cover" as const,
+  },
 };
 
 const Bar: React.FC = () => {
@@ -81,26 +95,38 @@ const Bar: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Hamburger icon */}
-      <div style={styles.open} onClick={() => setOpen(!open)}>
-        {/* <div style={styles.barLine}></div>
-        <div style={styles.barLine}></div>
-        <div style={styles.barLine}></div> */}
-        <img
-          src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"
-          alt="Open menu icon"
-        />
-      </div>
+      {!open && (
+        <div style={styles.open} onClick={() => setOpen(true)}>
+          <img
+            src="https://www.svgrepo.com/show/344422/arrow-right-short.svg"
+            alt="Open Menu"
+            style={{ width: "30px", height: "30px" }}
+          />
+        </div>
+      )}
 
-      {/* Slide-out menu */}
       <div style={{ ...styles.menu, ...(open ? {} : styles.menuHidden) }}>
-        {columnsData.map((columnItems, colIndex) => (
+        <div style={styles.close} onClick={() => setOpen(false)}>
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/109/109618.png"
+            alt="Close"
+            style={{ width: "30px", height: "30px" }}
+          />
+        </div>
+
+        {menuConfig.map((column, colIndex) => (
           <div style={styles.column} key={colIndex}>
-            {columnItems.map((title, itemIndex) => (
-              <div style={styles.box} key={itemIndex}>
-                <div style={styles.img}></div>
-                <h4>{title}</h4>
-              </div>
+            {column.map((item, itemIndex) => (
+              <Link
+                key={itemIndex}
+                to={item.path}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <div style={styles.box}>
+                  <img src={item.img} alt={item.title} style={styles.img} />
+                  <h4>{item.title}</h4>
+                </div>
+              </Link>
             ))}
           </div>
         ))}
