@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar, Box, Button, Card, CardActions, CardContent, CardHeader, Chip,
   CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid,
@@ -6,7 +6,8 @@ import {
 } from "@mui/material";
 import { deepPurple } from "@mui/material/colors";
 import { Edit, Save, Key, Delete, RefreshCcw, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { json, getToken, clearToken } from "../services/api";
 
 interface UserProfile {
   firstName: string;
@@ -18,16 +19,14 @@ interface UserProfile {
 }
 
 const initials = (firstName?: string, lastName?: string) =>
-  `${(firstName?.[0] || "").toUpperCase()}${(lastName?.[0] || "").toUpperCase()}`;
+  (`${(firstName?.[0] || "").toUpperCase()}${(lastName?.[0] || "").toUpperCase()}` || "U");
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : "—");
-
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5000/api";
-const AUTH_TOKEN_KEY = "authToken";
 
 const Profile: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,33 +37,27 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<UserProfile | null>(null);
 
-  // token in state so it can react to changes
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(AUTH_TOKEN_KEY));
-
-  // Redirect if missing token
+  // Guard: if no token, bounce to /auth (preserve return path)
   useEffect(() => {
-    if (!token) navigate("/auth");
-  }, [token, navigate]);
+    if (!getToken()) {
+      navigate("/auth", { replace: true, state: { from: location } });
+    }
+  }, [navigate, location]);
 
   const fetchMe = async () => {
-    if (!token) return;
+    if (!getToken()) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 404) {
-        throw new Error("Profile endpoint not found. Did you add /api/auth/me on the server?");
-      }
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Failed to load profile");
-
-      const u: UserProfile = data.user || data;
+      // Your api.ts baseURL targets server root; include the /api prefix here.
+      const data = await json<{ user?: UserProfile } | UserProfile>("/api/auth/me");
+      const u: UserProfile = (data as any).user ?? (data as any);
       setUser(u);
-      setDraft(u);
+      setDraft(JSON.parse(JSON.stringify(u)));
     } catch (err: any) {
-      setError(err.message || "Could not fetch profile");
+      setError(err?.message || "Could not fetch profile");
+      // If interceptor cleared token on 401, redirect here
+      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
     } finally {
       setLoading(false);
     }
@@ -73,33 +66,32 @@ const Profile: React.FC = () => {
   useEffect(() => {
     fetchMe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, []);
 
-  const onChange = (field: keyof UserProfile) =>
+  const onChange =
+    (field: keyof UserProfile) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setDraft((prev) => (prev ? { ...prev, [field]: e.target.value } : prev));
 
   const handleSave = async () => {
-    if (!token || !draft) return;
+    if (!draft) return;
     try {
       setSaving(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/users/me`, {
+      const data = await json<{ user: UserProfile }>("/api/users/me", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
+        data: {
           firstName: draft.firstName,
           lastName: draft.lastName,
-          email: draft.email, // allow if BE permits
-        }),
+          email: draft.email, // disable the field below if your BE forbids email change
+        },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Failed to update profile");
-      setUser(draft);
+      setUser({ ...(data?.user ?? draft) });
       setSuccess("Profile updated");
       setEditing(false);
     } catch (err: any) {
-      setError(err.message || "Update failed");
+      setError(err?.message || "Update failed");
+      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
     } finally {
       setSaving(false);
     }
@@ -110,45 +102,40 @@ const Profile: React.FC = () => {
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
 
   const submitPassword = async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/auth/change-password`, {
+      await json("/api/auth/change-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(pwForm),
+        data: pwForm,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Password change failed");
       setSuccess("Password updated");
       setPwOpen(false);
       setPwForm({ currentPassword: "", newPassword: "" });
     } catch (err: any) {
-      setError(err.message || "Password update failed");
+      setError(err?.message || "Password update failed");
+      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
     }
   };
 
   // Delete Account
   const [delOpen, setDelOpen] = useState(false);
   const confirmDelete = async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/users/me`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Delete failed");
-      }
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      setToken(null);
-      navigate("/");
+      await json("/api/users/me", { method: "DELETE" });
+      clearToken();
+      navigate("/", { replace: true });
     } catch (err: any) {
-      setError(err.message || "Account deletion failed");
+      setError(err?.message || "Account deletion failed");
+      if (!getToken()) navigate("/auth", { replace: true });
     }
   };
 
-  const gradientBg = `linear-gradient(135deg, ${theme.palette.mode === "dark" ? "#1f2937" : "#e3f2fd"} 0%, ${theme.palette.mode === "dark" ? "#111827" : "#f3e8ff"} 100%)`;
+  const gradientBg = useMemo(
+    () =>
+      `linear-gradient(135deg, ${
+        theme.palette.mode === "dark" ? "#1f2937" : "#e3f2fd"
+      } 0%, ${theme.palette.mode === "dark" ? "#111827" : "#f3e8ff"} 100%)`,
+    [theme.palette.mode]
+  );
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default }}>
@@ -156,7 +143,7 @@ const Profile: React.FC = () => {
       <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 6 }, background: gradientBg, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar sx={{ bgcolor: deepPurple[500], width: 64, height: 64 }}>
-            {initials(user?.firstName, user?.lastName) || "?"}
+            {initials(user?.firstName, user?.lastName)}
           </Avatar>
           <Box>
             <Typography variant="h5" fontWeight={700}>
@@ -200,7 +187,12 @@ const Profile: React.FC = () => {
                         </span>
                       </Tooltip>
                       <Tooltip title="Cancel">
-                        <IconButton onClick={() => { setEditing(false); setDraft(user); }}>
+                        <IconButton
+                          onClick={() => {
+                            setEditing(false);
+                            setDraft(user ? JSON.parse(JSON.stringify(user)) : null);
+                          }}
+                        >
                           <RefreshCcw />
                         </IconButton>
                       </Tooltip>
@@ -247,7 +239,7 @@ const Profile: React.FC = () => {
                         fullWidth
                         value={draft?.email || ""}
                         onChange={onChange("email")}
-                        disabled={!editing}
+                        disabled={!editing /* set true permanently if BE forbids email change */}
                         helperText={!editing ? "Contact support to change email if disabled." : ""}
                       />
                     </Grid>

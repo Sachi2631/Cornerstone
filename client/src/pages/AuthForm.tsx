@@ -1,13 +1,10 @@
-// src/pages/AuthForm.tsx
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import {
   Box, Typography, TextField, Button, Checkbox, FormControlLabel,
   Paper, Container, ToggleButton, ToggleButtonGroup, Snackbar, Alert, AlertColor,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { setToken } from '../services/api'; // <-- ADD THIS
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+import { setToken, json } from '../services/api';
 
 const AuthForm = (): React.ReactElement => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -58,8 +55,7 @@ const AuthForm = (): React.ReactElement => {
     setLoading(true);
 
     try {
-      const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup';
-      const url = `${API_BASE}${endpoint}`;
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
 
       const payload =
         mode === 'login'
@@ -71,24 +67,9 @@ const AuthForm = (): React.ReactElement => {
               password: formData.password,
             };
 
-      console.log('[AUTHFORM] POST', url, payload);
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      console.log('[AUTHFORM] response', response.status, data);
-
-      if (!response.ok) {
-        const message = data?.message || `Request failed (${response.status})`;
-        notify(message, 'error');
-        return;
-      }
+      const data: any = await json(endpoint, { method: 'POST', data: payload });
 
       if (mode === 'signup') {
-        // Do not auto-login; switch to login screen and carry email over
         const emailFromServer = data?.user?.email || formData.email;
         setMode('login');
         setFormData({
@@ -102,22 +83,17 @@ const AuthForm = (): React.ReactElement => {
         return;
       }
 
-      // LOGIN success -> store token the way api.ts expects (access_token)
       if (!data?.token) {
         notify('No token returned from server', 'error');
         return;
       }
 
-      setToken(data.token); // <-- THIS FIXES isAuthed()
-      console.log('[AUTHFORM] token stored via setToken (access_token)');
-
-      // optional: rememberMe handling (nothing to do if using localStorage)
+      setToken(data.token);
       notify('Login successful. Redirecting…', 'success');
       const redirectTo = location.state?.from?.pathname || '/dashboard';
       window.location.assign(redirectTo);
     } catch (err: any) {
-      console.error('[AUTHFORM] error', err);
-      notify(err?.message || 'Network error', 'error');
+      notify(err?.response?.data?.message || err?.message || 'Network error', 'error');
     } finally {
       setLoading(false);
     }

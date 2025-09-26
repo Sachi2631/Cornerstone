@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Button, useTheme, useMediaQuery, IconButton, Avatar,
@@ -8,20 +7,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-import { getToken, clearToken } from '../services/api'; // <-- use the same helpers as api.ts
+import { getToken, clearToken, json } from '../services/api';
 
 type Me = { firstName?: string; lastName?: string; email?: string; rememberMe?: boolean };
-
-const API_BASE =
-  (import.meta as any)?.env?.VITE_API_BASE_URL ||
-  (typeof process !== 'undefined' && (process as any)?.env?.REACT_APP_API_BASE) ||
-  'http://localhost:5000/api';
-
-const ME_PATH = '/auth/me';
-const ACCESS_TOKEN_STORAGE_KEY = 'access_token'; // single source of truth
-
-const initialsOf = (first?: string, last?: string) =>
-  `${(first?.[0] || '').toUpperCase()}${(last?.[0] || '').toUpperCase()}` || 'U';
 
 const Header = (): React.ReactElement => {
   const theme = useTheme();
@@ -43,8 +31,8 @@ const Header = (): React.ReactElement => {
   const handleMenuClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
-    clearToken();                // remove access_token
-    setAuthToken(getToken());    // refresh local state (null)
+    clearToken();
+    setAuthToken(getToken());
     setMe(null);
     setAnchorEl(null);
     setDrawerOpen(false);
@@ -68,20 +56,12 @@ const Header = (): React.ReactElement => {
       }
       try {
         setLoadingMe(true);
-        const res = await fetch(`${API_BASE}${ME_PATH}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          // token invalid/expired—clear it
-          clearToken();
-          setAuthToken(getToken());
-          setMe(null);
-          return;
-        }
-        setMe(data.user ?? data);
+        const data = await json<{ user?: Me } | Me>('/api/auth/me');
+        setMe((data as any).user ?? (data as any));
       } catch {
+        // likely 401 → interceptor cleared the token
         setMe(null);
+        setAuthToken(getToken());
       } finally {
         setLoadingMe(false);
       }
@@ -92,7 +72,7 @@ const Header = (): React.ReactElement => {
   // Sync across tabs/windows (watch the real key)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === ACCESS_TOKEN_STORAGE_KEY) {
+      if (e.key === 'access_token') {
         setAuthToken(getToken());
       }
     };
@@ -106,6 +86,9 @@ const Header = (): React.ReactElement => {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
+
+  const initialsOf = (first?: string, last?: string) =>
+    (`${(first?.[0] || '').toUpperCase()}${(last?.[0] || '').toUpperCase()}` || 'U');
 
   return (
     <Box
@@ -164,11 +147,7 @@ const Header = (): React.ReactElement => {
                 <span>
                   <IconButton onClick={handleMenuOpen} size="large" sx={{ p: 0 }}>
                     <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-                      {loadingMe ? (
-                        <CircularProgress size={18} sx={{ color: 'white' }} />
-                      ) : (
-                        initialsOf(me?.firstName, me?.lastName)
-                      )}
+                      {loadingMe ? <CircularProgress size={18} sx={{ color: 'white' }} /> : initialsOf(me?.firstName, me?.lastName)}
                     </Avatar>
                   </IconButton>
                 </span>
