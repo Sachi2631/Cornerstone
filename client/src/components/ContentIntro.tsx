@@ -1,0 +1,2 @@
+//component to introduce the new character. The component with the hiragana and katakana gifts on top of each other, stroke order numberings, audio button the middle
+// Second component after flipping flashcards
