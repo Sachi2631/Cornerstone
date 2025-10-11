@@ -1,22 +1,31 @@
+// src/components/Fact.tsx
+
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-const Fact: React.FC = () => {
+interface FactProps {
+  title: string;
+  description: string;
+}
+
+const Fact: React.FC<FactProps> = ({ title, description }) => {
   return (
     <div style={styles.body}>
       <div style={styles.box}>
-        <Typography variant="body1" sx={{ textAlign: 'left', fontSize: '25px', }}>Hiragana is used for Japanese-origin words!</Typography>
-        <Typography variant="subtitle1" sx={{ textAlign: 'left', fontSize: '25px', }}>Katakana is used for loan-words from other languages!</Typography>
+        <Typography variant="h5" sx={{ textAlign: 'left', fontWeight: 'bold' }}>{title}</Typography>
+        <Typography variant="body1" sx={{ textAlign: 'left', fontSize: '20px', mt: 2 }}>{description}</Typography>
       </div>
-
+            
       <img
-        src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png"
+        src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png" // This is a generic cat icon, consider finding one that fits the theme.
         alt="Cat Icon"
         style={styles.img}
       />
     </div>
   );
 };
+
+// ... (your styles object remains the same)
 
 const styles: { [key: string]: React.CSSProperties } = {
   body: {
@@ -32,8 +41,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     width: '40vw',
     marginLeft: 'auto',
     marginRight: 'auto',
-    marginTop: '10vh',
-    paddingLeft: '20px',
+    padding: '20px',
     textAlign: 'left',
     display: 'flex',
     flexDirection: 'column',
@@ -41,6 +49,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   img: {
     height: '30vh',
+    marginTop: '20px',
   },
 };
 
