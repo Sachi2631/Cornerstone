@@ -6,7 +6,7 @@ type DragPayload =
   | { source: "bank"; char: string; bankIndex: number }
   | { source: "drop"; slotIndex: number; char: string };
 
-type Props = {
+type DragDropProps = {
   prompt?: string;
   bankItems?: string[];
   answer?: string[];
@@ -33,7 +33,7 @@ const styles: Record<string, React.CSSProperties> = {
   feedback: { fontSize: 14, minHeight: 22 },
 };
 
-const DragDrop: React.FC<Props> = ({
+const DragDrop: React.FC<DragDropProps> = ({
   prompt = "Type the letters according to what you hear",
   bankItems = defaultBank,
   answer = defaultAnswer,

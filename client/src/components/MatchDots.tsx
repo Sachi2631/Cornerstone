@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
 type DotConnection = { dot1: HTMLElement; dot2: HTMLElement };
-type Props = { onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void };
+type DotMatchProps = { onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void };
 
-const DotMatch: React.FC<Props> = ({ onResult }) => {
+const DotMatch: React.FC<DotMatchProps> = ({ onResult }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [firstDot, setFirstDot] = useState<HTMLElement | null>(null);

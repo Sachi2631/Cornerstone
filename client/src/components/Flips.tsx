@@ -3,8 +3,16 @@ import { Box, Grid, IconButton, Button, useMediaQuery, useTheme } from "@mui/mat
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
+// type CardData = { id: number; front: string; back: string };
+
+// interface FlipsProps {
+//   onResult: ResultCb;
+//   cards: CardData[];
+//   correctCardId: number;
+// }
+
 type CardData = { id: number; front: string; back: string; audio?: string };
-type Props = {
+type FlipsProps = {
   onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
   prompt?: string;
   /** which card is the correct answer */
@@ -23,7 +31,7 @@ const Flips = ({
   prompt = "Flip the cards, then select the correct one.",
   correctCardId = 1,
   cards = defaultCards,
-}: Props): React.ReactElement => {
+}: FlipsProps): React.ReactElement => {
   const [flipped, setFlipped] = useState<Record<number, boolean>>({});
   const answeredRef = useRef(false); // ensure only one submission
   const theme = useTheme();

@@ -1,6 +1,12 @@
 import React from 'react';
 
-const Reward: React.FC = () => {
+interface RewardProps {
+  title: string;
+  xp: number | string;
+}
+
+
+const Reward: React.FC <RewardProps> = ({title, xp}) => {
   return (
     <div style={styles.body}>
       <h2>Complete!</h2>

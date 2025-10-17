@@ -1,9 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 
-type Props = { onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void };
+type AudioMatchProps = { onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void };
 
-const AudioMatch: React.FC<Props> = ({ onResult }) => {
+const AudioMatch: React.FC<AudioMatchProps> = ({ onResult }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const choices = useMemo(() => ["あ", "い", "う"], []);

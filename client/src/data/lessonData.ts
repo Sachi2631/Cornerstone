@@ -48,6 +48,7 @@ export const lesson1Data: LessonData = {
       { hiragana: "い", katakana: "イ" },
       { hiragana: "う", katakana: "ウ" },
     ],
+    
   },
   audioMatch1: {
     options: ["あ/ア", "い/イ", "う/ウ"],

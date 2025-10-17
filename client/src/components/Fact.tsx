@@ -25,6 +25,7 @@ const Fact: React.FC<FactProps> = ({ title, description }) => {
   );
 };
 
+
 // ... (your styles object remains the same)
 
 const styles: { [key: string]: React.CSSProperties } = {

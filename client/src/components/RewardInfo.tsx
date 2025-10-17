@@ -1,6 +1,12 @@
 import React from 'react';
 
-const RInfo: React.FC = () => {
+
+interface RewardInfoProps {
+  title: string;
+  description: string;
+}
+
+const RInfo: React.FC<RewardInfoProps>= ({title, description}) => {
   return (
     <div style={styles.body}>
       <div style={styles.img}></div>
