@@ -10,6 +10,7 @@ import lessonRoutes from './routes/lessonRoutes';
 import attemptsRoutes from './routes/attemptsRoutes';
 import progressRoutes from './routes/progressRoutes';
 import reviewRoutes from './routes/reviewRoutes';
+//import galleryRoutes from './routes/galleryRoutes';
 
 dotenv.config({ path: './.env' });
 
@@ -44,6 +45,7 @@ app.use('/api/lessons', lessonRoutes);
 app.use('/api/attempts', attemptsRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/review', reviewRoutes);
+//app.use('/api/gallery', galleryRoutes);
 
 // Centralized error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -57,3 +59,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`Server is running on port ${PORT}`)
 );
+
+//localhost:5000/api/gallery/a9s8d6f987a65sd987f65987asd6f9876asd9f876
