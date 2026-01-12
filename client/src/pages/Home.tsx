@@ -89,17 +89,13 @@ const Home = (): React.ReactElement => {
       <Box
         sx={{
           position: "relative",
-          bgcolor: "cerulean", // keep your original intent
-          minHeight: { xs: "82vh", sm: "68vh" },
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          px: { xs: 2, sm: 3, md: 6 },
-          pt: { xs: 5, sm: 0 },
+          // Replace flat grey slab with a proper gradient
+          background: "linear-gradient(135deg, rgba(180,61,32,0.12) 0%, rgba(255,255,255,0.65) 40%, rgba(180,61,32,0.06) 100%)",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
           overflow: "hidden",
         }}
       >
-        {/* Background layer (fills “blank” space visually) */}
+        {/* subtle texture blobs */}
         <Box
           aria-hidden
           sx={{
@@ -110,378 +106,244 @@ const Home = (): React.ReactElement => {
             "&::before, &::after": {
               content: '""',
               position: "absolute",
-              width: { xs: 360, sm: 520 },
-              height: { xs: 360, sm: 520 },
+              width: { xs: 280, sm: 420 },
+              height: { xs: 280, sm: 420 },
               borderRadius: "50%",
-              filter: "blur(30px)",
-              transform: "translate3d(0,0,0)",
+              filter: "blur(28px)",
               animation: "floaty 12s ease-in-out infinite",
             },
             "&::before": {
-              top: { xs: -160, sm: -220 },
-              left: { xs: -140, sm: -200 },
-              background: "rgba(180, 61, 32, 0.55)",
+              top: { xs: -140, sm: -200 },
+              left: { xs: -120, sm: -180 },
+              background: "rgba(180,61,32,0.55)",
             },
             "&::after": {
-              bottom: { xs: -170, sm: -240 },
-              right: { xs: -160, sm: -220 },
-              background: "rgba(255,255,255,0.65)",
-              animationDelay: "1.6s",
+              bottom: { xs: -160, sm: -220 },
+              right: { xs: -140, sm: -200 },
+              background: "rgba(0,0,0,0.06)",
+              animationDelay: "1.3s",
             },
             "@keyframes floaty": {
               "0%": { transform: "translate(0px, 0px) scale(1)" },
-              "50%": { transform: "translate(24px, 18px) scale(1.06)" },
+              "50%": { transform: "translate(18px, 14px) scale(1.07)" },
               "100%": { transform: "translate(0px, 0px) scale(1)" },
             },
           }}
         />
 
-        <Container maxWidth="lg" sx={{ px: 0, position: "relative", zIndex: 1 }}>
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+          {/* main hero content */}
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1.15fr 0.85fr" },
-              gap: { xs: 3, md: 4 },
-              alignItems: "center",
-              pt: { xs: 2, sm: "16vh" },
+              pt: { xs: 6, sm: 8 },
+              pb: { xs: 10, sm: 12 }, // leave room for the floating card overlap
+              textAlign: "center",
+              maxWidth: 760,
+              mx: "auto",
             }}
           >
-            {/* Left: headline + CTAs + hero fillers */}
-            <Box>
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, ease: EASE }}
-              >
-                <Typography
-                  variant={isMobile ? "h3" : isTabletDown ? "h2" : "h1"}
-                  fontWeight="bold"
-                  gutterBottom
-                  sx={{ lineHeight: 1.05, wordBreak: "break-word" }}
-                >
-                  Nihon-go!
-                </Typography>
-              </MotionBox>
+            <Typography
+              variant={isMobile ? "h3" : isTabletDown ? "h2" : "h1"}
+              fontWeight={900}
+              sx={{ letterSpacing: "-0.03em", lineHeight: 1.05 }}
+              gutterBottom
+            >
+              Nihon-go!
+            </Typography>
 
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.05, ease: EASE }}
-              >
-                <Typography
-                  variant={isMobile ? "body1" : "h6"}
-                  mb={2.5}
-                  sx={{ opacity: 0.95 }}
-                >
-                  Learn Japanese in a fun, effective, and cultural way
-                </Typography>
-              </MotionBox>
+            <Typography
+              variant={isMobile ? "body1" : "h6"}
+              sx={{ opacity: 0.85, maxWidth: 560, mx: "auto" }}
+              mb={3}
+            >
+              Learn Japanese in a fun, effective, and cultural way
+            </Typography>
 
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.1, ease: EASE }}
-              >
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
-                  justifyContent={{ xs: "center", md: "flex-start" }}
-                  alignItems="center"
-                  sx={{ mb: 2.5 }}
-                >
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#b43d20",
-                      color: "#dfe2e5",
-                      minHeight: 52,
-                      width: { xs: "min(460px, 92vw)", sm: 220, md: 260 },
-                      borderRadius: "10px",
-                      px: 3,
-                      boxShadow: 3,
-                      transition: "transform 180ms ease, box-shadow 180ms ease",
-                      "&:hover": {
-                        backgroundColor: "#9f341b",
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                    onClick={() => go("/dashboard", "/auth")}
-                  >
-                    Start Now!
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    sx={{
-                      color: "#b43d20",
-                      borderColor: "#b43d20",
-                      borderWidth: 3,
-                      minHeight: 52,
-                      width: { xs: "min(460px, 92vw)", sm: 220, md: 260 },
-                      borderRadius: "10px",
-                      px: 3,
-                      transition: "transform 180ms ease, background-color 180ms ease",
-                      "&:hover": {
-                        borderColor: "#9f341b",
-                        borderWidth: 3,
-                        backgroundColor: "rgba(180, 61, 32, 0.06)",
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                    onClick={() => go("/lesson", "/auth")}
-                  >
-                    Learn more
-                  </Button>
-                </Stack>
-              </MotionBox>
-
-              {/* “Filler” that makes hero feel complete (no blank area) */}
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.15, ease: EASE }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  justifyContent={{ xs: "center", md: "flex-start" }}
-                  flexWrap="wrap"
-                  sx={{ rowGap: 1 }}
-                >
-                  {[
-                    "Everyday Phrases",
-                    "Emergencies",
-                    "Work Culture",
-                    "Travel Japan",
-                    "Polite Speech",
-                  ].map((label) => (
-                    <Chip
-                      key={label}
-                      label={label}
-                      variant="outlined"
-                      sx={{
-                        borderColor: "rgba(180,61,32,0.55)",
-                        color: "#b43d20",
-                        bgcolor: "rgba(255,255,255,0.35)",
-                        backdropFilter: "blur(6px)",
-                        fontWeight: 600,
-                      }}
-                    />
-                  ))}
-                </Stack>
-              </MotionBox>
-
-              {/* Scroll hint */}
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.2, ease: EASE }}
+            {/* CTAs */}
+            <Stack
+              direction="column"
+              spacing={1.5}
+              sx={{
+                mx: "auto",
+                width: { xs: "100%", sm: 420 },
+              }}
+            >
+              <Button
+                variant="contained"
+                onClick={() => go("/dashboard", "/auth")}
                 sx={{
-                  mt: { xs: 2.5, md: 3 },
-                  display: "flex",
-                  justifyContent: { xs: "center", md: "flex-start" },
-                  alignItems: "center",
-                  gap: 1,
-                  opacity: 0.9,
+                  bgcolor: "#b43d20",
+                  borderRadius: 2.5,
+                  minHeight: 52,
+                  fontWeight: 900,
+                  letterSpacing: "0.02em",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                  "&:hover": { bgcolor: "#9f341b" },
                 }}
               >
-                <Typography variant="body2" sx={{ opacity: 0.85 }}>
-                  Scroll for features & testimonials
-                </Typography>
-                <MotionBox
-                  aria-hidden
-                  animate={{ y: [0, 6, 0] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                Start Now!
+              </Button>
+
+              <Button
+                variant="outlined"
+                onClick={() => go("/lesson", "/auth")}
+                sx={{
+                  color: "#b43d20",
+                  borderColor: "rgba(180,61,32,0.65)",
+                  borderWidth: 2,
+                  borderRadius: 2.5,
+                  minHeight: 52,
+                  fontWeight: 900,
+                  letterSpacing: "0.02em",
+                  "&:hover": {
+                    borderWidth: 2,
+                    borderColor: "#9f341b",
+                    bgcolor: "rgba(180, 61, 32, 0.06)",
+                  },
+                }}
+              >
+                Learn more
+              </Button>
+            </Stack>
+
+            {/* chips (smaller + cleaner) */}
+            <Box
+              sx={{
+                mt: 3,
+                display: "flex",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                px: 1,
+              }}
+            >
+              {["Everyday Phrases", "Emergencies", "Work Culture", "Travel Japan", "Polite Speech"].map((label) => (
+                <Chip
+                  key={label}
+                  label={label}
+                  variant="outlined"
                   sx={{
-                    width: 20,
+                    fontWeight: 800,
+                    borderColor: "rgba(180,61,32,0.45)",
+                    color: "#b43d20",
+                    bgcolor: "rgba(255,255,255,0.50)",
+                    backdropFilter: "blur(6px)",
                     height: 32,
-                    border: "2px solid rgba(0,0,0,0.35)",
-                    borderRadius: 20,
-                    position: "relative",
+                    "& .MuiChip-label": { px: 1.25 },
                   }}
-                >
-                  <Box
-                    sx={{
-                      width: 4,
-                      height: 6,
-                      borderRadius: 2,
-                      bgcolor: "rgba(0,0,0,0.45)",
-                      position: "absolute",
-                      left: "50%",
-                      top: 6,
-                      transform: "translateX(-50%)",
-                    }}
-                  />
-                </MotionBox>
-              </MotionBox>
+                />
+              ))}
             </Box>
 
-            {/* Right: lesson preview fills empty hero space on desktop */}
-            <MotionBox
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.15, ease: EASE }}
-              sx={{ display: { xs: "none", md: "block" } }}
+            {/* scroll hint (less dominant) */}
+            <Box
+              sx={{
+                mt: 2.5,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+                opacity: 0.7,
+              }}
             >
-              <Card
-                elevation={6}
+              <Typography variant="body2">Scroll for more</Typography>
+              <Box
+                aria-hidden
                 sx={{
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  bgcolor: "rgba(255,255,255,0.72)",
-                  backdropFilter: "blur(10px)",
+                  width: 18,
+                  height: 28,
+                  border: "2px solid rgba(0,0,0,0.25)",
+                  borderRadius: 999,
+                  position: "relative",
                 }}
               >
-                <CardContent sx={{ p: 0 }}>
-                  <Box sx={{ p: 2.5, textAlign: "left" }}>
-                    <Typography variant="subtitle2" fontWeight={800} sx={{ opacity: 0.8 }}>
-                      Today’s Lesson
-                    </Typography>
-                    <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
-                      Ordering Food 🍜
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
-                      Learn phrases you’ll actually say in Japan.
-                    </Typography>
-                  </Box>
-
-                  <Divider />
-
-                  <Box sx={{ p: 2.5, textAlign: "left" }}>
-                    <Typography variant="subtitle2" fontWeight={800} sx={{ opacity: 0.8, mb: 1 }}>
-                      Practice
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        p: 2,
-                        borderRadius: 3,
-                        bgcolor: "rgba(180,61,32,0.08)",
-                        border: "1px solid rgba(180,61,32,0.18)",
-                      }}
-                    >
-                      <Typography fontWeight={800} sx={{ mb: 0.5 }}>
-                        すみません
-                      </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.85 }}>
-                        “Excuse me” (polite attention getter)
-                      </Typography>
-                    </Box>
-
-                    <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", rowGap: 1 }}>
-                      <Chip label="Listening" size="small" sx={{ fontWeight: 700 }} />
-                      <Chip label="Speaking" size="small" sx={{ fontWeight: 700 }} />
-                      <Chip label="Culture" size="small" sx={{ fontWeight: 700 }} />
-                    </Stack>
-
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      sx={{
-                        mt: 2.5,
-                        backgroundColor: "#b43d20",
-                        borderRadius: 2,
-                        minHeight: 44,
-                        "&:hover": { backgroundColor: "#9f341b" },
-                      }}
-                      onClick={() => go("/lesson", "/auth")}
-                    >
-                      Continue Lesson
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </MotionBox>
-
-            {/* On mobile/tablet: show a compact preview under CTAs (fills blank space) */}
-            <Box sx={{ display: { xs: "block", md: "none" } }}>
-              <MotionBox
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.2, ease: EASE }}
-              >
-                <Card
-                  elevation={4}
+                <Box
                   sx={{
-                    mt: 3,
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    bgcolor: "rgba(255,255,255,0.75)",
-                    backdropFilter: "blur(10px)",
+                    width: 4,
+                    height: 6,
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.35)",
+                    position: "absolute",
+                    left: "50%",
+                    top: 6,
+                    transform: "translateX(-50%)",
+                    animation: "scrollDot 1.4s ease-in-out infinite",
+                    "@keyframes scrollDot": {
+                      "0%": { transform: "translate(-50%, 0)" },
+                      "50%": { transform: "translate(-50%, 6px)" },
+                      "100%": { transform: "translate(-50%, 0)" },
+                    },
                   }}
-                >
-                  <CardContent sx={{ textAlign: "left" }}>
-                    <Typography variant="subtitle2" fontWeight={800} sx={{ opacity: 0.8 }}>
-                      Try a quick sample
-                    </Typography>
-                    <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
-                      Greetings 👋
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
-                      “はじめまして” — Nice to meet you
-                    </Typography>
-
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      sx={{
-                        mt: 2,
-                        borderRadius: 2,
-                        minHeight: 44,
-                        borderWidth: 2,
-                        borderColor: "#b43d20",
-                        color: "#b43d20",
-                        "&:hover": {
-                          borderWidth: 2,
-                          borderColor: "#9f341b",
-                          backgroundColor: "rgba(180, 61, 32, 0.06)",
-                        },
-                      }}
-                      onClick={() => go("/lesson", "/auth")}
-                    >
-                      Open Sample Lesson
-                    </Button>
-                  </CardContent>
-                </Card>
-              </MotionBox>
+                />
+              </Box>
             </Box>
           </Box>
         </Container>
 
-        {/* Bottom callout (cat + Shinjuku) */}
-        <Box sx={{ width: "100%", display: "flex", justifyContent: "center", position: "relative", zIndex: 1 }}>
-          <Container maxWidth="lg" sx={{ px: 0 }}>
-            <MotionBox
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+        {/* floating sample card (overlaps hero bottom instead of stacking inside) */}
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
+          <Box
+            sx={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: { xs: -52, sm: -60 },
+              px: { xs: 2, sm: 3 },
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <Card
+              elevation={8}
               sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 2,
-                textAlign: "left",
-                transform: { xs: "none", sm: "translateY(18px)" },
-                pb: { xs: 2, sm: 0 },
+                width: "100%",
+                maxWidth: 560,
+                borderRadius: 4,
+                overflow: "hidden",
+                bgcolor: "rgba(255,255,255,0.92)",
+                border: "1px solid rgba(0,0,0,0.06)",
               }}
             >
-              <Box
-                component="img"
-                src="https://www.freeiconspng.com/thumbs/cat-icon/cat-icon-25.png"
-                alt="Cat"
-                sx={{ width: { xs: 64, sm: 88, md: 100 }, height: "auto", flexShrink: 0 }}
-              />
-              <Box sx={{ pt: { xs: 0.5, sm: 1 } }}>
-                <Typography variant={isMobile ? "h6" : "h5"} fontWeight={700} gutterBottom sx={{ lineHeight: 1.15 }}>
-                  Shinjuku
+              <CardContent sx={{ textAlign: "left" }}>
+                <Typography variant="subtitle2" fontWeight={900} sx={{ opacity: 0.75 }}>
+                  Try a quick sample
                 </Typography>
-                <Typography variant={isMobile ? "body2" : "h6"}>
-                  This is Shinjuku! It's the capital of Tokyo Prefecture.
+                <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
+                  Greetings 👋
                 </Typography>
-              </Box>
-            </MotionBox>
-          </Container>
-        </Box>
+                <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
+                  “はじめまして” — Nice to meet you
+                </Typography>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2.5,
+                    minHeight: 46,
+                    borderWidth: 2,
+                    borderColor: "#b43d20",
+                    color: "#b43d20",
+                    fontWeight: 900,
+                    "&:hover": {
+                      borderWidth: 2,
+                      borderColor: "#9f341b",
+                      bgcolor: "rgba(180, 61, 32, 0.06)",
+                    },
+                  }}
+                  onClick={() => go("/lesson", "/auth")}
+                >
+                  Open Sample Lesson
+                </Button>
+              </CardContent>
+            </Card>
+          </Box>
+        </Container>
       </Box>
+
+      {/* give space below hero because card overlaps */}
+      <Box sx={{ height: { xs: 70, sm: 84 } }} />
 
       {/* ABOUT */}
       {sectionBox(
