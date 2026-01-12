@@ -89,8 +89,8 @@ const Home = (): React.ReactElement => {
       <Box
         sx={{
           position: "relative",
-          // Replace flat grey slab with a proper gradient
-          background: "linear-gradient(135deg, rgba(180,61,32,0.12) 0%, rgba(255,255,255,0.65) 40%, rgba(180,61,32,0.06) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(180,61,32,0.12) 0%, rgba(255,255,255,0.65) 40%, rgba(180,61,32,0.06) 100%)",
           borderBottom: "1px solid rgba(0,0,0,0.06)",
           overflow: "hidden",
         }}
@@ -136,7 +136,9 @@ const Home = (): React.ReactElement => {
           <Box
             sx={{
               pt: { xs: 6, sm: 8 },
-              pb: { xs: 10, sm: 12 }, // leave room for the floating card overlap
+              // IMPORTANT:
+              // Give REAL space at the bottom because the sample card will "pull up" using transform.
+              pb: { xs: 10, sm: 12 },
               textAlign: "center",
               maxWidth: 760,
               mx: "auto",
@@ -206,7 +208,7 @@ const Home = (): React.ReactElement => {
               </Button>
             </Stack>
 
-            {/* chips (smaller + cleaner) */}
+            {/* chips */}
             <Box
               sx={{
                 mt: 3,
@@ -235,7 +237,7 @@ const Home = (): React.ReactElement => {
               ))}
             </Box>
 
-            {/* scroll hint (less dominant) */}
+            {/* scroll hint */}
             <Box
               sx={{
                 mt: 2.5,
@@ -279,71 +281,72 @@ const Home = (): React.ReactElement => {
             </Box>
           </Box>
         </Container>
-
-        {/* floating sample card (overlaps hero bottom instead of stacking inside) */}
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
-          <Box
-            sx={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: { xs: -52, sm: -60 },
-              px: { xs: 2, sm: 3 },
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <Card
-              elevation={8}
-              sx={{
-                width: "100%",
-                maxWidth: 560,
-                borderRadius: 4,
-                overflow: "hidden",
-                bgcolor: "rgba(255,255,255,0.92)",
-                border: "1px solid rgba(0,0,0,0.06)",
-              }}
-            >
-              <CardContent sx={{ textAlign: "left" }}>
-                <Typography variant="subtitle2" fontWeight={900} sx={{ opacity: 0.75 }}>
-                  Try a quick sample
-                </Typography>
-                <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
-                  Greetings 👋
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
-                  “はじめまして” — Nice to meet you
-                </Typography>
-
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{
-                    mt: 2,
-                    borderRadius: 2.5,
-                    minHeight: 46,
-                    borderWidth: 2,
-                    borderColor: "#b43d20",
-                    color: "#b43d20",
-                    fontWeight: 900,
-                    "&:hover": {
-                      borderWidth: 2,
-                      borderColor: "#9f341b",
-                      bgcolor: "rgba(180, 61, 32, 0.06)",
-                    },
-                  }}
-                  onClick={() => go("/lesson", "/auth")}
-                >
-                  Open Sample Lesson
-                </Button>
-              </CardContent>
-            </Card>
-          </Box>
-        </Container>
       </Box>
 
-      {/* give space below hero because card overlaps */}
-      <Box sx={{ height: { xs: 70, sm: 84 } }} />
+      {/* FLOATING SAMPLE CARD (SAFE overlap: never crops) */}
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, mt: 0 }}>
+        <MotionBox
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.45, ease: EASE }}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            // Pull up visually into the hero area without absolute positioning.
+            transform: { xs: "translateY(-48px)", sm: "translateY(-60px)" },
+          }}
+        >
+          <Card
+            elevation={8}
+            sx={{
+              width: "100%",
+              maxWidth: 560,
+              borderRadius: 4,
+              overflow: "hidden",
+              bgcolor: "rgba(255,255,255,0.92)",
+              border: "1px solid rgba(0,0,0,0.06)",
+            }}
+          >
+            <CardContent sx={{ textAlign: "left" }}>
+              <Typography variant="subtitle2" fontWeight={900} sx={{ opacity: 0.75 }}>
+                Try a quick sample
+              </Typography>
+              <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
+                Greetings 👋
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
+                “はじめまして” — Nice to meet you
+              </Typography>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{
+                  mt: 2,
+                  borderRadius: 2.5,
+                  minHeight: 46,
+                  borderWidth: 2,
+                  borderColor: "#b43d20",
+                  color: "#b43d20",
+                  fontWeight: 900,
+                  "&:hover": {
+                    borderWidth: 2,
+                    borderColor: "#9f341b",
+                    bgcolor: "rgba(180, 61, 32, 0.06)",
+                  },
+                }}
+                onClick={() => go("/lesson", "/auth")}
+              >
+                Open Sample Lesson
+              </Button>
+            </CardContent>
+          </Card>
+        </MotionBox>
+      </Container>
+
+      {/* spacer AFTER overlap (real spacing so next section doesn't collide) */}
+      <Box sx={{ height: { xs: 18, sm: 24 } }} />
 
       {/* ABOUT */}
       {sectionBox(
@@ -354,12 +357,14 @@ const Home = (): React.ReactElement => {
           </Typography>
           <Container maxWidth="md" sx={{ px: 0 }}>
             <Typography paragraph align="center" sx={{ mb: 2 }}>
-              Many language learning programs exist – but many aren’t fun, interesting, or teach useful real-world phrases.
-              Our goal is to build a website that helps you learn practical Japanese for everyday life, emergencies, and work.
+              Many language learning programs exist – but many aren’t fun, interesting, or teach useful real-world
+              phrases. Our goal is to build a website that helps you learn practical Japanese for everyday life,
+              emergencies, and work.
             </Typography>
             <Typography paragraph align="center" sx={{ mb: 0 }}>
-              We are Sara and Sachi, juniors at KLS, and we built this platform for curious, passionate learners who want
-              to enjoy Japanese language and culture. Here, you’ll find music, games, history, events, and more to help you thrive in Japan.
+              We are Sara and Sachi, juniors at KLS, and we built this platform for curious, passionate learners who
+              want to enjoy Japanese language and culture. Here, you’ll find music, games, history, events, and more to
+              help you thrive in Japan.
             </Typography>
           </Container>
         </>,
