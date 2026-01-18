@@ -155,11 +155,11 @@ return (
 <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
 {/* ✅ HAMBURGER MENU FIXED IN SAFE POSITION */}
 <Box
-sx={{
-position: 'absolute',
-top: 20,
-left: 20,
-zIndex: 10,
+  sx={{
+  position: 'absolute',
+  top: 20,
+  left: 20,
+  zIndex: 10,
 }}
 >
 <Bart />
@@ -221,28 +221,69 @@ zIndex: 10,
         }}
       >
       
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center' }}> Unit 1: Lesson 1</Typography>
+        <Typography variant="subtitle1" sx={{ fontSize: '18px', textAlign: 'center' }}> Unit 1: Lesson 1</Typography>
         <Typography variant="body1" sx={{ textAlign: 'center' }}>あ、い、う</Typography>
-        <Typography variant="body1" sx={{ textAlign: 'center' }}>Items Collected</Typography>
+        <Typography variant="body1" sx={{ textAlign: 'center', fontWeight: 200, }}>Items Collected</Typography>
         {/* <button className="lesson" onClick={() => alert(`Lesson A for ${popup.name}`)}> Lesson A </button> */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row'}}>
-          <Button 
-            sx={{ 
-              color: 'black', 
-              backgroundColor:'black',
-              height: '50px', 
-              width:'50px',
-              borderRadius: '50%',
-              borderStyle: 'solid',
-              marginRight: '5px',
-              marginLeft: '5px',
-            }} 
-            onClick={() => alert(`Lesson A for ${popup.name}`)}
-          >
-            Lesson A
-          </Button>
-          <button onClick={() => alert(`Lesson B for ${popup.name}`)}> </button>
-          <button onClick={() => alert(`Lesson C for ${popup.name}`)}> </button>
+        <Button
+          sx={{
+            minWidth: 0, // remove default padding
+            padding: 0,
+            height: '50px',
+            width: '50px',
+            borderRadius: '50%',
+            border: '1px solid black',
+            overflow: 'hidden', // make sure image doesn't spill out
+            marginRight: '5px',
+            marginLeft: '5px',
+          }}
+          onClick={() => alert(`Lesson A for ${popup.name}`)}
+        >
+          <img
+            src="assets/MysteryI.png" // replace with your image path
+            alt="Lesson A"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Button><Button
+          sx={{
+            minWidth: 0, // remove default padding
+            padding: 0,
+            height: '50px',
+            width: '50px',
+            borderRadius: '50%',
+            border: '1px solid black',
+            overflow: 'hidden', // make sure image doesn't spill out
+            marginRight: '5px',
+            marginLeft: '5px',
+          }}
+          onClick={() => alert(`Lesson B for ${popup.name}`)}
+        >
+          <img
+            src="assets/MysteryI.png" // replace with your image path
+            alt="Lesson B"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Button><Button
+          sx={{
+            minWidth: 0, // remove default padding
+            padding: 0,
+            height: '50px',
+            width: '50px',
+            borderRadius: '50%',
+            border: '1px solid black',
+            overflow: 'hidden', // make sure image doesn't spill out
+            marginRight: '5px',
+            marginLeft: '5px',
+          }}
+          onClick={() => alert(`Lesson C for ${popup.name}`)}
+        >
+          <img
+            src="assets/MysteryI.png" // replace with your image path
+            alt="Lesson C"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Button>
         </Box>
         <Link
           to={`/Lesson`}
@@ -250,20 +291,31 @@ zIndex: 10,
         <Button
         sx={{ 
           height: '40px',
-          width: '140px',
+          width: '160px',
           borderRadius: '30px',
           backgroundColor: '#92a6ba',
           border: 'none',
-          fontWeight: 900,
+          fontWeight: 100,
           mt: '50px',
           textTransform: 'none',
           margin: '0 auto',
           color: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
+          gap: '10px', 
           '&:hover': {
             backgroundColor: '#7a92a8', 
           }} }
           
-        >Learn!</Button>
+        >Start Now!
+        <img
+            src="assets/Arrow.png"
+            alt="Lesson"
+            style={{ height: '20px' }}
+          />
+    </Button>
         </Link>
       </Box>
 
@@ -274,7 +326,7 @@ zIndex: 10,
       <Box
         sx={{
           padding: "20px",
-          width: "20vw",
+          width: "18vw",
           borderRadius: "10px",
           marginRight: "5vw",
           bgcolor: "#d3d3d3",
@@ -288,18 +340,18 @@ zIndex: 10,
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Up next:</Typography>
         <Box sx={{ textAlign: "center" }}>
           <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Unit 1 Lesson 1</Typography>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 100 }}>
             Goal: Learn the first three letters of the Japanese alphabet
           </Typography>
           <div>
-            <img src="https://www.svgrepo.com/show/528478/play-circle.svg" alt="Open" style={{ width: '60px', height: '60px' }} />
+            <img src="assets/Play Button.png" alt="Open" style={{ width: '60px', height: '60px' }} />
           </div>
           <Typography variant="body1" sx={{ fontWeight: 600, mt: 3, mb: 1 }}>Grammar Lesson 1</Typography>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{  mb: 2, fontWeight: 100 }}>
             Goal: Learn how to use これ、それ、は
           </Typography>
           <div>
-            <img src="https://www.svgrepo.com/show/528478/play-circle.svg" alt="Open" style={{ width: '60px', height: '60px' }} />
+            <img src="assets/Play Button.png" alt="Open" style={{ width: '60px', height: '60px' }} />
           </div>
         </Box>
       </Box>
@@ -307,7 +359,7 @@ zIndex: 10,
       <Box
         sx={{
           padding: "20px",
-          width: "20vw",
+          width: "18vw",
           borderRadius: "10px",
           marginRight: "5vw",
           bgcolor: "#d3d3d3",
@@ -318,22 +370,37 @@ zIndex: 10,
           marginTop: "60vh"
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Stories:</Typography>
-        <Button sx={{
-          width: '19vw',
-          height: '80px',
-          borderRadius: '10px',
-          backgroundColor: '#92a6ba',
-          border: 'none',
-          fontWeight: 900,
-          mt: '50px',
-          textTransform: 'none',
-          margin: '0 auto',
-          color: '#000',
-          '&:hover': {
-            backgroundColor: '#7a92a8', 
-          }} }>
-          Momotaro </Button>
+        <Typography variant="h6" sx={{ fontWeight: 400, mb: 2 }}>Stories:</Typography>
+        <Button
+    sx={{
+      width: '18vw',
+      height: '60px',
+      borderRadius: '10px',
+      backgroundColor: '#92a6ba',
+      border: 'none',
+      fontWeight: 100,
+      fontSize: '18px',
+      mt: '50px',
+      textTransform: 'none',
+      margin: '0 auto',
+      color: '#000',
+      display: 'flex',             // ← make button a flex container
+      alignItems: 'center',        // ← vertically center image + text
+      justifyContent: 'center',    // ← horizontally center content
+      gap: '10px',                 // ← spacing between image and text
+      '&:hover': {
+        backgroundColor: '#7a92a8',
+      },
+    }}
+  >
+    
+    Momotaro
+    <img
+      src="assets/Arrow.png" // replace with your image path
+      alt="Momotaro"
+      style={{ height: '30px' }}
+    />
+  </Button>
     </Box>
 
     {/* Prefecture name display */}

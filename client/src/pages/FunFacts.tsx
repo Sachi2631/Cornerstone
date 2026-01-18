@@ -30,7 +30,7 @@ const FunFacts = (): React.ReactElement => {
       backgroundColor: '#b4441d',
       padding: '50px',
       width: '55vw',
-      marginLeft: '22.5vw',
+      margin: 'auto',
       marginTop: '80px',
       borderRadius: '25px',
       color: '#dee2e4',
@@ -45,12 +45,23 @@ const FunFacts = (): React.ReactElement => {
     learnMoreBtn: {
       marginTop: '15px',
       display: 'inline-block',
-      padding: '8px 16px',
+      // padding: '8px 16px',
       borderRadius: '8px',
-      backgroundColor: '#fff',
+      color: '#dee2e4',
+      fontWeight: 100,
+      textDecoration: 'underline',
+      transition: 'all 0.3s ease',
+      fontSize: '20px',
+    },
+
+    learnMoreBtn2: {
+      marginTop: '15px',
+      display: 'inline-block',
+      // padding: '8px 16px',
+      borderRadius: '8px',
       color: 'black',
-      fontWeight: 600,
-      textDecoration: 'none',
+      fontWeight: 100,
+      textDecoration: 'underline',
       transition: 'all 0.3s ease',
     },
     
@@ -96,14 +107,15 @@ const FunFacts = (): React.ReactElement => {
       display: 'block',
       cursor: 'pointer',
     },
+
     scroll: {
       display: 'flex',
       justifyContent: 'center',
       flexWrap: 'wrap' as const,
-      gap: '10px',
+      gap: '20px',
       // padding: '0 40px',
-      width:'70vw',
-      marginLeft:'15vw',
+      // width:'70vw',
+      // marginLeft:'15vw',
     },
 
     
@@ -113,13 +125,16 @@ const FunFacts = (): React.ReactElement => {
       gap: '20px',
     },
     facts: {
-      width: '260px',
-      padding: '20px',
+      width: '230px',
+      padding: '30px',
+      paddingRight: '40px',
       borderRadius: '16px',
       backgroundColor: '#d9d9d9',
       color: '#000',
       boxShadow: '0px 4px 5px gray',
       transition: 'transform 0.3s ease',
+      margin:'20px',
+      fontSize: '20px',
     },
   };
 
@@ -137,11 +152,26 @@ const FunFacts = (): React.ReactElement => {
 
       <Box sx={styles.main}>
         <Typography variant="h4" sx={styles.h3}>Fun Fact of the Day:</Typography>
-        <Typography variant="body1">
+        <Typography variant="body1"  sx={{ fontSize: '20px' }} >
         During Japan’s self-isolation period (sakoku), there was an island called Dejima (it’s still there and has been restored if you’d like to visit!) in Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s only main trading partners because they weren’t focused on spreading Christianity (unlike other European visitors). 
-        So, the Nagasaki area has a lot of European influence! If you ever go there now, there are lots of churches and stained glass windows in public buildings as well!
+        So, the Nagasaki area has a lot of European influence! If you ever go there now, there are lots of churches and stained glass windows in public buildings as well.
         </Typography>
-        <a href="#" style={styles.learnMoreBtn}>Learn more</a>
+        <Typography
+          component="a"
+          href="#"
+          variant="body1"
+          sx={{
+            display: 'inline-block',
+            marginTop: '15px',
+            color: '#dee2e4',
+            fontSize: '20px',
+            fontWeight: 400,
+            textDecoration: 'underline',
+          }}
+        >
+  Learn more
+</Typography>
+
       </Box>
 
       <hr style={styles.hr} />
@@ -182,8 +212,8 @@ const FunFacts = (): React.ReactElement => {
             {column.map((fact, j) => (
               <Box key={j} sx={styles.facts}>
                 <Typography variant="h6" gutterBottom>{fact.title}</Typography>
-                <Typography variant="body2">{fact.text}</Typography>
-                <a href="#" style={styles.learnMoreBtn}>Learn more</a>
+                <Typography variant="body1" sx={{ fontSize: '20px' }}  >{fact.text}</Typography>
+                <a href="#" style={styles.learnMoreBtn2}>Learn more</a>
               </Box>
             ))}
           </Box>

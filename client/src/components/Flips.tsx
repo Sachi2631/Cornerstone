@@ -142,14 +142,14 @@ const Flips = ({
             <ArrowForwardIosIcon color="primary" />
           </IconButton>
         </Box>
-        <Button
+        {/* <Button
           sx={{ mt: 1 }}
           variant="outlined"
           onClick={() => selectAnswer(cards[0].id)}
           disabled={answeredRef.current}
         >
           Select
-        </Button>
+        </Button> */}
       </Box>
 
       {/* Bottom cards */}
@@ -161,14 +161,14 @@ const Flips = ({
               <IconButton sx={{ mt: 1 }} onClick={() => playAudio(card.audio)} title="Play audio">
                 <VolumeUpIcon color="primary" />
               </IconButton>
-              <Button
+              {/* <Button
                 sx={{ mt: 1 }}
                 variant="outlined"
                 onClick={() => selectAnswer(card.id)}
                 disabled={answeredRef.current}
               >
                 Select
-              </Button>
+              </Button> */}
             </Box>
           </Grid>
         ))}

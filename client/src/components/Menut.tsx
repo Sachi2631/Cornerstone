@@ -8,6 +8,17 @@ const columnsData: string[][] = [
   ['Fun Facts', 'Games', 'Watch']
 ];
 
+const menuImages: Record<string, string> = {
+  Stories: 'assets/Stories.png',
+  Gallery: 'assets/Gallery.png',
+  Resources: 'assets/Resources.png',
+  Talk: 'assets/Talk.png',
+  'Fun Facts': 'assets/Fun Facts.png',
+  Games: 'assets/Games.png',
+  Watch: 'assets/Watch.png',
+};
+
+
 const styles = {
   container: {
     position: 'relative' as const,
@@ -15,10 +26,10 @@ const styles = {
   },
   open: {
     position: 'fixed' as const,
-    top: `${HEADER_HEIGHT + 20}px`, // keep opener below header
+    top: `${HEADER_HEIGHT + 40}px`, // keep opener below header
     left: '30px',
-    minWidth: '80px',   // wider, horizontal button
-    height: '40px',
+    minWidth: '60px',   // wider, horizontal button
+    height: '50px',
     cursor: 'pointer',
     zIndex: 100000,
     display: 'flex',
@@ -53,9 +64,9 @@ const styles = {
     top: `${HEADER_HEIGHT}px`,
     left: 0,
     zIndex: 999,
-    paddingTop: '60px', // ⬅️ push content down inside
+    paddingTop: '60px',
     boxShadow: '2px 0 10px rgba(0,0,0,0.2)',
-    overflowY: 'auto' as const
+    overflowY: 'auto' as const,
   },
   menuHidden: {
     transform: 'translateX(-100%)',
@@ -67,18 +78,20 @@ const styles = {
     justifyContent: 'flex-start',
   },
   box: {
-    marginTop: '10px',
+    marginTop: '5px',
     marginLeft: '20px',
     textAlign: 'center' as const,
   },
   img: {
     backgroundColor: '#d9d9d9',
     height: '14vh',
+     width: '100%',
     borderRadius: '10px',
     marginBottom: '5px',
+    padding: '5px',
+    objectFit: 'cover',
   },
 };
-
 
 const Bart: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -109,7 +122,11 @@ const Bart: React.FC = () => {
             {columnItems.map((title, itemIndex) => {
               const boxContent = (
                 <div style={styles.box} key={itemIndex}>
-                  <div style={styles.img}></div>
+                  <img
+                    src={menuImages[title]}
+                    alt={title}
+                    style={{...styles.img, objectFit: 'cover' }}
+                  />
                   <h4>{title}</h4>
                 </div>
               );
