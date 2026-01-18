@@ -1,3 +1,4 @@
+// src/components/Header.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -24,7 +25,12 @@ import PersonIcon from "@mui/icons-material/Person";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getToken, clearToken, json } from "../services/api";
 
-type Me = { firstName?: string; lastName?: string; email?: string; rememberMe?: boolean };
+type Me = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  rememberMe?: boolean;
+};
 
 const Header = (): React.ReactElement => {
   const theme = useTheme();
@@ -68,7 +74,11 @@ const Header = (): React.ReactElement => {
     (`${(first?.[0] || "").toUpperCase()}${(last?.[0] || "").toUpperCase()}` || "U");
 
   const displayName =
-    loadingMe ? "Loading..." : me ? (`${me.firstName ?? ""} ${me.lastName ?? ""}`.trim() || me.email) : "Account";
+    loadingMe
+      ? "Loading..."
+      : me
+        ? (`${me.firstName ?? ""} ${me.lastName ?? ""}`.trim() || me.email)
+        : "Account";
 
   // Fetch profile whenever token changes
   useEffect(() => {
@@ -116,10 +126,14 @@ const Header = (): React.ReactElement => {
       sx={{
         position: "sticky",
         top: 0,
-        zIndex: 1100,
-        bgcolor: "rgba(255,255,255,0.82)",
-        backdropFilter: "blur(10px)",
+        // ✅ Make header fully opaque so Menut / page backgrounds don't “bleed” through
+        bgcolor: "#fff",
+        // ✅ Remove translucent blur which caused the overlapping look
+        backdropFilter: "none",
         borderBottom: `1px solid ${theme.palette.divider}`,
+        // ✅ Keep header above Menut (your Menut uses zIndex 999)
+        zIndex: 2000,
+        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
       }}
     >
       <Container
@@ -253,7 +267,11 @@ const Header = (): React.ReactElement => {
                         aria-label="Open account menu"
                       >
                         <Avatar sx={{ bgcolor: "#b43d20", width: 40, height: 40 }}>
-                          {loadingMe ? <CircularProgress size={18} sx={{ color: "white" }} /> : initialsOf(me?.firstName, me?.lastName)}
+                          {loadingMe ? (
+                            <CircularProgress size={18} sx={{ color: "white" }} />
+                          ) : (
+                            initialsOf(me?.firstName, me?.lastName)
+                          )}
                         </Avatar>
                       </IconButton>
                     </span>
@@ -301,7 +319,12 @@ const Header = (): React.ReactElement => {
 
                     <Divider />
 
-                    <MenuItem component={Link} to="/profile" onClick={handleMenuClose} sx={{ gap: 1.25, py: 1.25 }}>
+                    <MenuItem
+                      component={Link}
+                      to="/profile"
+                      onClick={handleMenuClose}
+                      sx={{ gap: 1.25, py: 1.25 }}
+                    >
                       <PersonIcon fontSize="small" /> Profile
                     </MenuItem>
 
@@ -351,6 +374,11 @@ const Header = (): React.ReactElement => {
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
+                ModalProps={{
+                  keepMounted: true,
+                  // ✅ keep drawer above everything; avoids weird stacking with Menut
+                  sx: { zIndex: 3000 },
+                }}
                 PaperProps={{
                   sx: {
                     width: "82vw",

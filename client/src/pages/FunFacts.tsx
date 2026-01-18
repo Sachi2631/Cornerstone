@@ -3,19 +3,13 @@ import React, { useMemo, useState } from "react";
 import {
   Box,
   Typography,
-  IconButton,
   Button,
   TextField,
   InputAdornment,
+  Chip,
+  Stack,
 } from "@mui/material";
 import Bart from "../components/Menut";
-
-// Top-right icons (match screenshot vibe)
-import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
-import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-
-// Search icon
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 
 type Category =
@@ -76,7 +70,6 @@ const FunFacts = (): React.ReactElement => {
       title: "History Fact #1",
       text: "Did you know that the world’s still-operating company is Japan’s? It’s a construction company called Kongo-gumi.",
     },
-    // Optional filler categories (keep them even if empty so UI matches)
     {
       id: "food-1",
       category: "Food",
@@ -126,17 +119,34 @@ const FunFacts = (): React.ReactElement => {
     setSearch("");
   };
 
+  // category chip colors (subtle but clear)
+  const chipStyles = (cat: Category) => {
+    const active = activeCategory === cat;
+    return {
+      textTransform: "none",
+      fontWeight: active ? 900 : 700,
+      borderRadius: "999px",
+      px: 1.25,
+      py: 0.4,
+      border: "1px solid",
+      borderColor: active ? "rgba(180, 68, 29, 0.55)" : "rgba(0,0,0,0.14)",
+      bgcolor: active ? "rgba(180, 68, 29, 0.10)" : "rgba(255,255,255,0.60)",
+      color: "#111",
+      "&:hover": {
+        bgcolor: active ? "rgba(180, 68, 29, 0.14)" : "rgba(255,255,255,0.80)",
+      },
+    };
+  };
+
   return (
     <Box
       sx={{
         minHeight: "100vh",
         position: "relative",
-        // dotted grid background like screenshot
         backgroundColor: "#dee2e4",
-        backgroundImage:
-          "radial-gradient(rgba(0,0,0,0.15) 1px, transparent 1px)",
+        backgroundImage: "radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1px)",
         backgroundSize: "22px 22px",
-        paddingBottom: "60px",
+        paddingBottom: "70px",
         pt: "6px",
       }}
     >
@@ -145,78 +155,58 @@ const FunFacts = (): React.ReactElement => {
         <Bart />
       </Box>
 
-      {/* Top-right icons */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 14,
-          right: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          zIndex: 10,
-        }}
-      >
-        <IconButton
-          aria-label="Home"
-          size="small"
-          sx={{ color: "#b4441d" }}
-          onClick={() => {}}
-        >
-          <HomeRoundedIcon />
-        </IconButton>
-
-        <IconButton
-          aria-label="Achievements"
-          size="small"
-          sx={{ color: "#b4441d" }}
-          onClick={() => {}}
-        >
-          <EmojiEventsRoundedIcon />
-        </IconButton>
-
-        <IconButton
-          aria-label="Profile"
-          size="small"
-          sx={{ color: "#000" }}
-          onClick={() => {}}
-        >
-          <PersonRoundedIcon />
-        </IconButton>
-      </Box>
-
       {/* Fun fact of the day card */}
       <Box
         sx={{
-          width: "min(920px, 92vw)",
+          width: "min(980px, 92vw)",
           mx: "auto",
           mt: "70px",
           bgcolor: "#b4441d",
           color: "#dee2e4",
-          borderRadius: "32px",
+          borderRadius: "34px",
           px: { xs: 3, sm: 6 },
           py: { xs: 3, sm: 4 },
-          boxShadow: "0 10px 26px rgba(0,0,0,0.25)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* subtle highlight strip */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            height: "100%",
+            width: "120px",
+            background:
+              "linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.00))",
+            pointerEvents: "none",
+          }}
+        />
+
         <Typography
           variant="h6"
-          sx={{ fontWeight: 700, mb: 1, textAlign: "center" }}
+          sx={{ fontWeight: 900, mb: 1, textAlign: "center", letterSpacing: "-0.02em" }}
         >
           Fun Fact of the Day:
         </Typography>
 
         <Typography
           variant="body1"
-          sx={{ fontSize: "14px", lineHeight: 1.5, opacity: 0.95 }}
+          sx={{
+            fontSize: "14px",
+            lineHeight: 1.6,
+            opacity: 0.95,
+            textAlign: "left",
+          }}
         >
-          During Japan’s self-isolation period (sakoku), there was an island called
-          Dejima (it’s still there and has been restored if you’d like to visit!) in
-          Nagasaki prefecture that was open to Dutch trade. The Dutch were Japan’s
-          only main trading partners because they weren’t focused on spreading
-          Christianity (unlike other European visitors). So, the Nagasaki area has a
-          lot of European influence! If you ever go there now, there are lots of
-          churches and stained glass windows in public buildings as well.
+          During Japan’s self-isolation period (sakoku), there was an island called Dejima
+          (it’s still there and has been restored if you’d like to visit!) in Nagasaki prefecture
+          that was open to Dutch trade. The Dutch were Japan’s only main trading partners because
+          they weren’t focused on spreading Christianity (unlike other European visitors). So, the
+          Nagasaki area has a lot of European influence! If you ever go there now, there are lots
+          of churches and stained glass windows in public buildings as well.
         </Typography>
 
         <Typography
@@ -228,90 +218,49 @@ const FunFacts = (): React.ReactElement => {
             color: "#dee2e4",
             textDecoration: "underline",
             fontSize: "14px",
+            fontWeight: 700,
           }}
         >
           Learn more
         </Typography>
       </Box>
 
-      {/* Section header row: All | Categories + Search + Reset */}
+      {/* Controls */}
       <Box
         sx={{
           width: "min(980px, 92vw)",
           mx: "auto",
-          mt: "26px",
+          mt: 3,
         }}
       >
-        {/* Row 1 */}
+        {/* Search + reset */}
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "260px 1fr" },
-            alignItems: "center",
+            display: "flex",
+            alignItems: { xs: "stretch", sm: "center" },
+            justifyContent: "space-between",
             gap: 2,
+            flexDirection: { xs: "column", sm: "row" },
           }}
         >
-          {/* Left: All / Categories */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Button
-              onClick={() => setActiveCategory("All")}
-              disableRipple
-              sx={{
-                textTransform: "none",
-                color: "#000",
-                fontWeight: 800,
-                background: "transparent",
-                p: 0,
-                minWidth: "unset",
-                "&:hover": { background: "transparent" },
-              }}
-            >
-              All
-            </Button>
-
-            <Box sx={{ width: "1px", height: "26px", bgcolor: "rgba(0,0,0,0.35)" }} />
-
-            <Button
-              disableRipple
-              onClick={() => {}}
-              sx={{
-                textTransform: "none",
-                color: "#000",
-                fontWeight: 800,
-                background: "transparent",
-                p: 0,
-                minWidth: "unset",
-                borderBottom: "2px solid #000", // underline like screenshot
-                borderRadius: 0,
-                "&:hover": { background: "transparent" },
-              }}
-            >
+          <Box sx={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+            <Typography sx={{ fontWeight: 900, color: "#111" }}>All</Typography>
+            <Box sx={{ width: "1px", height: "22px", bgcolor: "rgba(0,0,0,0.30)" }} />
+            <Typography sx={{ fontWeight: 900, color: "#111", borderBottom: "2px solid #111" }}>
               Categories
-            </Button>
+            </Typography>
           </Box>
 
-          {/* Right: Search + Reset */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              justifyContent: { xs: "flex-start", md: "flex-end" },
-            }}
-          >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, justifyContent: "flex-end" }}>
             <TextField
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
               variant="standard"
               sx={{
-                width: { xs: "240px", sm: "320px" },
-                "& .MuiInput-underline:before": {
-                  borderBottomColor: "rgba(0,0,0,0.3)",
-                },
-                "& .MuiInput-underline:hover:before": {
-                  borderBottomColor: "rgba(0,0,0,0.6)",
-                },
+                width: { xs: "100%", sm: "320px" },
+                "& .MuiInput-underline:before": { borderBottomColor: "rgba(0,0,0,0.25)" },
+                "& .MuiInput-underline:hover:before": { borderBottomColor: "rgba(0,0,0,0.55)" },
               }}
               InputProps={{
                 endAdornment: (
@@ -331,6 +280,7 @@ const FunFacts = (): React.ReactElement => {
                 borderRadius: "999px",
                 px: 3,
                 py: 0.8,
+                fontWeight: 900,
                 boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
                 "&:hover": { bgcolor: "#7a92a8" },
               }}
@@ -340,43 +290,29 @@ const FunFacts = (): React.ReactElement => {
           </Box>
         </Box>
 
-        {/* Row 2: Category chips */}
+        {/* Category chips */}
         <Box
           sx={{
             mt: 2,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flexWrap: "wrap",
-            borderTop: "1px solid rgba(0,0,0,0.25)",
             pt: 2,
+            borderTop: "1px solid rgba(0,0,0,0.22)",
           }}
         >
-          {categories.slice(1).map((cat) => (
-            <Button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              disableRipple
-              sx={{
-                textTransform: "none",
-                color: "#000",
-                fontWeight: 700,
-                background: "transparent",
-                p: 0,
-                minWidth: "unset",
-                borderBottom:
-                  activeCategory === cat ? "2px solid #000" : "2px solid transparent",
-                borderRadius: 0,
-                "&:hover": { background: "transparent" },
-              }}
-            >
-              {cat}
-            </Button>
-          ))}
+          <Stack direction="row" spacing={1.25} useFlexGap flexWrap="wrap">
+            {categories.slice(1).map((cat) => (
+              <Chip
+                key={cat}
+                label={cat}
+                clickable
+                onClick={() => setActiveCategory(cat)}
+                sx={chipStyles(cat)}
+              />
+            ))}
+          </Stack>
         </Box>
       </Box>
 
-      {/* Cards grid */}
+      {/* Cards */}
       <Box
         sx={{
           width: "min(980px, 92vw)",
@@ -395,36 +331,107 @@ const FunFacts = (): React.ReactElement => {
           <Box
             key={fact.id}
             sx={{
-              bgcolor: "#d9d9d9",
               borderRadius: "18px",
-              p: 2.5,
-              minHeight: "170px",
-              boxShadow: "0px 6px 14px rgba(0,0,0,0.18)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
+              overflow: "hidden",
+              background: "rgba(255,255,255,0.65)",
+              border: "1px solid rgba(0,0,0,0.10)",
+              boxShadow: "0 10px 26px rgba(0,0,0,0.10)",
+              transition: "transform 160ms ease, box-shadow 160ms ease",
+              "&:hover": {
+                transform: "translateY(-3px)",
+                boxShadow: "0 14px 32px rgba(0,0,0,0.14)",
+              },
             }}
           >
-            <Box>
-              <Typography sx={{ fontWeight: 800, mb: 1 }}>{fact.title}</Typography>
-              <Typography sx={{ fontSize: "13px", lineHeight: 1.45 }}>
-                {fact.text}
-              </Typography>
-            </Box>
-
-            <Typography
-              component="a"
-              href={fact.learnMoreHref ?? "#"}
+            {/* top accent bar + category */}
+            <Box
               sx={{
-                mt: 2,
-                fontSize: "13px",
-                color: "#000",
-                textDecoration: "underline",
-                width: "fit-content",
+                px: 2.25,
+                py: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                bgcolor: "rgba(180, 68, 29, 0.08)",
+                borderBottom: "1px solid rgba(0,0,0,0.08)",
               }}
             >
-              Learn more
-            </Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: "12px", color: "#b4441d" }}>
+                {fact.category}
+              </Typography>
+
+              <Box
+                sx={{
+                  height: 8,
+                  width: 42,
+                  borderRadius: 999,
+                  bgcolor: "rgba(180, 68, 29, 0.45)",
+                }}
+              />
+            </Box>
+
+            {/* content */}
+            <Box
+              sx={{
+                px: 2.25,
+                py: 2,
+                minHeight: 170,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                gap: 1.5,
+              }}
+            >
+              <Box>
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    mb: 0.8,
+                    letterSpacing: "-0.01em",
+                    color: "#111",
+                  }}
+                >
+                  {fact.title}
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontSize: "13px",
+                    lineHeight: 1.55,
+                    color: "rgba(0,0,0,0.78)",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {fact.text}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Typography
+                  component="a"
+                  href={fact.learnMoreHref ?? "#"}
+                  sx={{
+                    fontSize: "13px",
+                    color: "#111",
+                    textDecoration: "underline",
+                    fontWeight: 800,
+                  }}
+                >
+                  Learn more
+                </Typography>
+
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "rgba(180, 68, 29, 0.55)",
+                  }}
+                />
+              </Box>
+            </Box>
           </Box>
         ))}
       </Box>
