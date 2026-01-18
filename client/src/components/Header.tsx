@@ -1,5 +1,5 @@
 // src/components/Header.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -37,6 +37,8 @@ const Header = (): React.ReactElement => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
   const navigate = useNavigate();
+
+  const headerRef = useRef<HTMLDivElement | null>(null);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -80,6 +82,32 @@ const Header = (): React.ReactElement => {
         ? (`${me.firstName ?? ""} ${me.lastName ?? ""}`.trim() || me.email)
         : "Account";
 
+  const isActive = (path: string) => location.pathname === path;
+
+  // ✅ Publish header height to CSS var (Menut can align to it)
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const setVar = () => {
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--app-header-height", `${Math.round(h)}px`);
+    };
+
+    setVar();
+
+    const ro = new ResizeObserver(() => setVar());
+    ro.observe(el);
+
+    // also set on next frame (fonts load, etc.)
+    const t = window.setTimeout(setVar, 50);
+
+    return () => {
+      ro.disconnect();
+      window.clearTimeout(t);
+    };
+  }, []);
+
   // Fetch profile whenever token changes
   useEffect(() => {
     const loadMe = async () => {
@@ -102,7 +130,7 @@ const Header = (): React.ReactElement => {
     loadMe();
   }, [authToken]);
 
-  // Sync across tabs/windows
+  // Sync auth token across tabs/windows
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === "access_token") setAuthToken(getToken());
@@ -118,20 +146,16 @@ const Header = (): React.ReactElement => {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  const isActive = (path: string) => location.pathname === path;
-
   return (
     <Box
       component="header"
+      ref={headerRef}
       sx={{
         position: "sticky",
         top: 0,
-        // ✅ Make header fully opaque so Menut / page backgrounds don't “bleed” through
         bgcolor: "#fff",
-        // ✅ Remove translucent blur which caused the overlapping look
         backdropFilter: "none",
         borderBottom: `1px solid ${theme.palette.divider}`,
-        // ✅ Keep header above Menut (your Menut uses zIndex 999)
         zIndex: 2000,
         boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
       }}
@@ -376,7 +400,6 @@ const Header = (): React.ReactElement => {
                 onClose={() => setDrawerOpen(false)}
                 ModalProps={{
                   keepMounted: true,
-                  // ✅ keep drawer above everything; avoids weird stacking with Menut
                   sx: { zIndex: 3000 },
                 }}
                 PaperProps={{
@@ -389,7 +412,6 @@ const Header = (): React.ReactElement => {
                   },
                 }}
               >
-                {/* Drawer header */}
                 <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Typography variant="h6" fontWeight={900}>
