@@ -1,26 +1,31 @@
 // src/App.tsx
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import React, { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
+import { Box } from "@mui/material";
 
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Lesson from './pages/Lesson';
-import Watch from './pages/Watch';
-import Talk from './pages/Talk';
-import AuthForm from './pages/AuthForm';
-import Resources from './pages/Resources';
-import FunFacts from './pages/FunFacts';
-import Gallery from './pages/Gallery';
-import Stories from './pages/Stories';
-import CharInfo from './pages/CharInfo';
-import Profile from './pages/Profile';
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
+import Lesson from "./pages/Lesson";
+import Watch from "./pages/Watch";
+import Talk from "./pages/Talk";
+import AuthForm from "./pages/AuthForm";
+import Resources from "./pages/Resources";
+import FunFacts from "./pages/FunFacts";
+import Gallery from "./pages/Gallery";
+import Stories from "./pages/Stories";
+import CharInfo from "./pages/CharInfo";
+import Profile from "./pages/Profile";
 
-import Header from './components/Header';
-import Footer from './components/Footer';
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
-// ⬇️ use the same helper as api.ts
-import { getToken } from './services/api';
+import { getToken } from "./services/api";
 
 // ----- Auth helpers -----
 const isAuthed = () => Boolean(getToken());
@@ -45,7 +50,7 @@ const PublicOnly: React.FC<{ children: React.ReactElement }> = ({ children }) =>
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
   return null;
 };
@@ -56,8 +61,8 @@ const AppContent: React.FC = () => {
   const path = location.pathname;
 
   // Hide rules
-  const hideHeader = path === '/lesson';
-  const hideFooter = path === '/dashboard';
+  const hideHeader = path === "/lesson";
+  const hideFooter = path === "/lesson" || path === "/dashboard"; // ✅ hide footer on lesson too
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
@@ -75,7 +80,7 @@ const AppContent: React.FC = () => {
           <Route path="/characters/:id" element={<CharInfo />} />
           <Route path="/charinfo" element={<Navigate to="/gallery" replace />} />
 
-          {/* Public-only (alias /auth) */}
+          {/* Public-only */}
           <Route
             path="/auth"
             element={

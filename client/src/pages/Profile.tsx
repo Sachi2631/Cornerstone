@@ -1,20 +1,42 @@
+// src/pages/Profile.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Avatar, Box, Button, Card, CardActions, CardContent, CardHeader, Chip,
-  CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid,
-  IconButton, Snackbar, Alert, TextField, Tooltip, Typography, useTheme, Paper,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  Snackbar,
+  Alert,
+  TextField,
+  Tooltip,
+  Typography,
+  useTheme,
+  Paper,
 } from "@mui/material";
 import { deepPurple } from "@mui/material/colors";
 import { Edit, Save, Key, Delete, RefreshCcw, Mail } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { json, getToken, clearToken } from "../services/api";
 
-interface UserProfile {
+export interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
   rememberMe?: boolean;
   createdAt?: string;
+  updatedAt?: string;
   lastLogin?: string;
 }
 
@@ -37,7 +59,7 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<UserProfile | null>(null);
 
-  // Guard: if no token, bounce to /auth (preserve return path)
+  // Guard: if no token, bounce to /auth
   useEffect(() => {
     if (!getToken()) {
       navigate("/auth", { replace: true, state: { from: location } });
@@ -49,14 +71,12 @@ const Profile: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      // Your api.ts baseURL targets server root; include the /api prefix here.
       const data = await json<{ user?: UserProfile } | UserProfile>("/api/auth/me");
       const u: UserProfile = (data as any).user ?? (data as any);
       setUser(u);
-      setDraft(JSON.parse(JSON.stringify(u)));
+      setDraft(structuredClone(u));
     } catch (err: any) {
       setError(err?.message || "Could not fetch profile");
-      // If interceptor cleared token on 401, redirect here
       if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
     } finally {
       setLoading(false);
@@ -78,15 +98,19 @@ const Profile: React.FC = () => {
     try {
       setSaving(true);
       setError(null);
+
       const data = await json<{ user: UserProfile }>("/api/users/me", {
         method: "PUT",
         data: {
           firstName: draft.firstName,
           lastName: draft.lastName,
-          email: draft.email, // disable the field below if your BE forbids email change
+          email: draft.email,
         },
       });
-      setUser({ ...(data?.user ?? draft) });
+
+      const updated = data?.user ?? draft;
+      setUser(updated);
+      setDraft(structuredClone(updated));
       setSuccess("Profile updated");
       setEditing(false);
     } catch (err: any) {
@@ -103,6 +127,7 @@ const Profile: React.FC = () => {
 
   const submitPassword = async () => {
     try {
+      setError(null);
       await json("/api/auth/change-password", {
         method: "POST",
         data: pwForm,
@@ -120,6 +145,7 @@ const Profile: React.FC = () => {
   const [delOpen, setDelOpen] = useState(false);
   const confirmDelete = async () => {
     try {
+      setError(null);
       await json("/api/users/me", { method: "DELETE" });
       clearToken();
       navigate("/", { replace: true });
@@ -139,26 +165,37 @@ const Profile: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default }}>
-      {/* Header / Cover */}
-      <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 6 }, background: gradientBg, borderBottom: `1px solid ${theme.palette.divider}` }}>
+      {/* Cover */}
+      <Box
+        sx={{
+          px: { xs: 2, sm: 4 },
+          py: { xs: 3, sm: 6 },
+          background: gradientBg,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }}
+      >
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar sx={{ bgcolor: deepPurple[500], width: 64, height: 64 }}>
             {initials(user?.firstName, user?.lastName)}
           </Avatar>
+
           <Box>
-            <Typography variant="h5" fontWeight={700}>
+            <Typography variant="h5" fontWeight={800}>
               {user ? `${user.firstName} ${user.lastName}` : "Your Profile"}
             </Typography>
-            <Box display="flex" alignItems="center" gap={1}>
+
+            <Box display="flex" alignItems="center" gap={1} sx={{ mt: 0.5 }}>
               <Mail size={16} />
               <Typography variant="body2" color="text.secondary">
                 {user?.email || "—"}
               </Typography>
+
               {user?.rememberMe !== undefined && (
                 <Chip size="small" label={user.rememberMe ? "Remembered" : "Session"} />
               )}
             </Box>
           </Box>
+
           <Box sx={{ flexGrow: 1 }} />
         </Box>
       </Box>
@@ -166,13 +203,15 @@ const Profile: React.FC = () => {
       {/* Body */}
       <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 4 } }}>
         <Grid container spacing={3}>
-          {/* Left: Details */}
+          {/* Left */}
           <Grid item xs={12} md={7}>
             <Card variant="outlined" sx={{ borderRadius: 3 }}>
               <CardHeader
                 title={
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="h6">Personal Details</Typography>
+                    <Typography variant="h6" fontWeight={900}>
+                      Personal Details
+                    </Typography>
                     <Chip size="small" label={editing ? "Editing" : "Read-only"} />
                   </Box>
                 }
@@ -186,11 +225,12 @@ const Profile: React.FC = () => {
                           </IconButton>
                         </span>
                       </Tooltip>
+
                       <Tooltip title="Cancel">
                         <IconButton
                           onClick={() => {
                             setEditing(false);
-                            setDraft(user ? JSON.parse(JSON.stringify(user)) : null);
+                            setDraft(user ? structuredClone(user) : null);
                           }}
                         >
                           <RefreshCcw />
@@ -206,7 +246,9 @@ const Profile: React.FC = () => {
                   )
                 }
               />
+
               <Divider />
+
               <CardContent>
                 {loading ? (
                   <Box display="flex" justifyContent="center" py={6}>
@@ -223,6 +265,7 @@ const Profile: React.FC = () => {
                         disabled={!editing}
                       />
                     </Grid>
+
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="Last Name"
@@ -232,6 +275,7 @@ const Profile: React.FC = () => {
                         disabled={!editing}
                       />
                     </Grid>
+
                     <Grid item xs={12}>
                       <TextField
                         label="Email"
@@ -239,13 +283,14 @@ const Profile: React.FC = () => {
                         fullWidth
                         value={draft?.email || ""}
                         onChange={onChange("email")}
-                        disabled={!editing /* set true permanently if BE forbids email change */}
-                        helperText={!editing ? "Contact support to change email if disabled." : ""}
+                        disabled={!editing}
+                        helperText={!editing ? "Edit mode required to change email." : ""}
                       />
                     </Grid>
                   </Grid>
                 )}
               </CardContent>
+
               {!loading && (
                 <CardActions sx={{ justifyContent: "flex-end", px: 3, pb: 3 }}>
                   <Button variant="outlined" startIcon={<Key />} onClick={() => setPwOpen(true)}>
@@ -256,24 +301,42 @@ const Profile: React.FC = () => {
             </Card>
           </Grid>
 
-          {/* Right: Meta / Security */}
+          {/* Right */}
           <Grid item xs={12} md={5}>
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>
                 Account Status
               </Typography>
-              <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "160px 1fr" }} rowGap={1.5} columnGap={2}>
+
+              <Box
+                display="grid"
+                gridTemplateColumns={{ xs: "1fr", sm: "160px 1fr" }}
+                rowGap={1.5}
+                columnGap={2}
+              >
                 <Typography color="text.secondary">Member since</Typography>
                 <Typography>{fmt(user?.createdAt)}</Typography>
+
                 <Typography color="text.secondary">Last login</Typography>
                 <Typography>{fmt(user?.lastLogin)}</Typography>
+
                 <Typography color="text.secondary">Auth mode</Typography>
                 <Typography>{user?.rememberMe ? "Persistent" : "Session"}</Typography>
               </Box>
+
               <Divider sx={{ my: 2 }} />
+
               <Box display="flex" gap={1}>
-                <Button fullWidth variant="outlined" onClick={fetchMe}>Refresh</Button>
-                <Button fullWidth color="error" variant="contained" startIcon={<Delete />} onClick={() => setDelOpen(true)}>
+                <Button fullWidth variant="outlined" onClick={fetchMe}>
+                  Refresh
+                </Button>
+                <Button
+                  fullWidth
+                  color="error"
+                  variant="contained"
+                  startIcon={<Delete />}
+                  onClick={() => setDelOpen(true)}
+                >
                   Delete Account
                 </Button>
               </Box>
@@ -306,7 +369,9 @@ const Profile: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPwOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={submitPassword}>Update</Button>
+          <Button variant="contained" onClick={submitPassword}>
+            Update
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -314,20 +379,29 @@ const Profile: React.FC = () => {
       <Dialog open={delOpen} onClose={() => setDelOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Delete Account</DialogTitle>
         <DialogContent>
-          <Typography>This action is irreversible. Your account and related data will be permanently removed.</Typography>
+          <Typography>
+            This action is irreversible. Your account and related data will be permanently removed.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDelOpen(false)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={confirmDelete}>Delete</Button>
+          <Button color="error" variant="contained" onClick={confirmDelete}>
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Notifications */}
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
-        <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       </Snackbar>
+
       <Snackbar open={!!success} autoHideDuration={4000} onClose={() => setSuccess(null)}>
-        <Alert severity="success" onClose={() => setSuccess(null)}>{success}</Alert>
+        <Alert severity="success" onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
       </Snackbar>
     </Box>
   );
