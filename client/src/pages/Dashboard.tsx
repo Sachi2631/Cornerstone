@@ -16,7 +16,7 @@ const Dashboard = (): React.ReactElement => {
 
   useEffect(() => {
     const handleResize = () => {
-      const width = Math.min(window.innerWidth * 0.92, 1200);
+      const width = Math.min(window.innerWidth * 0.9, 1200);
       const height = width * 0.625;
       setContainerSize({ width, height });
     };
@@ -89,8 +89,11 @@ const Dashboard = (): React.ReactElement => {
 
           svg
             .transition()
-            .duration(900)
-            .call(zoom.transform as any, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+            .duration(1250)
+            .call(
+              zoom.transform as any,
+              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+            );
 
           const name = d.properties?.nam_ja || d.properties?.nam || "Unknown Prefecture";
           setSelectedPrefecture(name);
@@ -116,6 +119,7 @@ const Dashboard = (): React.ReactElement => {
         const div = document.createElement("div");
         div.style.width = "20px";
         div.style.height = "30px";
+
         foreignObject.node()?.appendChild(div);
 
         const root = createRoot(div);
@@ -129,44 +133,54 @@ const Dashboard = (): React.ReactElement => {
     svg
       .transition()
       .duration(0)
-      .call(zoom.transform as any, d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale));
+      .call(
+        zoom.transform as any,
+        d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+      );
 
     svg.on("click", () => {
       svg
         .transition()
-        .duration(900)
-        .call(zoom.transform as any, d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale));
+        .duration(1250)
+        .call(
+          zoom.transform as any,
+          d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+        );
       setSelectedPrefecture(null);
       setPopup(null);
     });
   }, [containerSize]);
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        minHeight: "100vh",
-        bgcolor: "#fff",
-        overflowX: "hidden", // ✅ kills the 100vw overflow feel
-        px: { xs: 1.5, sm: 2.5 },
-        py: { xs: 2, sm: 3 },
-      }}
-    >
-      {/* MAIN */}
-      <Box sx={{ width: "min(1200px, 100%)", mx: "auto" }}>
-        {/* MAP AREA */}
+    <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
+      {/* ✅ HAMBURGER MENU FIXED IN SAFE POSITION */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          zIndex: 10,
+        }}
+      >
+        <Bart />
+      </Box>
+
+      <Box component="main" flexGrow={1} display="flex" flexDirection="column" justifyContent="center" width="100vw">
         <Box
+          display="flex"
+          flexDirection="row"
+          justifyContent="flex-end"
           sx={{
-            width: "100%",
+            width: "100vw",
             aspectRatio: "16/11",
             position: "relative",
-            border: "1px solid rgba(0,0,0,0.18)",
-            borderRadius: "14px",
+            border: "2px solid #ccc",
+            borderRadius: "8px",
             overflow: "hidden",
             background: "#dee2e4",
-            boxShadow: "0 10px 24px rgba(0,0,0,0.10)",
           }}
         >
+          {/* ✅ MAP SVG */}
           <svg
             ref={svgRef}
             width="100%"
@@ -209,29 +223,66 @@ const Dashboard = (): React.ReactElement => {
               </Typography>
 
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "row" }}>
-                {["A", "B", "C"].map((k) => (
-                  <Button
-                    key={k}
-                    sx={{
-                      minWidth: 0,
-                      padding: 0,
-                      height: "50px",
-                      width: "50px",
-                      borderRadius: "50%",
-                      border: "1px solid black",
-                      overflow: "hidden",
-                      marginRight: "5px",
-                      marginLeft: "5px",
-                    }}
-                    onClick={() => alert(`Lesson ${k} for ${popup.name}`)}
-                  >
-                    <img
-                      src="assets/MysteryI.png"
-                      alt={`Lesson ${k}`}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </Button>
-                ))}
+                <Button
+                  sx={{
+                    minWidth: 0,
+                    padding: 0,
+                    height: "50px",
+                    width: "50px",
+                    borderRadius: "50%",
+                    border: "1px solid black",
+                    overflow: "hidden",
+                    marginRight: "5px",
+                    marginLeft: "5px",
+                  }}
+                  onClick={() => alert(`Lesson A for ${popup.name}`)}
+                >
+                  <img
+                    src="assets/MysteryI.png"
+                    alt="Lesson A"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Button>
+                <Button
+                  sx={{
+                    minWidth: 0,
+                    padding: 0,
+                    height: "50px",
+                    width: "50px",
+                    borderRadius: "50%",
+                    border: "1px solid black",
+                    overflow: "hidden",
+                    marginRight: "5px",
+                    marginLeft: "5px",
+                  }}
+                  onClick={() => alert(`Lesson B for ${popup.name}`)}
+                >
+                  <img
+                    src="assets/MysteryI.png"
+                    alt="Lesson B"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Button>
+                <Button
+                  sx={{
+                    minWidth: 0,
+                    padding: 0,
+                    height: "50px",
+                    width: "50px",
+                    borderRadius: "50%",
+                    border: "1px solid black",
+                    overflow: "hidden",
+                    marginRight: "5px",
+                    marginLeft: "5px",
+                  }}
+                  onClick={() => alert(`Lesson C for ${popup.name}`)}
+                >
+                  <img
+                    src="assets/MysteryI.png"
+                    alt="Lesson C"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Button>
               </Box>
 
               <Link to={`/Lesson`} style={{ textDecoration: "none" }}>
@@ -241,6 +292,7 @@ const Dashboard = (): React.ReactElement => {
                     width: "160px",
                     borderRadius: "30px",
                     backgroundColor: "#92a6ba",
+                    border: "none",
                     fontWeight: 100,
                     mt: "50px",
                     textTransform: "none",
@@ -249,8 +301,11 @@ const Dashboard = (): React.ReactElement => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    textDecoration: "none",
                     gap: "10px",
-                    "&:hover": { backgroundColor: "#7a92a8" },
+                    "&:hover": {
+                      backgroundColor: "#7a92a8",
+                    },
                   }}
                 >
                   Start Now!
@@ -260,20 +315,19 @@ const Dashboard = (): React.ReactElement => {
             </Box>
           )}
 
-          {/* INFO PANELS (kept, but responsive widths) */}
+          {/* ✅ INFO PANELS */}
           <Box
             sx={{
               padding: "20px",
-              width: { xs: "88vw", sm: "320px", md: "18vw" },
-              maxWidth: 360,
-              borderRadius: "14px",
-              marginRight: { xs: 1.5, md: "5vw" },
+              width: "18vw",
+              borderRadius: "10px",
+              marginRight: "5vw",
               bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
               boxShadow: 3,
               zIndex: 1,
               marginTop: "5vh",
               position: "absolute",
-              right: 0,
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -289,7 +343,12 @@ const Dashboard = (): React.ReactElement => {
                 Goal: Learn the first three letters of the Japanese alphabet
               </Typography>
 
-              <IconButton aria-label="Open Unit 1 Lesson 1" onClick={() => alert("Open Unit 1 Lesson 1")}>
+              {/* ✅ PLAY ICON BUTTON (was image) */}
+              <IconButton
+                aria-label="Open Unit 1 Lesson 1"
+                onClick={() => alert("Open Unit 1 Lesson 1")}
+                sx={{ fontSize: 60 }}
+              >
                 <PlayCircleFilledIcon sx={{ fontSize: 60, color: "#000" }} />
               </IconButton>
 
@@ -301,7 +360,12 @@ const Dashboard = (): React.ReactElement => {
                 Goal: Learn how to use これ、それ、は
               </Typography>
 
-              <IconButton aria-label="Open Grammar Lesson 1" onClick={() => alert("Open Grammar Lesson 1")}>
+              {/* ✅ PLAY ICON BUTTON (was image) */}
+              <IconButton
+                aria-label="Open Grammar Lesson 1"
+                onClick={() => alert("Open Grammar Lesson 1")}
+                sx={{ fontSize: 60 }}
+              >
                 <PlayCircleFilledIcon sx={{ fontSize: 60, color: "#000" }} />
               </IconButton>
             </Box>
@@ -310,16 +374,15 @@ const Dashboard = (): React.ReactElement => {
           <Box
             sx={{
               padding: "20px",
-              width: { xs: "88vw", sm: "320px", md: "18vw" },
-              maxWidth: 360,
-              borderRadius: "14px",
-              marginRight: { xs: 1.5, md: "5vw" },
+              width: "18vw",
+              borderRadius: "10px",
+              marginRight: "5vw",
               bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
               boxShadow: 3,
               zIndex: 1,
               position: "absolute",
-              right: 0,
-              bottom: { xs: 16, md: "6vh" },
+              marginTop: "60vh",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 400, mb: 2 }}>
@@ -328,50 +391,49 @@ const Dashboard = (): React.ReactElement => {
 
             <Button
               sx={{
-                width: "100%",
-                height: "56px",
-                borderRadius: "12px",
+                width: "18vw",
+                height: "60px",
+                borderRadius: "10px",
                 backgroundColor: "#92a6ba",
+                border: "none",
                 fontWeight: 100,
                 fontSize: "18px",
-                mt: "10px",
+                mt: "50px",
                 textTransform: "none",
+                margin: "0 auto",
                 color: "#000",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "10px",
-                "&:hover": { backgroundColor: "#7a92a8" },
+                "&:hover": {
+                  backgroundColor: "#7a92a8",
+                },
               }}
             >
               Momotaro
-              <img src="assets/Arrow.png" alt="Momotaro" style={{ height: "28px" }} />
+              <img src="assets/Arrow.png" alt="Momotaro" style={{ height: "30px" }} />
             </Button>
           </Box>
-        </Box>
 
-        {/* Prefecture name display */}
-        <Box
-          mt={2}
-          minHeight="44px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          sx={{
-            opacity: selectedPrefecture ? 1 : 0,
-            transform: selectedPrefecture ? "translateY(0)" : "translateY(12px)",
-            transition: "all 0.35s ease",
-            color: "orange",
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-          }}
-        >
-          {selectedPrefecture && <Typography variant="h6">{selectedPrefecture}</Typography>}
-        </Box>
-
-        {/* ✅ MENUT UNDER MAP (embedded, not fixed) */}
-        <Box sx={{ mt: 2.5 }}>
-          <Bart variant="embedded" title="Quick Menu" />
+          {/* Prefecture name display */}
+          <Box
+            mt={4}
+            minHeight="50px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              opacity: selectedPrefecture ? 1 : 0,
+              transform: selectedPrefecture ? "translateY(0)" : "translateY(20px)",
+              transition: "all 0.5s ease",
+              color: "orange",
+              fontWeight: "bold",
+              fontSize: "1.5rem",
+            }}
+          >
+            {selectedPrefecture && <Typography variant="h5">{selectedPrefecture}</Typography>}
+          </Box>
         </Box>
       </Box>
     </Box>
