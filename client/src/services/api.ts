@@ -7,7 +7,7 @@ import axios, { AxiosError } from "axios";
  * - This file intentionally avoids import.meta to prevent webpack warnings.
  *
  * Supported config:
- * - REACT_APP_API_BASE_URL=http://localhost:5000
+ * - REACT_APP_API_BASE_URL=http://localhost:5001
  */
 
 function normalizeBaseUrl(url: string): string {
@@ -30,11 +30,11 @@ function resolveBaseUrl(): string {
     const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(
       window.location.hostname
     );
-    return isLocalhost ? "http://localhost:5000" : window.location.origin;
+    return isLocalhost ? "http://localhost:5001" : window.location.origin;
   }
 
   // Server/other fallback
-  return "http://localhost:5000";
+  return "http://localhost:5001";
 }
 
 const API_BASE_URL = resolveBaseUrl();
