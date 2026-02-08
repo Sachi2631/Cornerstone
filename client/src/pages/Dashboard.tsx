@@ -194,7 +194,7 @@ const Dashboard = (): React.ReactElement => {
             <Box
               sx={{
                 position: "absolute",
-                top: popup.y - 50,
+                top: popup.y + 100,
                 left: popup.x,
                 transform: "translate(-50%, -100%)",
                 bgcolor: "#d9d9d9",
@@ -343,13 +343,12 @@ const Dashboard = (): React.ReactElement => {
                 Goal: Learn the first three letters of the Japanese alphabet
               </Typography>
 
-              {/* ✅ PLAY ICON BUTTON (was image) */}
               <IconButton
                 aria-label="Open Unit 1 Lesson 1"
                 onClick={() => alert("Open Unit 1 Lesson 1")}
                 sx={{ fontSize: 60 }}
               >
-                <PlayCircleFilledIcon sx={{ fontSize: 60, color: "#000" }} />
+                <img src="assets/Play Button 2.png" alt="Play" style={{ height: "50px" }} />
               </IconButton>
 
               <Typography variant="body1" sx={{ fontWeight: 600, mt: 3, mb: 1 }}>
@@ -360,13 +359,12 @@ const Dashboard = (): React.ReactElement => {
                 Goal: Learn how to use これ、それ、は
               </Typography>
 
-              {/* ✅ PLAY ICON BUTTON (was image) */}
               <IconButton
                 aria-label="Open Grammar Lesson 1"
                 onClick={() => alert("Open Grammar Lesson 1")}
                 sx={{ fontSize: 60 }}
               >
-                <PlayCircleFilledIcon sx={{ fontSize: 60, color: "#000" }} />
+                <img src="assets/Play Button 2.png" alt="Play" style={{ height: "50px" }} />
               </IconButton>
             </Box>
           </Box>
@@ -382,7 +380,7 @@ const Dashboard = (): React.ReactElement => {
               boxShadow: 3,
               zIndex: 1,
               position: "absolute",
-              marginTop: "60vh",
+              marginTop: "65vh",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 400, mb: 2 }}>

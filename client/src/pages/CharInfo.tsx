@@ -28,21 +28,22 @@ const CharInfo: React.FC = () => {
     },
     img: {
       height: '48vh',
+      marginLeft: '30px',
       maxHeight: 420,
-      width: 280,
+      width: 300,
       backgroundColor: '#d3d3d3',
       borderRadius: '30px',
     },
     caption: {
       textAlign: 'left' as const,
       padding: '20px',
-      width: 'min(680px, 90vw)',
-      background: '#f5f5f5',
+      width: 'min(680px, 30vw)',
       borderRadius: '16px',
     },
     p: {
-      fontSize: '16px',
+      fontSize: '18px',
       lineHeight: 1.5,
+      fontWeight:100,
       margin: 0,
     },
     backWrap: { marginTop: 20, textAlign: 'center' as const },
@@ -51,9 +52,16 @@ const CharInfo: React.FC = () => {
   if (!char) {
     return (
       <div style={styles.body}>
-        <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
-          <Bart />
-        </Box>
+        <Box
+        sx={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          zIndex: 10,
+        }}
+      >
+        <Bart />
+      </Box>
         <h2>Character not found</h2>
         <Button variant="outlined" component={RouterLink} to="/gallery">
           Back to Gallery
@@ -72,26 +80,44 @@ const CharInfo: React.FC = () => {
       <div style={styles.main}>
         <div>
           <div style={styles.img}></div>
-          <p style={styles.p}>Met: {char.met}</p>
+          <p style={{ ...styles.p, marginTop: 16}}>Met: {char.met}</p>
         </div>
         <div style={styles.caption}>
           <h3 id="name" style={{ marginTop: 0 }}>{char.name}</h3>
           <p id="info" style={styles.p}>{char.description}</p>
 
-          <h3 style={{ marginTop: 16 }}>Abilities:</h3>
+          <h3 style={{ marginTop: 16 }}>Abilities</h3>
           {char.abilities.map((ab, idx) => (
             <div key={idx} style={{ marginBottom: 8 }}>
-              <h4 style={{ margin: '4px 0' }}>{ab.name}</h4>
-              <p style={styles.p}>{ab.effect}</p>
+              <h4 style={{ margin: '10px 20px' }}>{ab.name}</h4>
+              <p style={{ ...styles.p, margin: '10px 20px' }}>{ab.effect}</p>
             </div>
           ))}
         </div>
       </div>
 
       <div style={styles.backWrap}>
-        <Button variant="contained" component={RouterLink} to="/gallery">
-          Back to Gallery
-        </Button>
+      <Button
+        variant="outlined"
+        component={RouterLink}
+        to="/gallery"
+        sx={{
+          backgroundColor: '#92a6ba',
+          fontSize:'16px',
+          height:'50px',
+          width:'200px',
+          color: '#000',
+          borderColor: '#92a6ba',
+          textTransform: 'none',
+          '&:hover': {
+            backgroundColor: '#7a92a8',
+            borderColor: '#7a92a8',
+          },
+        }}
+      >
+        Back to Gallery
+      </Button>
+
       </div>
     </div>
   );

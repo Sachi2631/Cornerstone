@@ -171,7 +171,6 @@ const Watch = (): React.ReactElement => {
         minHeight: "100vh",
         position: "relative",
         backgroundColor: "#dee2e4",
-        backgroundImage: "radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1px)",
         backgroundSize: "22px 22px",
         paddingBottom: "70px",
         pt: "6px",
