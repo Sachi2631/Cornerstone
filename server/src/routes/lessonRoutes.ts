@@ -4,10 +4,10 @@ import { getLessonById, createLesson, updateLesson } from "../controllers/lesson
 
 const router = Router();
 
-router.get("/:lessonId", requireAuth, getLessonById);
+router.get("/:lessonId", getLessonById);
 
 // (optional admin)
-router.post("/", requireAuth, createLesson);
-router.patch("/:id", requireAuth, updateLesson);
+router.post("/", createLesson);
+router.patch("/:id", updateLesson);
 
 export default router;

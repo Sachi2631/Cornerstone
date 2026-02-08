@@ -1,36 +1,57 @@
-import { Response } from "express";
-import { AuthedRequest } from "../middleware/requireAuth";
+import { RequestHandler } from "express";
 import { Attempt } from "../models/Attempt";
 import { ReviewItem } from "../models/ReviewItem";
+import { AuthedRequest } from "../middleware/requireAuth";
 
-export const createAttempt = async (req: AuthedRequest, res: Response) => {
+export const createAttempt: RequestHandler = async (req, res): Promise<void> => {
+  const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   try {
-    if (!req.user?._id) {
+    const authed = req as AuthedRequest;
+    const userId = authed.user?._id;
+
+    if (!userId) {
+      console.warn(`[ATTEMPT][${rid}] Unauthorized: missing req.user`);
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
-    const { lessonId, stepIndex, result, detail } = req.body as {
-      lessonId: string; stepIndex: number; result: "correct" | "incorrect"; detail?: any;
+    const { lessonId, stepIndex, result, detail } = (req.body || {}) as {
+      lessonId: string;
+      stepIndex: number;
+      result: "correct" | "incorrect";
+      detail?: any;
     };
 
     if (!lessonId || typeof stepIndex !== "number" || !["correct", "incorrect"].includes(result)) {
+      console.warn(`[ATTEMPT][${rid}] Invalid payload`, {
+        lessonId,
+        stepIndexType: typeof stepIndex,
+        result,
+      });
       res.status(400).json({ error: "Invalid payload" });
       return;
     }
 
     const attempt = await Attempt.create({
-      userId: req.user._id, // ObjectId (user)
-      lessonId,             // string (slug)
+      userId,   // ObjectId (user)
+      lessonId, // string (slug or lesson key)
       stepIndex,
       result,
       detail,
     });
-    console.log("[ATTEMPT] created:", attempt._id.toString());
+
+    console.log(`[ATTEMPT][${rid}] created`, {
+      attemptId: attempt._id.toString(),
+      userId: userId.toString?.() ?? String(userId),
+      lessonId,
+      stepIndex,
+      result,
+    });
 
     // spaced repetition update
     const review = await ReviewItem.findOneAndUpdate(
-      { userId: req.user._id, lessonId, stepIndex },
+      { userId, lessonId, stepIndex },
       {},
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -52,8 +73,10 @@ export const createAttempt = async (req: AuthedRequest, res: Response) => {
     await review.save();
 
     res.status(201).json({ ok: true, attemptId: attempt._id });
-  } catch (err) {
-    console.error("[ATTEMPT] error", err);
-    res.status(500).json({ error: "Internal error" });
+    return;
+  } catch (err: any) {
+    console.error(`[ATTEMPT][${rid}] error`, err?.message || err);
+    res.status(500).json({ error: "Internal error", details: err?.message || String(err) });
+    return;
   }
 };

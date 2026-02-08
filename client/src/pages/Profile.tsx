@@ -27,7 +27,7 @@ import {
 import { deepPurple } from "@mui/material/colors";
 import { Edit, Save, Key, Delete, RefreshCcw, Mail } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getToken, clearToken } from "../services/api";
+import { getToken, clearToken, json } from "../services/api";
 
 export interface UserProfile {
   firstName: string;
@@ -45,74 +45,23 @@ const initials = (firstName?: string, lastName?: string) =>
 const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : "—");
 
 function clone<T>(obj: T): T {
-  // safer than structuredClone for older browsers/build targets
   return JSON.parse(JSON.stringify(obj));
 }
 
 function normalizeUser(payload: any): UserProfile | null {
   if (!payload) return null;
-
-  // Accept common shapes:
-  // { user: {...} }
-  // { data: { user: {...} } }
-  // {...userFields}
   const u = payload.user ?? payload.data?.user ?? payload;
-
   if (!u) return null;
 
-  // If backend uses snake_case, map here as needed
-  const firstName = u.firstName ?? u.first_name ?? "";
-  const lastName = u.lastName ?? u.last_name ?? "";
-  const email = u.email ?? "";
-
-  // If essential fields missing, still return best-effort object
   return {
-    firstName,
-    lastName,
-    email,
+    firstName: u.firstName ?? u.first_name ?? "",
+    lastName: u.lastName ?? u.last_name ?? "",
+    email: u.email ?? "",
     rememberMe: u.rememberMe ?? u.remember_me,
     createdAt: u.createdAt ?? u.created_at,
     updatedAt: u.updatedAt ?? u.updated_at,
     lastLogin: u.lastLogin ?? u.last_login,
   };
-}
-
-async function authedRequest<T>(
-  url: string,
-  options?: { method?: string; body?: any }
-): Promise<T> {
-  const token = getToken();
-  if (!token) throw new Error("Missing token");
-
-  const res = await fetch(url, {
-    method: options?.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  const text = await res.text();
-  let data: any = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
-  }
-
-  if (res.status === 401 || res.status === 403) {
-    // token invalid/expired
-    clearToken();
-    throw new Error("Unauthorized");
-  }
-
-  if (!res.ok) {
-    const msg = data?.message || data?.error || `Request failed (${res.status})`;
-    throw new Error(msg);
-  }
-
-  return data as T;
 }
 
 const Profile: React.FC = () => {
@@ -129,9 +78,9 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<UserProfile | null>(null);
 
-  // Guard: if no token, bounce to /auth
   useEffect(() => {
     if (!getToken()) {
+      console.warn("[PROFILE] no token -> redirect /auth");
       navigate("/auth", { replace: true, state: { from: location } });
     }
   }, [navigate, location]);
@@ -141,19 +90,27 @@ const Profile: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // IMPORTANT: this enforces Authorization header
-      const data = await authedRequest<any>("/api/auth/me");
+      console.log("[PROFILE] fetching /api/auth/me token?", !!getToken());
+      const data = await json<any>("/api/auth/me");
+
+      console.log("[PROFILE] /me response:", data);
 
       const u = normalizeUser(data);
-      if (!u) throw new Error("Malformed profile response");
+      if (!u) throw new Error("Malformed profile response (missing user)");
 
       setUser(u);
       setDraft(clone(u));
     } catch (err: any) {
-      const msg = err?.message || "Could not fetch profile";
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      const msg = serverMsg || err?.message || "Could not fetch profile";
+
+      console.error("[PROFILE] fetchMe error:", { status, msg, raw: err });
+
       setError(msg);
 
-      if (msg === "Unauthorized" || !getToken()) {
+      if (status === 401 || status === 403 || msg === "Unauthorized") {
+        clearToken();
         navigate("/auth", { replace: true, state: { from: "/profile" } });
       }
     } finally {
@@ -162,7 +119,7 @@ const Profile: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMe();
+    void fetchMe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -178,26 +135,34 @@ const Profile: React.FC = () => {
       setSaving(true);
       setError(null);
 
-      const data = await authedRequest<any>("/api/users/me", {
+      console.log("[PROFILE] saving /api/users/me", draft);
+
+      const data = await json<any>("/api/users/me", {
         method: "PUT",
-        body: {
+        data: {
           firstName: draft.firstName,
           lastName: draft.lastName,
           email: draft.email,
         },
       });
 
-      const updated = normalizeUser(data) ?? draft;
+      console.log("[PROFILE] save response:", data);
 
+      const updated = normalizeUser(data) ?? draft;
       setUser(updated);
       setDraft(clone(updated));
       setSuccess("Profile updated");
       setEditing(false);
     } catch (err: any) {
-      const msg = err?.message || "Update failed";
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      const msg = serverMsg || err?.message || "Update failed";
+
+      console.error("[PROFILE] save error:", { status, msg, raw: err });
       setError(msg);
 
-      if (msg === "Unauthorized" || !getToken()) {
+      if (status === 401 || status === 403) {
+        clearToken();
         navigate("/auth", { replace: true, state: { from: "/profile" } });
       }
     } finally {
@@ -205,7 +170,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Change Password
   const [pwOpen, setPwOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
 
@@ -213,39 +177,47 @@ const Profile: React.FC = () => {
     try {
       setError(null);
 
-      await authedRequest<any>("/api/auth/change-password", {
-        method: "POST",
-        body: pwForm,
-      });
+      console.log("[PROFILE] change password");
+      await json<any>("/api/auth/change-password", { method: "POST", data: pwForm });
 
       setSuccess("Password updated");
       setPwOpen(false);
       setPwForm({ currentPassword: "", newPassword: "" });
     } catch (err: any) {
-      const msg = err?.message || "Password update failed";
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      const msg = serverMsg || err?.message || "Password update failed";
+
+      console.error("[PROFILE] change password error:", { status, msg, raw: err });
       setError(msg);
 
-      if (msg === "Unauthorized" || !getToken()) {
+      if (status === 401 || status === 403) {
+        clearToken();
         navigate("/auth", { replace: true, state: { from: "/profile" } });
       }
     }
   };
 
-  // Delete Account
   const [delOpen, setDelOpen] = useState(false);
   const confirmDelete = async () => {
     try {
       setError(null);
+      console.log("[PROFILE] delete account /api/users/me");
 
-      await authedRequest<any>("/api/users/me", { method: "DELETE" });
+      await json<any>("/api/users/me", { method: "DELETE" });
 
       clearToken();
       navigate("/", { replace: true });
     } catch (err: any) {
-      const msg = err?.message || "Account deletion failed";
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      const msg = serverMsg || err?.message || "Account deletion failed";
+
+      console.error("[PROFILE] delete error:", { status, msg, raw: err });
       setError(msg);
 
-      if (msg === "Unauthorized" || !getToken()) {
+      if (status === 401 || status === 403) {
+        clearToken();
         navigate("/auth", { replace: true });
       }
     }
@@ -261,7 +233,6 @@ const Profile: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default }}>
-      {/* Cover */}
       <Box
         sx={{
           px: { xs: 2, sm: 4 },
@@ -296,10 +267,8 @@ const Profile: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Body */}
       <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 4 } }}>
         <Grid container spacing={3}>
-          {/* Left */}
           <Grid item xs={12} md={7}>
             <Card variant="outlined" sx={{ borderRadius: 3 }}>
               <CardHeader
@@ -397,7 +366,6 @@ const Profile: React.FC = () => {
             </Card>
           </Grid>
 
-          {/* Right */}
           <Grid item xs={12} md={5}>
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
               <Typography variant="subtitle1" fontWeight={900} gutterBottom>
@@ -441,7 +409,6 @@ const Profile: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Change Password */}
       <Dialog open={pwOpen} onClose={() => setPwOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Change Password</DialogTitle>
         <DialogContent>
@@ -471,7 +438,6 @@ const Profile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Account */}
       <Dialog open={delOpen} onClose={() => setDelOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Delete Account</DialogTitle>
         <DialogContent>
@@ -487,7 +453,6 @@ const Profile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Notifications */}
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
         <Alert severity="error" onClose={() => setError(null)}>
           {error}
