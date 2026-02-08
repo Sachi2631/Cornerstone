@@ -59,7 +59,7 @@ const AuthForm = (): React.ReactElement => {
 
       const payload =
         mode === 'login'
-          ? { email: formData.email, password: formData.password }
+          ? { email: formData.email, password: formData.password, rememberMe: formData.rememberMe }
           : {
               firstName: formData.firstName,
               lastName: formData.lastName,

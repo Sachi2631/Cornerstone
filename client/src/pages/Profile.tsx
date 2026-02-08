@@ -1,4 +1,3 @@
-// src/pages/Profile.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
@@ -28,7 +27,7 @@ import {
 import { deepPurple } from "@mui/material/colors";
 import { Edit, Save, Key, Delete, RefreshCcw, Mail } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { json, getToken, clearToken } from "../services/api";
+import { getToken, clearToken } from "../services/api";
 
 export interface UserProfile {
   firstName: string;
@@ -44,6 +43,77 @@ const initials = (firstName?: string, lastName?: string) =>
   (`${(firstName?.[0] || "").toUpperCase()}${(lastName?.[0] || "").toUpperCase()}` || "U");
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : "—");
+
+function clone<T>(obj: T): T {
+  // safer than structuredClone for older browsers/build targets
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function normalizeUser(payload: any): UserProfile | null {
+  if (!payload) return null;
+
+  // Accept common shapes:
+  // { user: {...} }
+  // { data: { user: {...} } }
+  // {...userFields}
+  const u = payload.user ?? payload.data?.user ?? payload;
+
+  if (!u) return null;
+
+  // If backend uses snake_case, map here as needed
+  const firstName = u.firstName ?? u.first_name ?? "";
+  const lastName = u.lastName ?? u.last_name ?? "";
+  const email = u.email ?? "";
+
+  // If essential fields missing, still return best-effort object
+  return {
+    firstName,
+    lastName,
+    email,
+    rememberMe: u.rememberMe ?? u.remember_me,
+    createdAt: u.createdAt ?? u.created_at,
+    updatedAt: u.updatedAt ?? u.updated_at,
+    lastLogin: u.lastLogin ?? u.last_login,
+  };
+}
+
+async function authedRequest<T>(
+  url: string,
+  options?: { method?: string; body?: any }
+): Promise<T> {
+  const token = getToken();
+  if (!token) throw new Error("Missing token");
+
+  const res = await fetch(url, {
+    method: options?.method ?? "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const text = await res.text();
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    // token invalid/expired
+    clearToken();
+    throw new Error("Unauthorized");
+  }
+
+  if (!res.ok) {
+    const msg = data?.message || data?.error || `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
 
 const Profile: React.FC = () => {
   const theme = useTheme();
@@ -67,17 +137,25 @@ const Profile: React.FC = () => {
   }, [navigate, location]);
 
   const fetchMe = async () => {
-    if (!getToken()) return;
     try {
       setLoading(true);
       setError(null);
-      const data = await json<{ user?: UserProfile } | UserProfile>("/api/auth/me");
-      const u: UserProfile = (data as any).user ?? (data as any);
+
+      // IMPORTANT: this enforces Authorization header
+      const data = await authedRequest<any>("/api/auth/me");
+
+      const u = normalizeUser(data);
+      if (!u) throw new Error("Malformed profile response");
+
       setUser(u);
-      setDraft(structuredClone(u));
+      setDraft(clone(u));
     } catch (err: any) {
-      setError(err?.message || "Could not fetch profile");
-      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
+      const msg = err?.message || "Could not fetch profile";
+      setError(msg);
+
+      if (msg === "Unauthorized" || !getToken()) {
+        navigate("/auth", { replace: true, state: { from: "/profile" } });
+      }
     } finally {
       setLoading(false);
     }
@@ -95,27 +173,33 @@ const Profile: React.FC = () => {
 
   const handleSave = async () => {
     if (!draft) return;
+
     try {
       setSaving(true);
       setError(null);
 
-      const data = await json<{ user: UserProfile }>("/api/users/me", {
+      const data = await authedRequest<any>("/api/users/me", {
         method: "PUT",
-        data: {
+        body: {
           firstName: draft.firstName,
           lastName: draft.lastName,
           email: draft.email,
         },
       });
 
-      const updated = data?.user ?? draft;
+      const updated = normalizeUser(data) ?? draft;
+
       setUser(updated);
-      setDraft(structuredClone(updated));
+      setDraft(clone(updated));
       setSuccess("Profile updated");
       setEditing(false);
     } catch (err: any) {
-      setError(err?.message || "Update failed");
-      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
+      const msg = err?.message || "Update failed";
+      setError(msg);
+
+      if (msg === "Unauthorized" || !getToken()) {
+        navigate("/auth", { replace: true, state: { from: "/profile" } });
+      }
     } finally {
       setSaving(false);
     }
@@ -128,16 +212,22 @@ const Profile: React.FC = () => {
   const submitPassword = async () => {
     try {
       setError(null);
-      await json("/api/auth/change-password", {
+
+      await authedRequest<any>("/api/auth/change-password", {
         method: "POST",
-        data: pwForm,
+        body: pwForm,
       });
+
       setSuccess("Password updated");
       setPwOpen(false);
       setPwForm({ currentPassword: "", newPassword: "" });
     } catch (err: any) {
-      setError(err?.message || "Password update failed");
-      if (!getToken()) navigate("/auth", { replace: true, state: { from: "/profile" } });
+      const msg = err?.message || "Password update failed";
+      setError(msg);
+
+      if (msg === "Unauthorized" || !getToken()) {
+        navigate("/auth", { replace: true, state: { from: "/profile" } });
+      }
     }
   };
 
@@ -146,12 +236,18 @@ const Profile: React.FC = () => {
   const confirmDelete = async () => {
     try {
       setError(null);
-      await json("/api/users/me", { method: "DELETE" });
+
+      await authedRequest<any>("/api/users/me", { method: "DELETE" });
+
       clearToken();
       navigate("/", { replace: true });
     } catch (err: any) {
-      setError(err?.message || "Account deletion failed");
-      if (!getToken()) navigate("/auth", { replace: true });
+      const msg = err?.message || "Account deletion failed";
+      setError(msg);
+
+      if (msg === "Unauthorized" || !getToken()) {
+        navigate("/auth", { replace: true });
+      }
     }
   };
 
@@ -230,7 +326,7 @@ const Profile: React.FC = () => {
                         <IconButton
                           onClick={() => {
                             setEditing(false);
-                            setDraft(user ? structuredClone(user) : null);
+                            setDraft(user ? clone(user) : null);
                           }}
                         >
                           <RefreshCcw />
