@@ -1,22 +1,30 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 
+type ResultCb = (r: { result: "correct" | "incorrect"; detail?: any }) => void;
+
 type AudioMatchProps = {
-  onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
+  onResult?: ResultCb;
+  options: string[];          // choices shown (already normalized, e.g. ["あ","い","う"])
+  correctAnswer: string;      // e.g. "あ"
+  audioUrl?: string;          // optional
+  prompt?: string;            // optional
 };
 
-const AUDIO_SRC =
-  "https://res.cloudinary.com/dxxezusx5/video/upload/v1768181048/New_Recording_11_g1jcpx.m4a";
-
-const AudioMatch: React.FC<AudioMatchProps> = ({ onResult }) => {
+const AudioMatch: React.FC<AudioMatchProps> = ({
+  onResult,
+  options,
+  correctAnswer,
+  audioUrl,
+  prompt,
+}) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
 
-  const choices = useMemo(() => ["あ", "い", "う"], []);
-  const correct = "あ"; // replace with lesson data
+  const choices = useMemo(() => options ?? [], [options]);
 
   const play = async () => {
-    if (!audioRef.current) return;
+    if (!audioUrl || !audioRef.current) return;
     try {
       setPlaying(true);
       await audioRef.current.play();
@@ -29,26 +37,33 @@ const AudioMatch: React.FC<AudioMatchProps> = ({ onResult }) => {
 
   const choose = (label: string) => {
     onResult?.({
-      result: label === correct ? "correct" : "incorrect",
-      detail: { choice: label },
+      result: label === correctAnswer ? "correct" : "incorrect",
+      detail: { choice: label, correct: correctAnswer },
     });
   };
 
   return (
     <Box textAlign="center">
       <Typography variant="h6" mb={2}>
-        Listen and choose the right character
+        {prompt || "Listen and choose the right character"}
       </Typography>
 
-      <audio ref={audioRef} src={AUDIO_SRC} preload="auto" />
+      {audioUrl ? (
+        <>
+          <audio ref={audioRef} src={audioUrl} preload="auto" />
+          <Button variant="contained" onClick={() => void play()} disabled={playing}>
+            {playing ? "Playing…" : "Play ▶"}
+          </Button>
+        </>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          Audio not available for this exercise.
+        </Typography>
+      )}
 
-      <Button variant="contained" onClick={() => void play()} disabled={playing}>
-        Play ▶
-      </Button>
-
-      <Stack direction="row" spacing={2} justifyContent="center" mt={3}>
+      <Stack direction="row" spacing={2} justifyContent="center" mt={3} flexWrap="wrap">
         {choices.map((c) => (
-          <Button key={c} variant="outlined" onClick={() => choose(c)}>
+          <Button key={c} variant="outlined" onClick={() => choose(c)} sx={{ minWidth: 64, mt: 1 }}>
             {c}
           </Button>
         ))}

@@ -1,4 +1,3 @@
-// src/services/api.ts
 import axios, { AxiosError } from "axios";
 
 /**
@@ -15,7 +14,6 @@ function normalizeBaseUrl(url: string): string {
 }
 
 function resolveBaseUrl(): string {
-  // CRA env var (preferred)
   const envUrl =
     (typeof process !== "undefined" &&
       (process.env.REACT_APP_API_BASE_URL as string | undefined)) ||
@@ -25,15 +23,11 @@ function resolveBaseUrl(): string {
     return normalizeBaseUrl(envUrl.trim());
   }
 
-  // Browser fallback
   if (typeof window !== "undefined") {
-    const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(
-      window.location.hostname
-    );
+    const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
     return isLocalhost ? "http://localhost:5001" : window.location.origin;
   }
 
-  // Server/other fallback
   return "http://localhost:5001";
 }
 
@@ -78,22 +72,13 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = getToken();
 
-  // Axios headers typing can be gnarly across versions; keep this safe.
   config.headers = config.headers ?? {};
 
   if (token) {
     (config.headers as any).Authorization = `Bearer ${token}`;
-    console.log(
-      "[HTTP] attach token: YES",
-      config.method?.toUpperCase(),
-      config.url
-    );
+    console.log("[HTTP] attach token: YES", config.method?.toUpperCase(), config.url);
   } else {
-    console.log(
-      "[HTTP] attach token: NO",
-      config.method?.toUpperCase(),
-      config.url
-    );
+    console.log("[HTTP] attach token: NO", config.method?.toUpperCase(), config.url);
   }
 
   return config;
@@ -106,12 +91,9 @@ api.interceptors.response.use(
       console.warn("[HTTP] 401 from", err.config?.url);
       clearToken();
 
-      // Keep your original behavior (no forced redirect)
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
-        // window.location.href = "/login"; // enable if you want auto-redirect
+      // Keep original behavior (no forced redirect), but correct the route
+      if (typeof window !== "undefined" && window.location.pathname !== "/auth") {
+        // window.location.href = "/auth"; // enable if you want auto-redirect
       }
     }
     return Promise.reject(err);

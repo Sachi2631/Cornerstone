@@ -1,32 +1,76 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model } from "mongoose";
 
-export type Step =
-  | { type: "audioPlay"; audioUrl: string; prompt?: string }
-  | { type: "recordRepeat"; targetText: string; minSec?: number }
-  | { type: "dragDrop"; prompt: string; items: string[]; answer: string[] }
-  | { type: "quizMCQ"; prompt: string; choices: string[]; answerIndex: number }
-  | { type: "quizJudge"; prompt: string; correct: boolean }
-  | { type: "fact"; text: string };
+export type Exercise =
+  | {
+      exerciseId: string;
+      type: "connectTheDots";
+      items: string[]; // e.g. ["あ/ア", "い/イ"]
+      correctAnswers: string[];
+    }
+  | {
+      exerciseId: string;
+      type: "matchAudioLetter";
+      items: string[]; // e.g. ["あ/ア", "い/イ"]
+      correctAnswers: string[];
+      audioUrl?: string; // optional if you have it
+      prompt?: string;
+    }
+  | {
+      exerciseId: string;
+      type: "vocabulary_drag_drop";
+      characterBank: string[];
+      correctAnswer: string; // e.g. "あい"
+      prompt?: string;
+    };
 
-const StepSchema = new Schema(
+const ExerciseSchema = new Schema(
   {
+    exerciseId: { type: String, required: true },
     type: { type: String, required: true },
-    // store flexible payload in "data"
-    data: { type: Schema.Types.Mixed, default: {} }
+
+    // connectTheDots / matchAudioLetter
+    items: { type: [String], default: undefined },
+    correctAnswers: { type: [String], default: undefined },
+
+    // matchAudioLetter
+    audioUrl: { type: String, default: undefined },
+    prompt: { type: String, default: undefined },
+
+    // vocabulary_drag_drop
+    characterBank: { type: [String], default: undefined },
+    correctAnswer: { type: String, default: undefined },
+  },
+  { _id: false }
+);
+
+const AchievementSchema = new Schema(
+  {
+    title: { type: String, default: "" },
+    xp: { type: Number, default: 0 },
   },
   { _id: false }
 );
 
 const LessonSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, index: true },
+    // Use your JSON `id` as primary lookup field
+    lessonId: { type: String, required: true, unique: true, index: true }, // e.g. "lesson_1_v1"
+
     title: { type: String, required: true },
-    unitId: { type: Types.ObjectId, ref: "Unit" },
-    kind: { type: String, enum: ["character", "vocab", "listening", "mixed"], default: "mixed" },
-    steps: { type: [StepSchema], default: [] },
+    version: { type: String, default: "" }, // e.g. "V1"
+
+    flashcards: { type: [String], default: [] }, // e.g. ["あ/ア", "い/イ"]
+    flashcardsCorrect: { type: String, default: "" }, // optional, for flips grading
+
+    funFact: { type: String, default: "" },
+    notes: { type: String, default: "" },
+
+    exercises: { type: [ExerciseSchema], default: [] },
+
+    achievement: { type: AchievementSchema, default: () => ({ title: "", xp: 0 }) },
+
+    isActive: { type: Boolean, default: true },
     tags: { type: [String], default: [] },
-    prefectureCode: { type: String },
-    isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
 );

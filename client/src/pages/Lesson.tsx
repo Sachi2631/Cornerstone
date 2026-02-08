@@ -1,8 +1,6 @@
-// src/pages/Lesson.tsx
-
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Button, LinearProgress, Stack, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Box, Button, LinearProgress, Stack, Typography, CircularProgress } from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
 
 import Flips from "../components/Flips";
 import AudioMatch from "../components/AudioMatch";
@@ -14,9 +12,7 @@ import RInfo from "../components/RewardInfo";
 
 import { submitAttempt, upsertProgress } from "../services/progress";
 import { isAuthed, safe } from "../services/api";
-import { lesson1Data } from "../data/lessonData"; // Import the mock data
-
-const LESSON_ID = lesson1Data.lessonId;
+import { getLesson, LessonDoc } from "../services/lessons";
 
 type ResultCb = (args: { result: "correct" | "incorrect"; detail?: any }) => void;
 type StepSpec = { key: string; graded: boolean; comp: (on: ResultCb) => React.ReactNode };
@@ -34,12 +30,23 @@ interface AudioMatchProps {
   onResult: ResultCb;
   options: string[];
   correctAnswer: string;
+  audioUrl?: string;
+  prompt?: string;
 }
 
 interface DragDropProps {
   onResult: ResultCb;
-  items: any[]; // if your vocab is string[], change to string[]
+  prompt?: string;
+  characterBank?: string[];
+  correctAnswer?: string;
+  audioUrl?: string;
+
+  // keep legacy so older uses don't break
+  bankItems?: string[];
+  answer?: string[];
+  caption?: string;
 }
+
 
 interface DotMatchPair {
   hiragana: string;
@@ -65,141 +72,188 @@ interface RewardInfoProps {
   description: string;
 }
 
-// --- Cast imported components to the prop contracts above (adapter pattern) ---
-const FlipsC   = Flips as unknown as React.FC<FlipsProps>;
-const AudioC   = AudioMatch as unknown as React.FC<AudioMatchProps>;
-const DragC    = DragDrop as unknown as React.FC<DragDropProps>;
-const DotsC    = DotMatch as unknown as React.FC<DotMatchProps>;
-const FactC    = Fact as unknown as React.FC<FactProps>;
-const RewardC  = Reward as unknown as React.FC<RewardProps>;
-const RInfoC   = RInfo as unknown as React.FC<RewardInfoProps>;
+// --- Cast imported components to the prop contracts above ---
+const FlipsC = Flips as unknown as React.FC<FlipsProps>;
+const AudioC = AudioMatch as unknown as React.FC<AudioMatchProps>;
+const DragC = DragDrop as unknown as React.FC<DragDropProps>;
+const DotsC = DotMatch as unknown as React.FC<DotMatchProps>;
+const FactC = Fact as unknown as React.FC<FactProps>;
+const RewardC = Reward as unknown as React.FC<RewardProps>;
+const RInfoC = RInfo as unknown as React.FC<RewardInfoProps>;
+
+function splitPair(s: string): DotMatchPair {
+  // "あ/ア" => { hiragana: "あ", katakana: "ア" }
+  const [hiragana, katakana] = String(s).split("/");
+  return { hiragana: hiragana ?? s, katakana: katakana ?? "" };
+}
+
+function normalizeChoiceLabel(s: string): string {
+  // For audio choices we show only hiragana by default: "あ/ア" -> "あ"
+  const [a] = String(s).split("/");
+  return a ?? s;
+}
 
 const Lesson: React.FC = () => {
   const navigate = useNavigate();
+  const params = useParams();
+
+  // You should route like /lesson/:lessonId
+  const lessonId = (params.lessonId || "lesson_1_v1") as string;
+
+  const [loading, setLoading] = useState(true);
+  const [lesson, setLesson] = useState<LessonDoc | null>(null);
+
   const [step, setStep] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [attemptCount, setAttemptCount] = useState(0);
 
-  const steps: StepSpec[] = useMemo(
-    () => [
-      {
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const l = await getLesson(lessonId);
+        if (!mounted) return;
+        setLesson(l);
+      } catch (e) {
+        console.error("[Lesson] fetch failed:", e);
+        // if lesson can't load, go back
+        navigate("/dashboard", { replace: true });
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [lessonId, navigate]);
+
+  const steps: StepSpec[] = useMemo(() => {
+    if (!lesson) return [];
+
+    const out: StepSpec[] = [];
+
+    // 1) Flips from flashcards
+    if (lesson.flashcards?.length) {
+      out.push({
         key: "flips",
         graded: true,
         comp: (on) => {
-          // Map string[] -> CardData[]
-          const cardData: CardData[] = lesson1Data.flashcards.characters.map(
-            (char: string, index: number) => ({
-              id: index,
-              front: char,
-              back: "", // put actual "back" if you have one
-            })
-          );
+          const cardData: CardData[] = lesson.flashcards.map((raw, index) => ({
+            id: index,
+            front: raw,
+            back: "",
+          }));
 
-          // Convert string correctAnswer -> numeric index
-          const idx = lesson1Data.flashcards.characters.findIndex(
-            (c: string) => c === lesson1Data.flashcards.correctAnswer
-          );
+          const correctRaw = lesson.flashcardsCorrect || lesson.flashcards[0] || "";
+          const idx = lesson.flashcards.findIndex((x) => x === correctRaw);
           const correctId = idx >= 0 ? idx : 0;
 
-          return (
-            <FlipsC onResult={on} cards={cardData} correctCardId={correctId} />
-          );
+          return <FlipsC onResult={on} cards={cardData} correctCardId={correctId} />;
         },
-      },
-      {
-        key: "dotmatch",
-        graded: true,
-        comp: (on) => (
-          <DotsC onResult={on} pairs={lesson1Data.connectTheDots.pairs as DotMatchPair[]} />
-        ),
-      },
-      {
-        key: "audio1",
-        graded: true,
-        comp: (on) => (
-          <AudioC
-            onResult={on}
-            options={lesson1Data.audioMatch1.options}
-            correctAnswer={lesson1Data.audioMatch1.correctAnswer}
-          />
-        ),
-      },
-      {
-        key: "audio2",
-        graded: true,
-        comp: (on) => (
-          <AudioC
-            onResult={on}
-            options={lesson1Data.audioMatch2.options}
-            correctAnswer={lesson1Data.audioMatch2.correctAnswer}
-          />
-        ),
-      },
-      {
-        key: "audio3",
-        graded: true,
-        comp: (on) => (
-          <AudioC
-            onResult={on}
-            options={lesson1Data.audioMatch3.options}
-            correctAnswer={lesson1Data.audioMatch3.correctAnswer}
-          />
-        ),
-      },
-      {
-        key: "dragdrop",
-        graded: true,
-        comp: (on) => (
-          <DragC onResult={on} items={lesson1Data.vocab as any[]} />
-        ),
-      },
-      {
+      });
+    }
+
+    // 2) Exercises drive components
+    for (const ex of lesson.exercises || []) {
+      if (ex.type === "connectTheDots") {
+        out.push({
+          key: ex.exerciseId,
+          graded: true,
+          comp: (on) => <DotsC onResult={on} pairs={(ex.items || []).map(splitPair)} />,
+        });
+      }
+
+      if (ex.type === "matchAudioLetter") {
+        const options = (ex.items || []).map(normalizeChoiceLabel);
+        const correctAnswer = normalizeChoiceLabel((ex.correctAnswers || [])[0] || options[0] || "");
+        out.push({
+          key: ex.exerciseId,
+          graded: true,
+          comp: (on) => (
+            <AudioC
+              onResult={on}
+              options={options}
+              correctAnswer={correctAnswer}
+              audioUrl={ex.audioUrl}
+              prompt={ex.prompt}
+            />
+          ),
+        });
+      }
+
+      if (ex.type === "vocabulary_drag_drop") {
+        out.push({
+          key: ex.exerciseId,
+          graded: true,
+          comp: (on) => (
+            <DragC
+              onResult={on}
+              prompt={ex.prompt || "Build the correct word"}
+              characterBank={ex.characterBank || []}
+              correctAnswer={ex.correctAnswer}
+            />
+          ),
+        });
+      }
+    }
+
+    // 3) Fun fact
+    if (lesson.funFact) {
+      out.push({
         key: "fact",
         graded: false,
-        comp: () => (
-          <FactC
-            title={lesson1Data.funFact.title}
-            description={lesson1Data.funFact.description}
-          />
-        ),
-      },
-      {
+        comp: () => <FactC title="Fun Fact" description={lesson.funFact || ""} />,
+      });
+    }
+
+    // 4) Rewards
+    if (lesson.achievement?.title || lesson.achievement?.xp !== undefined) {
+      out.push({
         key: "reward",
         graded: false,
         comp: () => (
-          <RewardC
-            title={lesson1Data.achievement.title}
-            xp={lesson1Data.achievement.xp}
-          />
+          <RewardC title={lesson.achievement?.title || "Lesson Complete!"} xp={lesson.achievement?.xp ?? 0} />
         ),
-      },
-      {
-        key: "rinfo",
-        graded: false,
-        comp: () => (
-          <RInfoC
-            title={lesson1Data.souvenir.title}
-            description={lesson1Data.souvenir.description}
-          />
-        ),
-      },
-    ],
-    []
-  );
-
-  const pct = Math.round(((step + 1) / steps.length) * 100);
-  const accuracy = attemptCount ? Math.round((100 * correctCount) / attemptCount) : 0;
-
-  useEffect(() => {
-    if (isAuthed()) {
-      void upsertProgress({
-        lessonId: LESSON_ID,
-        status: "in_progress",
-        lastStep: 0,
-        accuracyPct: 0,
       });
     }
-  }, []);
+
+    // 5) Optional info page
+    if (lesson.notes) {
+      out.push({
+        key: "rinfo",
+        graded: false,
+        comp: () => <RInfoC title="Notes" description={lesson.notes || ""} />,
+      });
+    }
+
+    return out;
+  }, [lesson]);
+
+  const pct = steps.length ? Math.round(((step + 1) / steps.length) * 100) : 0;
+  const accuracy = attemptCount ? Math.round((100 * correctCount) / attemptCount) : 0;
+
+  // IMPORTANT: catch upsertProgress errors so 500 doesn't crash the UI (your current code triggers Uncaught runtime)
+  useEffect(() => {
+    if (!lesson) return;
+
+    if (isAuthed()) {
+      void (async () => {
+        try {
+          await upsertProgress({
+            lessonId: lesson.lessonId,
+            status: "in_progress",
+            lastStep: 0,
+            accuracyPct: 0,
+          });
+        } catch (e) {
+          console.error("[Progress] upsert failed:", e);
+        }
+      })();
+    }
+  }, [lesson]);
 
   function advance({
     result,
@@ -215,36 +269,53 @@ const Lesson: React.FC = () => {
     const nextCorrectCount = nextAttemptCount
       ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
       : correctCount;
-    const nextAccuracy = nextAttemptCount
-      ? Math.round((100 * nextCorrectCount) / nextAttemptCount)
-      : accuracy;
+    const nextAccuracy = nextAttemptCount ? Math.round((100 * nextCorrectCount) / nextAttemptCount) : accuracy;
 
     setAttemptCount(nextAttemptCount);
     setCorrectCount(nextCorrectCount);
 
-    if (isAuthed() && createAttempt) {
-      void submitAttempt({ lessonId: LESSON_ID, stepIndex: step, result, detail });
+    if (lesson && isAuthed() && createAttempt) {
+      void (async () => {
+        try {
+          await submitAttempt({ lessonId: lesson.lessonId, stepIndex: step, result, detail });
+        } catch (e) {
+          console.error("[Attempt] submit failed:", e);
+        }
+      })();
     }
 
     if (!isLast) {
       const nextStep = step + 1;
       setStep(nextStep);
-      if (isAuthed()) {
-        void upsertProgress({
-          lessonId: LESSON_ID,
-          status: "in_progress",
-          lastStep: nextStep,
-          accuracyPct: nextAccuracy,
-        });
+
+      if (lesson && isAuthed()) {
+        void (async () => {
+          try {
+            await upsertProgress({
+              lessonId: lesson.lessonId,
+              status: "in_progress",
+              lastStep: nextStep,
+              accuracyPct: nextAccuracy,
+            });
+          } catch (e) {
+            console.error("[Progress] upsert failed:", e);
+          }
+        })();
       }
     } else {
-      if (isAuthed()) {
-        void upsertProgress({
-          lessonId: LESSON_ID,
-          status: "completed",
-          lastStep: step,
-          accuracyPct: nextAccuracy,
-        });
+      if (lesson && isAuthed()) {
+        void (async () => {
+          try {
+            await upsertProgress({
+              lessonId: lesson.lessonId,
+              status: "completed",
+              lastStep: step,
+              accuracyPct: nextAccuracy,
+            });
+          } catch (e) {
+            console.error("[Progress] upsert failed:", e);
+          }
+        })();
       }
       navigate("/dashboard");
     }
@@ -271,16 +342,39 @@ const Lesson: React.FC = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ px: 3, py: 6, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!lesson || !steps.length) {
+    return (
+      <Box sx={{ px: 3, py: 6 }}>
+        <Typography variant="h6">Lesson unavailable.</Typography>
+        <Button sx={{ mt: 2 }} variant="contained" onClick={() => navigate("/dashboard")}>
+          Back to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 3 }, maxWidth: 1000, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" gap={2} mb={2}>
-        <Box sx={{ flex: 1 }}>
+      <Stack direction="row" alignItems="center" gap={2} mb={2} flexWrap="wrap">
+        <Box sx={{ flex: 1, minWidth: 220 }}>
           <LinearProgress variant="determinate" value={pct} />
         </Box>
+
         <Typography variant="body2">{pct}%</Typography>
-        <Typography variant="body2" sx={{ ml: 2 }}>
+        <Typography variant="body2" sx={{ ml: 1 }}>
           Acc: {accuracy}%
         </Typography>
+
+        <Box sx={{ flexGrow: 1 }} />
+
         <Button variant="text" onClick={() => navigate("/dashboard")}>
           Save & Exit
         </Button>
@@ -294,6 +388,7 @@ const Lesson: React.FC = () => {
         <Button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
           Back
         </Button>
+
         <Stack direction="row" gap={1}>
           <Button onClick={handleSkip} color="warning" variant="outlined">
             Skip

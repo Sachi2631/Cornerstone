@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { getLessonBySlug, createLesson, updateLesson } from "../controllers/lessonController";
 import { requireAuth } from "../middleware/requireAuth";
+import { getLessonById, createLesson, updateLesson } from "../controllers/lessonController";
 
 const router = Router();
 
-router.get("/:slug", requireAuth, getLessonBySlug);
+router.get("/:lessonId", requireAuth, getLessonById);
 
 // (optional admin)
 router.post("/", requireAuth, createLesson);

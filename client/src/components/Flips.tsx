@@ -1,45 +1,38 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Box, Grid, IconButton, Button, useMediaQuery, useTheme } from "@mui/material";
+import React, { useMemo, useRef, useState } from "react";
+import { Box, Grid, IconButton, Button, useMediaQuery, useTheme, Typography } from "@mui/material";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-
-// type CardData = { id: number; front: string; back: string };
-
-// interface FlipsProps {
-//   onResult: ResultCb;
-//   cards: CardData[];
-//   correctCardId: number;
-// }
 
 type CardData = { id: number; front: string; back: string; audio?: string };
+
 type FlipsProps = {
   onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
   prompt?: string;
-  /** which card is the correct answer */
+
+  /** which card id is the correct answer (must match cards[].id) */
   correctCardId?: number;
+
   cards?: CardData[];
 };
 
 const defaultCards: CardData[] = [
-  { id: 1, front: "あ/ア", back: "Looks like an apple" },
-  { id: 2, front: "い/イ", back: "Looks like an ear" },
-  { id: 3, front: "う/ウ", back: "Looks like someone being punched" },
+  { id: 0, front: "あ/ア", back: "Looks like an apple" },
+  { id: 1, front: "い/イ", back: "Looks like an ear" },
+  { id: 2, front: "う/ウ", back: "Looks like someone being punched" },
 ];
 
-const Flips = ({
+const Flips: React.FC<FlipsProps> = ({
   onResult,
   prompt = "Flip the cards, then select the correct one.",
-  correctCardId = 1,
+  correctCardId = 0,
   cards = defaultCards,
-}: FlipsProps): React.ReactElement => {
+}) => {
   const [flipped, setFlipped] = useState<Record<number, boolean>>({});
-  const answeredRef = useRef(false); // ensure only one submission
+  const answeredRef = useRef(false);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const toggleFlip = (id: number) => {
-    setFlipped((p) => ({ ...p, [id]: !p[id] }));
-  };
+  const toggleFlip = (id: number) => setFlipped((p) => ({ ...p, [id]: !p[id] }));
 
   const playAudio = (src?: string) => {
     if (!src) return;
@@ -47,129 +40,134 @@ const Flips = ({
     void a.play();
   };
 
-  // Optional: auto-enable the "Next" arrow after all have been flipped at least once (no grading)
-  const allFlipped = cards.every((c) => flipped[c.id]);
+  const allFlipped = useMemo(() => cards.every((c) => flipped[c.id]), [cards, flipped]);
 
   const selectAnswer = (pickedId: number) => {
     if (answeredRef.current) return;
     answeredRef.current = true;
+
     const correct = pickedId === correctCardId;
-    console.log("[FLIPS] answer selected:", { pickedId, correctCardId, correct });
+
     onResult?.({
       result: correct ? "correct" : "incorrect",
-      detail: { pickedId, correctCardId, flippedIds: Object.keys(flipped) },
+      detail: {
+        pickedId,
+        correctCardId,
+        flippedIds: Object.keys(flipped).map((x) => Number(x)),
+      },
     });
   };
 
-  const renderCard = (card: CardData) => (
-    <Box
-      key={card.id}
-      sx={{ perspective: "1000px", width: isMobile ? "100%" : 250, height: 200, cursor: "pointer" }}
-      onClick={() => toggleFlip(card.id)}
-    >
-      <Box
-        sx={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          transition: "transform 0.6s",
-          transformStyle: "preserve-3d",
-          transform: flipped[card.id] ? "rotateY(180deg)" : "rotateY(0deg)",
-        }}
-      >
-        {/* Front */}
+  const renderCard = (card: CardData) => {
+    const isFlipped = !!flipped[card.id];
+
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
         <Box
           sx={{
-            position: "absolute",
-            inset: 0,
-            backfaceVisibility: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "2px solid #ccc",
-            borderRadius: 3,
-            bgcolor: "#fff",
-            boxShadow: 3,
-            fontSize: "2.3rem",
-            fontWeight: 500,
-            userSelect: "none",
+            perspective: "1000px",
+            width: isMobile ? "100%" : 250,
+            height: 200,
+            cursor: "pointer",
           }}
+          onClick={() => toggleFlip(card.id)}
         >
-          {card.front}
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              transition: "transform 0.6s",
+              transformStyle: "preserve-3d",
+              transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            }}
+          >
+            {/* Front */}
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                backfaceVisibility: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "2px solid #ccc",
+                borderRadius: 3,
+                bgcolor: "#fff",
+                boxShadow: 3,
+                fontSize: "2.3rem",
+                fontWeight: 600,
+                userSelect: "none",
+              }}
+            >
+              {card.front}
+            </Box>
+
+            {/* Back */}
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                backfaceVisibility: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "2px solid #ccc",
+                borderRadius: 3,
+                bgcolor: "#fff",
+                boxShadow: 3,
+                fontSize: "1.05rem",
+                fontWeight: 500,
+                padding: 1,
+                textAlign: "center",
+                userSelect: "none",
+                transform: "rotateY(180deg)",
+              }}
+            >
+              {card.back}
+            </Box>
+          </Box>
         </Box>
 
-        {/* Back */}
-        <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            backfaceVisibility: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "2px solid #ccc",
-            borderRadius: 3,
-            bgcolor: "#fff",
-            boxShadow: 3,
-            fontSize: "1.1rem",
-            fontWeight: 500,
-            padding: 1,
-            textAlign: "center",
-            userSelect: "none",
-            transform: "rotateY(180deg)",
-          }}
-        >
-          {card.back}
+        <Box display="flex" gap={1} alignItems="center">
+          <IconButton onClick={() => playAudio(card.audio)} title="Play audio" size="small">
+            <VolumeUpIcon color="primary" />
+          </IconButton>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => selectAnswer(card.id)}
+            disabled={answeredRef.current || !allFlipped}
+          >
+            Select
+          </Button>
         </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
+
+  if (!cards.length) {
+    return (
+      <Box p={3}>
+        <Typography>No cards.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box display="flex" flexDirection="column" px={3} py={2} width="100%" maxWidth={900}>
-      <Box textAlign="center" mb={2} fontWeight={600}>
-        {prompt}
+      <Box textAlign="center" mb={2}>
+        <Typography fontWeight={700}>{prompt}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Flip all cards, then select one.
+        </Typography>
       </Box>
 
-      {/* Top card with controls */}
-      <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
-        {renderCard(cards[0])}
-        <Box display="flex" gap={1} mt={1}>
-          <IconButton onClick={() => playAudio(cards[0].audio)} title="Play audio">
-            <VolumeUpIcon color="primary" />
-          </IconButton>
-          <IconButton disabled={!allFlipped} title="Next hint (ungraded)">
-            <ArrowForwardIosIcon color="primary" />
-          </IconButton>
-        </Box>
-        {/* <Button
-          sx={{ mt: 1 }}
-          variant="outlined"
-          onClick={() => selectAnswer(cards[0].id)}
-          disabled={answeredRef.current}
-        >
-          Select
-        </Button> */}
-      </Box>
-
-      {/* Bottom cards */}
       <Grid container spacing={2} justifyContent="center">
-        {cards.slice(1).map((card) => (
-          <Grid item key={card.id}>
-            <Box display="flex" flexDirection="column" alignItems="center">
-              {renderCard(card)}
-              <IconButton sx={{ mt: 1 }} onClick={() => playAudio(card.audio)} title="Play audio">
-                <VolumeUpIcon color="primary" />
-              </IconButton>
-              {/* <Button
-                sx={{ mt: 1 }}
-                variant="outlined"
-                onClick={() => selectAnswer(card.id)}
-                disabled={answeredRef.current}
-              >
-                Select
-              </Button> */}
-            </Box>
+        {cards.map((card) => (
+          <Grid item key={card.id} xs={12} sm={6} md={4} display="flex" justifyContent="center">
+            {renderCard(card)}
           </Grid>
         ))}
       </Grid>
