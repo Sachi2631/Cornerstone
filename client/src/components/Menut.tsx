@@ -121,12 +121,12 @@ const styles = {
 
   fixedOpen: {
     position: "fixed",
-    top: "calc(var(--app-header-height, 73px) + 40px)",
+    top: "var(--app-header-height, 73px)",
     left: "30px",
     minWidth: "60px",
     height: "50px",
     cursor: "pointer",
-    zIndex: 100000,
+    zIndex: 2100,
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -160,7 +160,7 @@ const styles = {
     position: "fixed",
     top: "var(--app-header-height, 73px)",
     left: 0,
-    zIndex: 999,
+    zIndex: 1500,
     paddingTop: "60px",
     boxShadow: "2px 0 10px rgba(0,0,0,0.2)",
     overflowY: "auto",
