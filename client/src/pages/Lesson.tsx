@@ -1,5 +1,5 @@
 // src/pages/Lesson.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, LinearProgress, Stack, Typography, CircularProgress } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -18,17 +18,18 @@ import { getLesson, LessonDoc } from "../services/lessons";
 type ResultCb = (args: { result: "correct" | "incorrect"; detail?: any }) => void;
 type StepSpec = { key: string; graded: boolean; comp: (on: ResultCb) => React.ReactNode };
 
-// --- Local prop contracts matching how we use each component here ---
-type CardData = { id: number; front: string; back: string };
+// ---------- Local prop contracts (align with your actual components) ----------
+type CardData = { id: number; front: string; back: string; audio?: string };
 
 interface FlipsProps {
-  onResult: ResultCb;
-  cards: CardData[];
-  correctCardId: number;
+  onResult?: ResultCb;
+  prompt?: string;
+  correctCardId?: number;
+  cards?: CardData[];
 }
 
 interface AudioMatchProps {
-  onResult: ResultCb;
+  onResult?: ResultCb;
   options: string[];
   correctAnswer: string;
   audioUrl?: string;
@@ -36,24 +37,21 @@ interface AudioMatchProps {
 }
 
 interface DragDropProps {
-  onResult: ResultCb;
+  onResult?: ResultCb;
   prompt?: string;
+
   characterBank?: string[];
   correctAnswer?: string;
   audioUrl?: string;
 
-  // keep legacy so older uses don't break
   bankItems?: string[];
   answer?: string[];
   caption?: string;
 }
 
-interface DotMatchPair {
-  hiragana: string;
-  katakana: string;
-}
+export type DotMatchPair = { hiragana: string; katakana: string };
 interface DotMatchProps {
-  onResult: ResultCb;
+  onResult?: ResultCb;
   pairs: DotMatchPair[];
 }
 
@@ -72,7 +70,7 @@ interface RewardInfoProps {
   description: string;
 }
 
-// --- Cast imported components to the prop contracts above ---
+// ---------- Cast imported components ----------
 const FlipsC = Flips as unknown as React.FC<FlipsProps>;
 const AudioC = AudioMatch as unknown as React.FC<AudioMatchProps>;
 const DragC = DragDrop as unknown as React.FC<DragDropProps>;
@@ -81,6 +79,7 @@ const FactC = Fact as unknown as React.FC<FactProps>;
 const RewardC = Reward as unknown as React.FC<RewardProps>;
 const RInfoC = RInfo as unknown as React.FC<RewardInfoProps>;
 
+// ---------- Helpers ----------
 function splitPair(s: string): DotMatchPair {
   const [hiragana, katakana] = String(s).split("/");
   return { hiragana: hiragana ?? s, katakana: katakana ?? "" };
@@ -92,26 +91,30 @@ function normalizeChoiceLabel(s: string): string {
 }
 
 function resolveLessonIdentifier(lesson: LessonDoc): string {
-  // You switched your DB seed to use slug. Keep compatibility with older fields.
   return (
-    (lesson as any).slug ||
-    (lesson as any).id ||
-    (lesson as any).lessonId ||
+    String((lesson as any).slug || "") ||
+    String((lesson as any).id || "") ||
+    String((lesson as any).lessonId || "") ||
     String((lesson as any)._id || "")
   );
 }
 
-function getLessonTitle(lesson: LessonDoc): string {
-  const title = String((lesson as any).title || "Lesson");
-  const version = String((lesson as any).version || "");
-  return version ? `${title} (${version})` : title;
+function getLessonHeader(lesson: LessonDoc): string {
+  const t = String((lesson as any).title || "Lesson");
+  const v = String((lesson as any).version || "");
+  return v ? `${t} (${v})` : t;
+}
+
+// Optional: create a stable step key even if exerciseId missing
+function stepKeyFromExercise(ex: any, fallbackIndex: number): string {
+  return String(ex?.exerciseId || ex?._id || `${String(ex?.type || "exercise")}-${fallbackIndex}`);
 }
 
 const Lesson: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  // Route is /lesson/:lessonId (now lessonId should be the slug)
+  // Route should be /lesson/:lessonId where lessonId is your slug (e.g. hiragana-l1-v1)
   const lessonId = String(params.lessonId || "");
 
   const [loading, setLoading] = useState(true);
@@ -120,6 +123,9 @@ const Lesson: React.FC = () => {
   const [step, setStep] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [attemptCount, setAttemptCount] = useState(0);
+
+  // Prevent double-submits from components that can fire multiple times
+  const answeredStepRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -137,9 +143,12 @@ const Lesson: React.FC = () => {
         if (!mounted) return;
 
         setLesson(l);
+
+        // reset state on lesson change
         setStep(0);
         setCorrectCount(0);
         setAttemptCount(0);
+        answeredStepRef.current = {};
       } catch (e) {
         console.error("[Lesson] fetch failed:", e);
         navigate("/dashboard", { replace: true });
@@ -155,53 +164,61 @@ const Lesson: React.FC = () => {
 
   const lessonKey = useMemo(() => (lesson ? resolveLessonIdentifier(lesson) : ""), [lesson]);
 
+  // Build steps based on exercises.type (connectTheDots, matchAudioLetter, vocabulary_drag_drop)
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
 
     const out: StepSpec[] = [];
 
-    // 1) Flips from flashcards (unchanged logic)
-    if ((lesson as any).flashcards?.length) {
+    // 1) Flips uses lesson.flashcards (not exercises)
+    const flashcards: string[] = (lesson as any).flashcards || [];
+    if (flashcards.length) {
       out.push({
         key: "flips",
         graded: true,
         comp: (on) => {
-          const flashcards: string[] = (lesson as any).flashcards || [];
-          const cardData: CardData[] = flashcards.map((raw, index) => ({
-            id: index,
+          const cardData: CardData[] = flashcards.map((raw, idx) => ({
+            id: idx,
             front: raw,
-            back: "",
+            back: "", // you can later populate mnemonic backs if you add them
           }));
 
           const correctRaw = String((lesson as any).flashcardsCorrect || flashcards[0] || "");
           const idx = flashcards.findIndex((x) => x === correctRaw);
           const correctId = idx >= 0 ? idx : 0;
 
-          return <FlipsC onResult={on} cards={cardData} correctCardId={correctId} />;
+          return (
+            <FlipsC
+              onResult={on}
+              prompt={"Flip the cards, then select the correct one."}
+              cards={cardData}
+              correctCardId={correctId}
+            />
+          );
         },
       });
     }
 
-    // 2) Exercises drive components (MATCH BY ex.type)
+    // 2) Exercises -> component mapping by `type`
     const exercises: any[] = (lesson as any).exercises || [];
-    for (const ex of exercises) {
+    exercises.forEach((ex, i) => {
       const exType = String(ex?.type || "");
-      const exKey = String(ex?.exerciseId || ex?._id || `${exType}-${Math.random()}`);
+      const key = stepKeyFromExercise(ex, i);
 
       if (exType === "connectTheDots") {
         out.push({
-          key: exKey,
+          key,
           graded: true,
           comp: (on) => <DotsC onResult={on} pairs={(ex.items || []).map(splitPair)} />,
         });
-        continue;
+        return;
       }
 
       if (exType === "matchAudioLetter") {
         const options = (ex.items || []).map(normalizeChoiceLabel);
         const correctAnswer = normalizeChoiceLabel((ex.correctAnswers || [])[0] || options[0] || "");
         out.push({
-          key: exKey,
+          key,
           graded: true,
           comp: (on) => (
             <AudioC
@@ -209,16 +226,16 @@ const Lesson: React.FC = () => {
               options={options}
               correctAnswer={correctAnswer}
               audioUrl={ex.audioUrl}
-              prompt={ex.prompt}
+              prompt={ex.prompt || "Listen and choose the right character"}
             />
           ),
         });
-        continue;
+        return;
       }
 
       if (exType === "vocabulary_drag_drop") {
         out.push({
-          key: exKey,
+          key,
           graded: true,
           comp: (on) => (
             <DragC
@@ -226,17 +243,18 @@ const Lesson: React.FC = () => {
               prompt={ex.prompt || "Build the correct word"}
               characterBank={ex.characterBank || []}
               correctAnswer={ex.correctAnswer}
+              audioUrl={ex.audioUrl}
             />
           ),
         });
-        continue;
+        return;
       }
 
-      // Unknown exercise types: skip (no logic change, just safety)
+      // Unknown exercise types: ignore (keeps logic safe)
       console.warn("[Lesson] unknown exercise type:", exType, ex);
-    }
+    });
 
-    // 3) Fun fact
+    // 3) Fun fact (informational)
     if ((lesson as any).funFact) {
       out.push({
         key: "fact",
@@ -245,7 +263,7 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 4) Rewards
+    // 4) Achievement -> Reward component (match achievements with rewards)
     if ((lesson as any).achievement?.title || (lesson as any).achievement?.xp !== undefined) {
       out.push({
         key: "reward",
@@ -259,7 +277,7 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 5) Notes
+    // 5) Notes -> RewardInfo page (kept)
     if ((lesson as any).notes) {
       out.push({
         key: "rinfo",
@@ -274,18 +292,16 @@ const Lesson: React.FC = () => {
   const pct = steps.length ? Math.round(((step + 1) / steps.length) * 100) : 0;
   const accuracy = attemptCount ? Math.round((100 * correctCount) / attemptCount) : 0;
 
-  // ✅ No unhandled promise; also uses slug/id consistently
+  // Start progress (no unhandled promise; uses slug/id)
   useEffect(() => {
     if (!lesson) return;
     if (!isAuthed()) return;
-
-    const key = lessonKey;
-    if (!key) return;
+    if (!lessonKey) return;
 
     void (async (): Promise<void> => {
       try {
         await upsertProgress({
-          lessonId: key, // ✅ use slug
+          lessonId: lessonKey,
           status: "in_progress",
           lastStep: 0,
           accuracyPct: 0,
@@ -300,30 +316,33 @@ const Lesson: React.FC = () => {
     result,
     detail,
     createAttempt,
+    stepKey,
   }: {
     result: "correct" | "incorrect";
     detail?: any;
     createAttempt: boolean;
+    stepKey: string;
   }) {
+    // prevent repeated submit from same step
+    if (answeredStepRef.current[stepKey]) return;
+    answeredStepRef.current[stepKey] = true;
+
     const isLast = step >= steps.length - 1;
 
     const nextAttemptCount = attemptCount + (createAttempt ? 1 : 0);
-    const nextCorrectCount =
-      nextAttemptCount
-        ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
-        : correctCount;
+    const nextCorrectCount = nextAttemptCount
+      ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
+      : correctCount;
 
     const nextAccuracy = nextAttemptCount ? Math.round((100 * nextCorrectCount) / nextAttemptCount) : accuracy;
 
     setAttemptCount(nextAttemptCount);
     setCorrectCount(nextCorrectCount);
 
-    // ✅ attempts/progress keyed by slug (or fallback)
-    const key = lesson ? resolveLessonIdentifier(lesson) : "";
-    if (lesson && isAuthed() && createAttempt && key) {
+    if (lesson && isAuthed() && createAttempt && lessonKey) {
       void (async (): Promise<void> => {
         try {
-          await submitAttempt({ lessonId: key, stepIndex: step, result, detail });
+          await submitAttempt({ lessonId: lessonKey, stepIndex: step, result, detail });
         } catch (e) {
           console.error("[Attempt] submit failed:", e);
         }
@@ -334,11 +353,11 @@ const Lesson: React.FC = () => {
       const nextStep = step + 1;
       setStep(nextStep);
 
-      if (lesson && isAuthed() && key) {
+      if (lesson && isAuthed() && lessonKey) {
         void (async (): Promise<void> => {
           try {
             await upsertProgress({
-              lessonId: key,
+              lessonId: lessonKey,
               status: "in_progress",
               lastStep: nextStep,
               accuracyPct: nextAccuracy,
@@ -349,11 +368,11 @@ const Lesson: React.FC = () => {
         })();
       }
     } else {
-      if (lesson && isAuthed() && key) {
+      if (lesson && isAuthed() && lessonKey) {
         void (async (): Promise<void> => {
           try {
             await upsertProgress({
-              lessonId: key,
+              lessonId: lessonKey,
               status: "completed",
               lastStep: step,
               accuracyPct: nextAccuracy,
@@ -368,24 +387,38 @@ const Lesson: React.FC = () => {
   }
 
   const handleResult = (args: { result: "correct" | "incorrect"; detail?: any }) => {
-    advance({ ...args, createAttempt: true });
+    const k = steps[step]?.key || String(step);
+    advance({ ...args, createAttempt: true, stepKey: k });
   };
 
   const handleSkip = safe(async () => {
+    const graded = steps[step]?.graded ?? false;
+    const k = steps[step]?.key || String(step);
     advance({
       result: "incorrect",
       detail: { skipped: true },
-      createAttempt: steps[step]?.graded ?? false,
+      createAttempt: graded,
+      stepKey: k,
     });
   });
 
   const handleNext = () => {
     const graded = steps[step]?.graded ?? false;
+    const k = steps[step]?.key || String(step);
     advance({
       result: graded ? "incorrect" : "correct",
       detail: graded ? { nextOnGraded: true } : { informational: true },
       createAttempt: graded,
+      stepKey: k,
     });
+  };
+
+  // If user goes back manually, allow answering again (remove step lock for that step key)
+  const handleBack = () => {
+    const prevStep = Math.max(0, step - 1);
+    const prevKey = steps[prevStep]?.key;
+    if (prevKey) delete answeredStepRef.current[prevKey];
+    setStep(prevStep);
   };
 
   if (loading) {
@@ -427,7 +460,7 @@ const Lesson: React.FC = () => {
       </Stack>
 
       <Typography variant="h6" sx={{ mb: 1 }}>
-        {getLessonTitle(lesson)}
+        {getLessonHeader(lesson)}
       </Typography>
 
       <Box sx={{ minHeight: 420, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -435,7 +468,7 @@ const Lesson: React.FC = () => {
       </Box>
 
       <Stack direction="row" justifyContent="space-between" mt={2}>
-        <Button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+        <Button disabled={step === 0} onClick={handleBack}>
           Back
         </Button>
 
