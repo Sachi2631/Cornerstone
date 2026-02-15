@@ -1,3 +1,4 @@
+// src/pages/Lesson.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Button, LinearProgress, Stack, Typography, CircularProgress } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
@@ -47,7 +48,6 @@ interface DragDropProps {
   caption?: string;
 }
 
-
 interface DotMatchPair {
   hiragana: string;
   katakana: string;
@@ -82,23 +82,37 @@ const RewardC = Reward as unknown as React.FC<RewardProps>;
 const RInfoC = RInfo as unknown as React.FC<RewardInfoProps>;
 
 function splitPair(s: string): DotMatchPair {
-  // "あ/ア" => { hiragana: "あ", katakana: "ア" }
   const [hiragana, katakana] = String(s).split("/");
   return { hiragana: hiragana ?? s, katakana: katakana ?? "" };
 }
 
 function normalizeChoiceLabel(s: string): string {
-  // For audio choices we show only hiragana by default: "あ/ア" -> "あ"
   const [a] = String(s).split("/");
   return a ?? s;
+}
+
+function resolveLessonIdentifier(lesson: LessonDoc): string {
+  // You switched your DB seed to use slug. Keep compatibility with older fields.
+  return (
+    (lesson as any).slug ||
+    (lesson as any).id ||
+    (lesson as any).lessonId ||
+    String((lesson as any)._id || "")
+  );
+}
+
+function getLessonTitle(lesson: LessonDoc): string {
+  const title = String((lesson as any).title || "Lesson");
+  const version = String((lesson as any).version || "");
+  return version ? `${title} (${version})` : title;
 }
 
 const Lesson: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  // You should route like /lesson/:lessonId
-  const lessonId = (params.lessonId || "lesson_1_v1") as string;
+  // Route is /lesson/:lessonId (now lessonId should be the slug)
+  const lessonId = String(params.lessonId || "");
 
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<LessonDoc | null>(null);
@@ -110,15 +124,24 @@ const Lesson: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    void (async (): Promise<void> => {
       try {
         setLoading(true);
+
+        if (!lessonId) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+
         const l = await getLesson(lessonId);
         if (!mounted) return;
+
         setLesson(l);
+        setStep(0);
+        setCorrectCount(0);
+        setAttemptCount(0);
       } catch (e) {
         console.error("[Lesson] fetch failed:", e);
-        // if lesson can't load, go back
         navigate("/dashboard", { replace: true });
       } finally {
         if (mounted) setLoading(false);
@@ -130,25 +153,28 @@ const Lesson: React.FC = () => {
     };
   }, [lessonId, navigate]);
 
+  const lessonKey = useMemo(() => (lesson ? resolveLessonIdentifier(lesson) : ""), [lesson]);
+
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
 
     const out: StepSpec[] = [];
 
-    // 1) Flips from flashcards
-    if (lesson.flashcards?.length) {
+    // 1) Flips from flashcards (unchanged logic)
+    if ((lesson as any).flashcards?.length) {
       out.push({
         key: "flips",
         graded: true,
         comp: (on) => {
-          const cardData: CardData[] = lesson.flashcards.map((raw, index) => ({
+          const flashcards: string[] = (lesson as any).flashcards || [];
+          const cardData: CardData[] = flashcards.map((raw, index) => ({
             id: index,
             front: raw,
             back: "",
           }));
 
-          const correctRaw = lesson.flashcardsCorrect || lesson.flashcards[0] || "";
-          const idx = lesson.flashcards.findIndex((x) => x === correctRaw);
+          const correctRaw = String((lesson as any).flashcardsCorrect || flashcards[0] || "");
+          const idx = flashcards.findIndex((x) => x === correctRaw);
           const correctId = idx >= 0 ? idx : 0;
 
           return <FlipsC onResult={on} cards={cardData} correctCardId={correctId} />;
@@ -156,21 +182,26 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 2) Exercises drive components
-    for (const ex of lesson.exercises || []) {
-      if (ex.type === "connectTheDots") {
+    // 2) Exercises drive components (MATCH BY ex.type)
+    const exercises: any[] = (lesson as any).exercises || [];
+    for (const ex of exercises) {
+      const exType = String(ex?.type || "");
+      const exKey = String(ex?.exerciseId || ex?._id || `${exType}-${Math.random()}`);
+
+      if (exType === "connectTheDots") {
         out.push({
-          key: ex.exerciseId,
+          key: exKey,
           graded: true,
           comp: (on) => <DotsC onResult={on} pairs={(ex.items || []).map(splitPair)} />,
         });
+        continue;
       }
 
-      if (ex.type === "matchAudioLetter") {
+      if (exType === "matchAudioLetter") {
         const options = (ex.items || []).map(normalizeChoiceLabel);
         const correctAnswer = normalizeChoiceLabel((ex.correctAnswers || [])[0] || options[0] || "");
         out.push({
-          key: ex.exerciseId,
+          key: exKey,
           graded: true,
           comp: (on) => (
             <AudioC
@@ -182,11 +213,12 @@ const Lesson: React.FC = () => {
             />
           ),
         });
+        continue;
       }
 
-      if (ex.type === "vocabulary_drag_drop") {
+      if (exType === "vocabulary_drag_drop") {
         out.push({
-          key: ex.exerciseId,
+          key: exKey,
           graded: true,
           comp: (on) => (
             <DragC
@@ -197,35 +229,42 @@ const Lesson: React.FC = () => {
             />
           ),
         });
+        continue;
       }
+
+      // Unknown exercise types: skip (no logic change, just safety)
+      console.warn("[Lesson] unknown exercise type:", exType, ex);
     }
 
     // 3) Fun fact
-    if (lesson.funFact) {
+    if ((lesson as any).funFact) {
       out.push({
         key: "fact",
         graded: false,
-        comp: () => <FactC title="Fun Fact" description={lesson.funFact || ""} />,
+        comp: () => <FactC title="Fun Fact" description={String((lesson as any).funFact || "")} />,
       });
     }
 
     // 4) Rewards
-    if (lesson.achievement?.title || lesson.achievement?.xp !== undefined) {
+    if ((lesson as any).achievement?.title || (lesson as any).achievement?.xp !== undefined) {
       out.push({
         key: "reward",
         graded: false,
         comp: () => (
-          <RewardC title={lesson.achievement?.title || "Lesson Complete!"} xp={lesson.achievement?.xp ?? 0} />
+          <RewardC
+            title={String((lesson as any).achievement?.title || "Lesson Complete!")}
+            xp={(lesson as any).achievement?.xp ?? 0}
+          />
         ),
       });
     }
 
-    // 5) Optional info page
-    if (lesson.notes) {
+    // 5) Notes
+    if ((lesson as any).notes) {
       out.push({
         key: "rinfo",
         graded: false,
-        comp: () => <RInfoC title="Notes" description={lesson.notes || ""} />,
+        comp: () => <RInfoC title="Notes" description={String((lesson as any).notes || "")} />,
       });
     }
 
@@ -235,25 +274,27 @@ const Lesson: React.FC = () => {
   const pct = steps.length ? Math.round(((step + 1) / steps.length) * 100) : 0;
   const accuracy = attemptCount ? Math.round((100 * correctCount) / attemptCount) : 0;
 
-  // IMPORTANT: catch upsertProgress errors so 500 doesn't crash the UI (your current code triggers Uncaught runtime)
+  // ✅ No unhandled promise; also uses slug/id consistently
   useEffect(() => {
     if (!lesson) return;
+    if (!isAuthed()) return;
 
-    if (isAuthed()) {
-      void (async () => {
-        try {
-          await upsertProgress({
-            lessonId: lesson.lessonId,
-            status: "in_progress",
-            lastStep: 0,
-            accuracyPct: 0,
-          });
-        } catch (e) {
-          console.error("[Progress] upsert failed:", e);
-        }
-      })();
-    }
-  }, [lesson]);
+    const key = lessonKey;
+    if (!key) return;
+
+    void (async (): Promise<void> => {
+      try {
+        await upsertProgress({
+          lessonId: key, // ✅ use slug
+          status: "in_progress",
+          lastStep: 0,
+          accuracyPct: 0,
+        });
+      } catch (e) {
+        console.error("[Progress] upsert failed:", e);
+      }
+    })();
+  }, [lesson, lessonKey]);
 
   function advance({
     result,
@@ -265,19 +306,24 @@ const Lesson: React.FC = () => {
     createAttempt: boolean;
   }) {
     const isLast = step >= steps.length - 1;
+
     const nextAttemptCount = attemptCount + (createAttempt ? 1 : 0);
-    const nextCorrectCount = nextAttemptCount
-      ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
-      : correctCount;
+    const nextCorrectCount =
+      nextAttemptCount
+        ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
+        : correctCount;
+
     const nextAccuracy = nextAttemptCount ? Math.round((100 * nextCorrectCount) / nextAttemptCount) : accuracy;
 
     setAttemptCount(nextAttemptCount);
     setCorrectCount(nextCorrectCount);
 
-    if (lesson && isAuthed() && createAttempt) {
-      void (async () => {
+    // ✅ attempts/progress keyed by slug (or fallback)
+    const key = lesson ? resolveLessonIdentifier(lesson) : "";
+    if (lesson && isAuthed() && createAttempt && key) {
+      void (async (): Promise<void> => {
         try {
-          await submitAttempt({ lessonId: lesson.lessonId, stepIndex: step, result, detail });
+          await submitAttempt({ lessonId: key, stepIndex: step, result, detail });
         } catch (e) {
           console.error("[Attempt] submit failed:", e);
         }
@@ -288,11 +334,11 @@ const Lesson: React.FC = () => {
       const nextStep = step + 1;
       setStep(nextStep);
 
-      if (lesson && isAuthed()) {
-        void (async () => {
+      if (lesson && isAuthed() && key) {
+        void (async (): Promise<void> => {
           try {
             await upsertProgress({
-              lessonId: lesson.lessonId,
+              lessonId: key,
               status: "in_progress",
               lastStep: nextStep,
               accuracyPct: nextAccuracy,
@@ -303,11 +349,11 @@ const Lesson: React.FC = () => {
         })();
       }
     } else {
-      if (lesson && isAuthed()) {
-        void (async () => {
+      if (lesson && isAuthed() && key) {
+        void (async (): Promise<void> => {
           try {
             await upsertProgress({
-              lessonId: lesson.lessonId,
+              lessonId: key,
               status: "completed",
               lastStep: step,
               accuracyPct: nextAccuracy,
@@ -379,6 +425,10 @@ const Lesson: React.FC = () => {
           Save & Exit
         </Button>
       </Stack>
+
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        {getLessonTitle(lesson)}
+      </Typography>
 
       <Box sx={{ minHeight: 420, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {steps[step]?.comp(handleResult)}
