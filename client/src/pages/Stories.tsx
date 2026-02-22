@@ -20,20 +20,7 @@ const Stories = (): React.ReactElement => {
       </Box>
 
       <Container maxWidth="lg" sx={{ pt: { xs: 6, sm: 7 }, pb: { xs: 6, md: 8 } }}>
-        {/* Header */}
-        <Typography
-          variant="h2"
-          sx={{
-            textAlign: 'center',
-            mb: { xs: 3, md: 4 },
-            fontSize: { xs: '1.9rem', sm: '2.4rem', md: '3rem' },
-            lineHeight: 1.1,
-          }}
-        >
-          Stories
-        </Typography>
 
-        {/* All Stories */}
         <Typography
           variant="h4"
           sx={{
@@ -60,10 +47,10 @@ const Stories = (): React.ReactElement => {
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: 10,
                   bgcolor: bg,
                   aspectRatio: '1 / 1' as any,
-                  height: { xs: 140, sm: 160, md: 180 }, // fallback for browsers w/o aspect-ratio
+                  height: { xs: 140, sm: 160, md: 180 },
                   mx: 'auto',
                 }}
               >
@@ -71,13 +58,28 @@ const Stories = (): React.ReactElement => {
                   sx={{
                     width: '100%',
                     height: '100%',
-                    borderRadius: 3,
+                    borderRadius: 30,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    
                   }}
                   aria-label={`Open story ${i + 1}`}
-                />
+                >
+                  {bg === '#505c68' && (
+                    <Box
+                      component="img"
+                      src="assets/Lock.png"
+                      alt="Locked"
+                      sx={{
+                        width: '45%',
+                        maxWidth: 100,
+                        opacity: 0.9,
+                        
+                      }}
+                    />
+                  )}
+                </CardActionArea>
               </Card>
             </Grid>
           ))}
@@ -105,142 +107,185 @@ const Stories = (): React.ReactElement => {
             px: { xs: 0, sm: 1 },
           }}
         >
-          Unit 1
+          UNIT 1: MOMOTARO
         </Typography>
 
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={{ xs: 3, md: 4 }}
+    <Stack
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={4}
+      sx={{ alignItems: 'stretch', backgroundColor: 'green', witdh:'40vw', }}
+    >
+      {/* LEFT STORY CARD */}
+      <Box
+        sx={{
+          height: 220,
+          backgroundColor: '#9fb1c4',
+          borderRadius: '28px',
+          width: '28vw',
+          p: 4,
+          display: 'flex',
+          gap: 3,
+          alignItems: 'center',
+        }}
+      >
+        {/* Peach image placeholder */}
+        <Box
           sx={{
-            alignItems: { xs: 'stretch', md: 'flex-start' },
-            justifyContent: 'space-between',
-            flexWrap: 'nowrap',
+            width: 180,
+            height: 180,
+            borderRadius: '20px',
+            backgroundColor: '#e0e0e0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            color: '#777',
+            flexShrink: 0,
           }}
         >
-          {/* Left Panel */}
-          <Box
+          <img src="assets/Peach.png" alt="Momotaro" style={{ height: "100px" }} />
+        </Box>
+
+        {/* Text */}
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h4" sx={{ fontSize: '1.25rem', fontWeight: 600 }}>
+            Momotaro
+          </Typography>
+
+          <Typography variant="body2" sx={{ mt: 3, mb: 3, mr: 2, fontSize: '1rem', color: '#1e1e1e', fontWeight:100 }}>
+            Read about the adventure of Momotaro and his mission to defeat the oni!
+          </Typography>
+          <Button
             sx={{
-              backgroundColor: '#92a6ba',
-              borderRadius: '20px',
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'stretch', sm: 'center' },
-              gap: { xs: 2, md: 3 },
-              p: { xs: 2, sm: 3 },
-              flex: { xs: '1 1 100%', md: '1 1 0' }, // grow to fill remaining space
-              minWidth: 0,                            // allow content to shrink without overflow
-              minHeight: { xs: 220, sm: 240, md: 260 },
+              alignSelf: 'flex-end',
+              mt: 1,
+              px: 4,
+              height: "60px",
+              width: "12vw",
+              borderRadius: '999px',
+              backgroundColor: '#d3d3d3',
+              fontSize: '1.4rem',
+              fontWeight: 600,
+              textTransform: 'none',
+              color: '#1e1e1e',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative", // <-- important
+              textAlign: "center",
             }}
           >
+            Read
             <Box
+              component="img"
+              src="assets/Blue Arrow.png"
+              alt="arrow"
               sx={{
-                backgroundColor: '#d9d9d9',
-                borderRadius: '24px',
-                width: { xs: '100%', sm: 180 },
-                height: { xs: 160, sm: 180 },
-                flexShrink: 0,
+                height: "30px",
+                position: "absolute",
+                right: 16, // distance from right edge
               }}
             />
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontSize: { xs: '1.15rem', sm: '1.3rem', md: '1.5rem' } }}
-              >
-                Momotaro
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ mt: 1, fontSize: { xs: '0.95rem', sm: '1rem' } }}
-              >
-                Read about the adventure of Momotaro and his mission to defeat the oni!
-              </Typography>
-              <Button
-                fullWidth
-                sx={{
-                  height: { xs: 44, sm: 48, md: 56 },
-                  width: '100%',
-                  borderRadius: '30px',
-                  backgroundColor: '#d3d3d3',
-                  border: 'none',
-                  fontWeight: 900,
-                  mt: { xs: 2, sm: 2.5 },
-                  textTransform: 'none',
-                  color: '#000',
-                  '&:hover': { backgroundColor: '#c0c0c0' },
-                }}
-              >
-                Read &gt;
-              </Button>
+          </Button>
+        </Box>
+      </Box>
+
+      <Stack spacing={3} sx={{ width: { xs: '100%', md: 360 } }}>
+        <Box
+          sx={{
+            backgroundColor: '#e1e1e1',
+            borderRadius: '22px',
+            p: 2.5,
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 800 }}>
+              Review Vocabulary
+            </Typography>
+            
+          </Stack>
+
+          {/* Progress */}
+          <Box sx={{ mt: 1.5 }}>
+            <Box
+              sx={{
+                height: 6,
+                borderRadius: 999,
+                backgroundColor: '#cfcfcf',
+                overflow: 'hidden',
+              }}
+            >
+              <Box sx={{ width: '0%', height: '100%', backgroundColor: '#7aa0c4' }} />
             </Box>
+            <Typography sx={{ fontSize: '0.75rem', mt: 0.5 }}>0%</Typography>
           </Box>
 
-          {/* Right Panel (actions column) */}
-          <Stack
-            spacing={2}
-            sx={{
-              flex: { xs: '1 1 100%', md: '0 0 320px' }, // fixed column on md+
-              maxWidth: { md: 340 },
-              width: '100%',
-              alignSelf: { xs: 'stretch', md: 'flex-start' },
-            }}
-          >
-            <Button
-              sx={{
-                width: '100%',                // never spills; bounded by the column
-                maxWidth: '100%',
-                height: { xs: 80, sm: 96, md: 110 },
-                backgroundColor: '#d3d3d3',
-                borderRadius: '20px',
-                border: 'none',
-                textTransform: 'none',
-                color: '#000',
-                '&:hover': { backgroundColor: '#c0c0c0' },
-                px: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                Review Vocabulary &gt;
-              </Typography>
-            </Button>
+          <img src="assets/Blue Arrow.png" alt="Momotaro" style={{ height: "30px" }} />
 
-            <Button
+        </Box>
+
+        <Box
+          sx={{
+            backgroundColor: '#e1e1e1',
+            borderRadius: '22px',
+            p: 2.5,
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 800 }}>
+              Learn Grammar
+            </Typography>
+            <img src="assets/Blue Arrow.png" alt="Momotaro" style={{ height: "30px" }} />
+          </Stack>
+
+          {/* Progress */}
+          <Box sx={{ mt: 1.5 }}>
+            <Box
               sx={{
-                width: '100%',
-                maxWidth: '100%',
-                height: { xs: 80, sm: 96, md: 110 },
-                backgroundColor: '#d3d3d3',
-                borderRadius: '20px',
-                border: 'none',
-                textTransform: 'none',
-                color: '#000',
-                '&:hover': { backgroundColor: '#7a92a8' },
-                px: 2,
+                height: 6,
+                borderRadius: 999,
+                backgroundColor: '#cfcfcf',
                 overflow: 'hidden',
               }}
             >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                Learn Grammar &gt;
-              </Typography>
-            </Button>
-          </Stack>
-        </Stack>
+              <Box sx={{ width: '0%', height: '100%', backgroundColor: '#7aa0c4' }} />
+            </Box>
+            <Typography sx={{ fontSize: '0.75rem', mt: 0.5 }}>0%</Typography>
+          </Box>
+        </Box>
+
+        
+      </Stack>
+      
+    </Stack>
+    {/* LEARN BUTTON */}
+    <Button
+      sx={{
+        alignSelf: 'flex-end',
+        mt: 5,
+        mr: 0,
+        height: "80px",
+        width: "18vw",
+        borderRadius: '999px',
+        backgroundColor: '#92a6ba',
+        fontSize: '1.7rem',
+        fontWeight: 400,
+        textTransform: 'none',
+        color: '#1e1e1e',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "20px",
+        '&:hover': { backgroundColor: '#8da3b8' },
+      }}
+    >
+      Learn!
+
+      <img src="assets/Arrow.png" alt="arrow" style={{ height: "30px" }} />
+    </Button>
+
       </Container>
     </Box>
   );
