@@ -1,4 +1,5 @@
-import { getToken } from "./api";
+// src/services/lessons.ts
+import api from "./api";
 
 export type LessonExercise =
   | {
@@ -6,6 +7,7 @@ export type LessonExercise =
       type: "connectTheDots";
       items: string[];
       correctAnswers: string[];
+      prompt?: string;
     }
   | {
       exerciseId: string;
@@ -24,31 +26,41 @@ export type LessonExercise =
     };
 
 export type LessonDoc = {
-  lessonId: string;
+  _id: string;
+  slug: string;
   title: string;
   version?: string;
+
   flashcards: string[];
-  flashcardsCorrect?: string;
   funFact?: string;
   notes?: string;
-  exercises: LessonExercise[];
-  achievement?: { title?: string; xp?: number };
+
+  exercises?: LessonExercise[];
+  achievement?: { title: string; xp: number };
+
+  prefecture: string;
+  isActive?: boolean;
+  tags?: string[];
 };
 
-export async function getLesson(lessonId: string): Promise<LessonDoc> {
-  const token = getToken();
-  if (!token) throw new Error("Missing token");
+export type LessonListItem = Pick<
+  LessonDoc,
+  "_id" | "slug" | "title" | "version" | "flashcards" | "prefecture" | "isActive"
+>;
 
-  const res = await fetch(`/api/lessons/${encodeURIComponent(lessonId)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function listLessons(params?: { prefecture?: string; includeInactive?: boolean }) {
+  const sp = new URLSearchParams();
+  if (params?.prefecture) sp.set("prefecture", params.prefecture);
+  if (params?.includeInactive) sp.set("includeInactive", "true");
 
-  const data = await res.json().catch(() => null);
+  const url = sp.toString() ? `/api/lessons?${sp.toString()}` : "/api/lessons";
+  const res = await api.get<{ lessons: LessonListItem[] }>(url);
+  return res.data.lessons;
+}
 
-  if (!res.ok) {
-    const msg = data?.error || data?.message || `Failed to fetch lesson (${res.status})`;
-    throw new Error(msg);
-  }
-
-  return (data?.lesson ?? data) as LessonDoc;
+export async function getLesson(lessonIdOrSlug: string) {
+  const res = await api.get<{ lesson: LessonDoc }>(
+    `/api/lessons/${encodeURIComponent(lessonIdOrSlug)}`
+  );
+  return res.data.lesson;
 }

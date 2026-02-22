@@ -1,6 +1,6 @@
 // src/controllers/userController.ts
 import { RequestHandler } from "express";
-import User from "../models/User";
+import User from "../models/user";
 import { AuthedRequest } from "../middleware/requireAuth";
 
 export const updateMe: RequestHandler = async (req, res) => {
