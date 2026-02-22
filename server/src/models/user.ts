@@ -1,49 +1,80 @@
 // src/models/User.ts
+
 import mongoose, { Document, Schema } from "mongoose";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
-  rememberMe?: boolean;
-  lastLogin?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  role: "Volunteer" | "Public";
   comparePassword(candidate: string): Promise<boolean>;
 }
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true },
-    rememberMe: { type: Boolean, default: false },
-    lastLogin: { type: Date },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false, // prevents accidental exposure
+    },
+    role: {
+      type: String,
+      enum: ["Volunteer", "Public"],
+      default: "Volunteer",
+    },
   },
   {
-    collection: "User",
     timestamps: true,
-    toJSON: {
-      transform(_doc, ret) {
-        delete ret.password;
-        return ret;
-      },
-    },
   }
 );
 
-userSchema.pre("save", async function (next) {
+/**
+ * Hash password before saving
+ */
+UserSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-userSchema.methods.comparePassword = async function (candidate: string) {
+/**
+ * Compare password during login
+ */
+UserSchema.methods.comparePassword = async function (
+  candidate: string
+): Promise<boolean> {
   return bcrypt.compare(candidate, this.password);
 };
 
-export default mongoose.model<IUser>("User", userSchema);
+/**
+ * Remove sensitive/internal fields when returning JSON
+ */
+UserSchema.set("toJSON", {
+  transform: (_doc, ret) => {
+    const { password, __v, ...safe } = ret;
+    return safe;
+  },
+});
+
+export default mongoose.model<IUser>("User", UserSchema);

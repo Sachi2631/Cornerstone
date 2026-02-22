@@ -13,6 +13,9 @@ import reviewRoutes from './routes/reviewRoutes';
 import resourceRoutes from './routes/resourceRoute';
 //import galleryRoutes from './routes/galleryRoutes';
 
+import mongoose from "mongoose";
+import { Lesson } from "./models/Lesson";
+
 dotenv.config({ path: './.env' });
 
 const app = express();
@@ -49,6 +52,13 @@ app.use('/api/review', reviewRoutes);
 app.use('/api/resources', resourceRoutes);
 //app.use('/api/gallery', galleryRoutes);
 
+app.get("/debug/lessons", async (_req, res) => {
+  const dbName = mongoose.connection.db?.databaseName;
+  const count = await Lesson.countDocuments();
+  const activeCount = await Lesson.countDocuments({ isActive: true });
+  res.json({ dbName, count, activeCount });
+});
+
 // Centralized error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
@@ -61,5 +71,3 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () =>
   console.log(`Server is running on port ${PORT}`)
 );
-
-//localhost:5000/api/gallery/a9s8d6f987a65sd987f65987asd6f9876asd9f876

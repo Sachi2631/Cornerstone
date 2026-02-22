@@ -120,6 +120,11 @@ const Lesson: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<LessonDoc | null>(null);
 
+  // ---- DEBUG (safe; does not alter behavior) ----
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  // ---------------------------------------------
+
   const [step, setStep] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [attemptCount, setAttemptCount] = useState(0);
@@ -140,9 +145,36 @@ const Lesson: React.FC = () => {
         }
 
         const l = await getLesson(lessonId);
+
+        // ---- DEBUG: inspect server payload & critical fields ----
+        console.log("[Lesson][debug] lessonId param:", lessonId);
+        console.log("[Lesson][debug] raw lesson payload:", l);
+        console.log("[Lesson][debug] keys:", l ? Object.keys(l as any) : null);
+        console.log("[Lesson][debug] slug:", (l as any)?.slug);
+        console.log("[Lesson][debug] _id:", (l as any)?._id);
+        console.log("[Lesson][debug] flashcards length:", ((l as any)?.flashcards || []).length);
+        console.log("[Lesson][debug] exercises length:", ((l as any)?.exercises || []).length);
+        console.log("[Lesson][debug] exercise types:", ((l as any)?.exercises || []).map((x: any) => x?.type));
+        console.log("[Lesson][debug] prefecture:", (l as any)?.prefecture);
+        // ---------------------------------------------
+
         if (!mounted) return;
 
         setLesson(l);
+
+        // ---- DEBUG: keep a snapshot for UI toggle ----
+        setDebugInfo({
+          lessonIdParam: lessonId,
+          received: l,
+          receivedKeys: l ? Object.keys(l as any) : [],
+          slug: (l as any)?.slug,
+          _id: (l as any)?._id,
+          flashcardsLen: ((l as any)?.flashcards || []).length,
+          exercisesLen: ((l as any)?.exercises || []).length,
+          exerciseTypes: ((l as any)?.exercises || []).map((x: any) => x?.type),
+          prefecture: (l as any)?.prefecture,
+        });
+        // ---------------------------------------------
 
         // reset state on lesson change
         setStep(0);
@@ -334,7 +366,9 @@ const Lesson: React.FC = () => {
       ? correctCount + (createAttempt && result === "correct" ? 1 : 0)
       : correctCount;
 
-    const nextAccuracy = nextAttemptCount ? Math.round((100 * nextCorrectCount) / nextAttemptCount) : accuracy;
+    const nextAccuracy = nextAttemptCount
+      ? Math.round((100 * nextCorrectCount) / nextAttemptCount)
+      : accuracy;
 
     setAttemptCount(nextAttemptCount);
     setCorrectCount(nextCorrectCount);
@@ -462,6 +496,32 @@ const Lesson: React.FC = () => {
       <Typography variant="h6" sx={{ mb: 1 }}>
         {getLessonHeader(lesson)}
       </Typography>
+
+      {/* ---- DEBUG UI (optional) ---- */}
+      <Box sx={{ mb: 2 }}>
+        <Button size="small" variant="outlined" onClick={() => setDebugOpen((v) => !v)}>
+          {debugOpen ? "Hide Debug" : "Show Debug"}
+        </Button>
+
+        {debugOpen && (
+          <Box
+            sx={{
+              mt: 1,
+              p: 2,
+              border: "1px solid rgba(0,0,0,0.12)",
+              borderRadius: 1,
+              maxHeight: 260,
+              overflow: "auto",
+              fontFamily: "monospace",
+              fontSize: 12,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {JSON.stringify(debugInfo, null, 2)}
+          </Box>
+        )}
+      </Box>
+      {/* ------------------------------ */}
 
       <Box sx={{ minHeight: 420, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {steps[step]?.comp(handleResult)}

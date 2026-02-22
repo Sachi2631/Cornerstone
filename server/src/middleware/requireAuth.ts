@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/User";
+import User from "../models/user";
 
 export interface AuthedRequest extends Express.Request {
   user?: any;

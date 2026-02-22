@@ -11,14 +11,17 @@ const isObjectId = (s: string) => /^[a-fA-F0-9]{24}$/.test(s);
 export const listLessons: RequestHandler = (req, res) => {
   void (async (): Promise<void> => {
     try {
-      const prefecture = typeof req.query.prefecture === "string" ? req.query.prefecture.trim() : "";
+      const prefecture =
+        typeof req.query.prefecture === "string"
+          ? req.query.prefecture.trim()
+          : "";
 
-      const query: any = { isActive: true };
+      const query: any = {}; // ❌ removed isActive filter
+
       if (prefecture) query.prefecture = prefecture;
 
-      // return minimal fields used by dashboard
       const lessons = await Lesson.find(query)
-        .select("slug title version flashcards prefecture")
+        .select("slug title version flashcards prefecture isActive")
         .sort({ createdAt: 1 })
         .lean();
 
