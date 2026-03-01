@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import User from "../models/user";
 import { AuthedRequest } from "../middleware/requireAuth";
 
@@ -13,10 +13,21 @@ const sanitizeUser = (u: any) => {
   return obj;
 };
 
+function normalizeEmail(email: any): string {
+  return String(email || "").toLowerCase().trim();
+}
+
+function isBcryptHash(pw: any): boolean {
+  const s = String(pw || "");
+  return s.startsWith("$2a$") || s.startsWith("$2b$") || s.startsWith("$2y$") || s.startsWith("$2");
+}
+
 export const signup: RequestHandler = async (req, res): Promise<void> => {
   const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   try {
-    const { firstName, lastName, email, password } = req.body;
+    let { firstName, lastName, email, password } = req.body;
+    email = normalizeEmail(email);
 
     if (!email || !password) {
       console.warn(`[AUTH][${rid}] signup missing email/password`);
@@ -26,17 +37,18 @@ export const signup: RequestHandler = async (req, res): Promise<void> => {
 
     const existing = await User.findOne({ email });
     if (existing) {
+      console.warn(`[AUTH][${rid}] signup user exists email=${email}`);
       res.status(409).json({ message: "User already exists" });
       return;
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // IMPORTANT: DO NOT hash here (schema pre-save hook hashes)
     const user = await User.create({
       firstName,
       lastName,
       email,
-      password: hashed,
-      createdAt: new Date(),
+      password: String(password),
+      role: "Volunteer",
     });
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
@@ -52,8 +64,10 @@ export const signup: RequestHandler = async (req, res): Promise<void> => {
 
 export const login: RequestHandler = async (req, res): Promise<void> => {
   const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = normalizeEmail(email);
 
     if (!email || !password) {
       console.warn(`[AUTH][${rid}] login missing email/password`);
@@ -61,27 +75,35 @@ export const login: RequestHandler = async (req, res): Promise<void> => {
       return;
     }
 
-    const user: any = await User.findOne({ email });
+    // IMPORTANT: include password (schema has select:false)
+    const user: any = await User.findOne({ email }).select("+password");
+    console.log(`[AUTH][${rid}] login email=${email} userFound=${!!user}`);
+
     if (!user) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
+    const stored = String(user.password || "");
+    const input = String(password);
+
     let match = false;
 
-    if (user.password.startsWith("$2")) {
-      // bcrypt hash
-      match = await bcrypt.compare(password, user.password);
+    if (isBcryptHash(stored)) {
+      match = await bcrypt.compare(input, stored);
     } else {
-      // legacy plain password
-      match = password === user.password;
+      // legacy plain password support (optional)
+      match = input === stored;
 
       if (match) {
-        // upgrade password to bcrypt automatically
-        user.password = await bcrypt.hash(password, 10);
+        // upgrading: assign raw password; pre-save hook will hash it
+        user.password = input;
         await user.save();
+        console.log(`[AUTH][${rid}] upgraded legacy password to bcrypt for userId=${user._id}`);
       }
     }
+
+    console.log(`[AUTH][${rid}] passwordMatch=${match}`);
 
     if (!match) {
       res.status(401).json({ message: "Invalid credentials" });
@@ -91,8 +113,12 @@ export const login: RequestHandler = async (req, res): Promise<void> => {
     user.lastLogin = new Date();
     await user.save();
 
+    // remove password before returning
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
-    res.status(200).json({ token, user: sanitizeUser(user) });
+    res.status(200).json({ token, user: safeUser });
     return;
   } catch (err: any) {
     console.error(`[AUTH][${rid}] login error:`, err?.message || err);
@@ -103,6 +129,7 @@ export const login: RequestHandler = async (req, res): Promise<void> => {
 
 export const me: RequestHandler = async (req, res): Promise<void> => {
   const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   try {
     const user = (req as AuthedRequest).user;
 
@@ -123,6 +150,7 @@ export const me: RequestHandler = async (req, res): Promise<void> => {
 
 export const changePassword: RequestHandler = async (req, res): Promise<void> => {
   const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   try {
     const { currentPassword, newPassword } = req.body;
 
@@ -135,19 +163,31 @@ export const changePassword: RequestHandler = async (req, res): Promise<void> =>
       return;
     }
 
-    const user: any = await User.findById(userId);
+    // IMPORTANT: include password
+    const user: any = await User.findById(userId).select("+password");
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
 
-    const ok = await bcrypt.compare(currentPassword, user.password);
+    const stored = String(user.password || "");
+    const current = String(currentPassword || "");
+    const next = String(newPassword || "");
+
+    if (!current || !next) {
+      res.status(400).json({ message: "Current password and new password are required" });
+      return;
+    }
+
+    const ok = isBcryptHash(stored) ? await bcrypt.compare(current, stored) : current === stored;
+
     if (!ok) {
       res.status(401).json({ message: "Current password is incorrect" });
       return;
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    // assign raw; pre-save hook will hash
+    user.password = next;
     await user.save();
 
     res.status(200).json({ message: "Password updated" });

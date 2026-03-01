@@ -53,8 +53,13 @@ const UserSchema = new Schema<IUser>(
 UserSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();
 
+  const pw = String(this.password || "");
+  if (pw.startsWith("$2a$") || pw.startsWith("$2b$") || pw.startsWith("$2y$") || pw.startsWith("$2")) {
+    return next(); // already hashed
+  }
+
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(pw, salt);
   next();
 });
 
