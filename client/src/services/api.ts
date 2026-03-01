@@ -1,4 +1,14 @@
+// src/services/api.ts
 import axios, { AxiosError } from "axios";
+
+/**
+ * CRA NOTE:
+ * - CRA uses process.env.REACT_APP_* env vars (not import.meta.env).
+ * - This file intentionally avoids import.meta to prevent webpack warnings.
+ *
+ * Supported config:
+ * - REACT_APP_API_BASE_URL=http://localhost:5001
+ */
 
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
@@ -15,7 +25,9 @@ function resolveBaseUrl(): string {
   }
 
   if (typeof window !== "undefined") {
-    const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+    const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(
+      window.location.hostname
+    );
     return isLocalhost ? "http://localhost:5001" : window.location.origin;
   }
 
@@ -63,20 +75,52 @@ const api = axios.create({
 
 function isPublicAuthEndpoint(url?: string) {
   if (!url) return false;
-  // handles "/api/auth/login" and also full urls if axios ever receives them
   return url.includes("/api/auth/login") || url.includes("/api/auth/signup");
 }
 
+/**
+ * Backward-compat rewrite:
+ * Some parts of the client may still call /lessons instead of /api/lessons.
+ * This rewrites those requests so they hit the correct server route.
+ */
+function rewriteLegacyPaths(url?: string) {
+  if (!url) return url;
+
+  // absolute urls: keep them untouched (axios usually passes relative, but be safe)
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+
+  // normalize to start with "/"
+  const u = url.startsWith("/") ? url : `/${url}`;
+
+  // rewrite /lessons... -> /api/lessons...
+  if (u === "/lessons" || u.startsWith("/lessons/") || u.startsWith("/lessons?")) {
+    return `/api${u}`;
+  }
+
+  return u;
+}
+
 api.interceptors.request.use((config) => {
+  // Rewrite any accidental legacy paths before anything else
+  config.url = rewriteLegacyPaths(config.url);
+
   const token = getToken();
   config.headers = config.headers ?? {};
 
-  // IMPORTANT: don't attach token for login/signup
+  // Don't attach token for login/signup
   if (token && !isPublicAuthEndpoint(config.url)) {
     (config.headers as any).Authorization = `Bearer ${token}`;
-    console.log("[HTTP] attach token: YES", config.method?.toUpperCase(), config.url);
+    console.log(
+      "[HTTP] attach token: YES",
+      config.method?.toUpperCase(),
+      config.url
+    );
   } else {
-    console.log("[HTTP] attach token: NO", config.method?.toUpperCase(), config.url);
+    console.log(
+      "[HTTP] attach token: NO",
+      config.method?.toUpperCase(),
+      config.url
+    );
   }
 
   return config;

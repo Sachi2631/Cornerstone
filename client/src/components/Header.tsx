@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -14,8 +13,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Divider,
-  Tooltip,
   CircularProgress,
   Container,
 } from "@mui/material";
@@ -45,12 +42,14 @@ const Header = (): React.ReactElement => {
 
   const isAuthed = Boolean(authToken);
 
+  // IMPORTANT: you do NOT have a route "/lesson" (only "/lesson/:lessonId")
+  // So this should route to dashboard (where user picks a lesson)
   const navButtons = useMemo(
     () => [
       { label: "Dashboard", path: "/dashboard" },
       { label: "Watch", path: "/watch" },
       { label: "Talk", path: "/talk" },
-      { label: "Lesson", path: "/lesson" },
+      { label: "Lessons", path: "/dashboard" }, // <-- FIXED
     ],
     []
   );
@@ -66,27 +65,41 @@ const Header = (): React.ReactElement => {
     navigate("/auth");
   };
 
-  const initialsOf = (first?: string, last?: string) =>
-    (`${(first?.[0] || "").toUpperCase()}${(last?.[0] || "").toUpperCase()}` || "U");
+  const initialsOf = (first?: string, last?: string) => {
+    const a = (first?.[0] || "").toUpperCase();
+    const b = (last?.[0] || "").toUpperCase();
+    return (a + b) || "U";
+  };
 
+  // Load /me when token is present, and re-run whenever token changes
   useEffect(() => {
     const loadMe = async () => {
       const token = getToken();
-      if (!token) return setMe(null);
+      setAuthToken(token);
+
+      if (!token) {
+        setMe(null);
+        return;
+      }
+
       try {
         setLoadingMe(true);
         const data = await json<{ user?: Me } | Me>("/api/auth/me");
         setMe((data as any).user ?? (data as any));
       } catch {
+        // token invalid/expired -> treat as logged out
+        clearToken();
+        setAuthToken(null);
         setMe(null);
-        setAuthToken(getToken());
       } finally {
         setLoadingMe(false);
       }
     };
-    loadMe();
+
+    void loadMe();
   }, [authToken]);
 
+  // LocalStorage "storage" event only fires across tabs, but keep it anyway
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === "access_token") setAuthToken(getToken());
@@ -95,6 +108,7 @@ const Header = (): React.ReactElement => {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  // Ensure header refreshes auth state when tab becomes active
   useEffect(() => {
     const onFocus = () => setAuthToken(getToken());
     window.addEventListener("focus", onFocus);
@@ -124,7 +138,6 @@ const Header = (): React.ReactElement => {
             minHeight: 64,
           }}
         >
-          {/* Logo */}
           <Box
             component={Link}
             to="/"
@@ -182,7 +195,11 @@ const Header = (): React.ReactElement => {
                     open={Boolean(anchorEl)}
                     onClose={() => setAnchorEl(null)}
                   >
-                    <MenuItem component={Link} to="/profile">
+                    <MenuItem
+                      component={Link}
+                      to="/profile"
+                      onClick={() => setAnchorEl(null)}
+                    >
                       <PersonIcon fontSize="small" sx={{ mr: 1 }} /> Profile
                     </MenuItem>
                     <MenuItem onClick={handleLogout}>
@@ -217,6 +234,35 @@ const Header = (): React.ReactElement => {
                 </ListItemButton>
               ))}
             </List>
+
+            <Box sx={{ px: 2, pb: 2 }}>
+              {!isAuthed ? (
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    navigate("/auth");
+                  }}
+                  sx={{ bgcolor: "#b43d20" }}
+                >
+                  Get Started
+                </Button>
+              ) : (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    handleLogout();
+                  }}
+                  startIcon={<LogoutIcon />}
+                >
+                  Logout
+                </Button>
+              )}
+            </Box>
           </Drawer>
         </Box>
       </Container>
