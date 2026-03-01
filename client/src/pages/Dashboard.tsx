@@ -1,4 +1,4 @@
-// src/pages/Dashboard.tsx
+// src/pages/Dashboard.tsx (FIXED + CLIENT LOGGING)
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Typography, Button, IconButton } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -14,6 +14,7 @@ type Lesson = {
   version: string;
   flashcards: string[];
   prefecture: string;
+  isActive?: boolean;
 };
 
 const Dashboard = (): React.ReactElement => {
@@ -26,6 +27,9 @@ const Dashboard = (): React.ReactElement => {
 
   const [prefLessons, setPrefLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
+
+  // debug snapshot shown in popup (optional)
+  const [lessonsDebug, setLessonsDebug] = useState<any>(null);
 
   // ✅ Prefecture normalization map (JP -> canonical DB value)
   const PREF_NAME_TO_CODE = useMemo<Record<string, string>>(
@@ -78,7 +82,7 @@ const Dashboard = (): React.ReactElement => {
       "鹿児島県": "Kagoshima",
       "沖縄県": "Okinawa",
 
-      // English passthrough (if geojson uses English)
+      // English passthrough
       Hokkaido: "Hokkaido",
       Aomori: "Aomori",
       Iwate: "Iwate",
@@ -136,7 +140,7 @@ const Dashboard = (): React.ReactElement => {
     return PREF_NAME_TO_CODE[s] ?? null;
   };
 
-  // ✅ responsive container sizing (unchanged logic)
+  // ✅ responsive container sizing
   useEffect(() => {
     const handleResize = () => {
       const width = Math.min(window.innerWidth * 0.9, 1200);
@@ -149,10 +153,11 @@ const Dashboard = (): React.ReactElement => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ fetch lessons for the selected prefecture code (no unhandled promise)
+  // ✅ fetch lessons for selected prefecture code
   useEffect(() => {
     if (!selectedPrefectureCode) {
       setPrefLessons([]);
+      setLessonsDebug(null);
       return;
     }
 
@@ -160,13 +165,61 @@ const Dashboard = (): React.ReactElement => {
 
     void (async (): Promise<void> => {
       setLessonsLoading(true);
+
+      const url = `/api/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`; // <-- FIX
+      console.log("[Dashboard] fetching lessons:", {
+        selectedPrefecture,
+        selectedPrefectureCode,
+        url,
+      });
+
       try {
-        const data = await json<{ lessons: Lesson[] }>(
-          `/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`
-        );
-        if (!cancelled) setPrefLessons(Array.isArray(data?.lessons) ? data.lessons : []);
-      } catch {
-        if (!cancelled) setPrefLessons([]);
+        const data = await json<{ lessons: Lesson[] }>(url);
+
+        const lessons = Array.isArray((data as any)?.lessons) ? (data as any).lessons : [];
+        console.log("[Dashboard] lessons response:", {
+          count: lessons.length,
+          sample: lessons.slice(0, 5).map((l) => ({
+            slug: l.slug,
+            title: l.title,
+            prefecture: l.prefecture,
+            version: l.version,
+            isActive: l.isActive,
+          })),
+          raw: data,
+        });
+
+        if (!cancelled) {
+          setPrefLessons(lessons);
+          setLessonsDebug({
+            url,
+            selectedPrefecture,
+            selectedPrefectureCode,
+            count: lessons.length,
+            sample: lessons.slice(0, 5),
+          });
+        }
+      } catch (e: any) {
+        console.error("[Dashboard] lessons fetch failed:", {
+          url,
+          status: e?.response?.status,
+          message: e?.message,
+          data: e?.response?.data,
+        });
+
+        if (!cancelled) {
+          setPrefLessons([]);
+          setLessonsDebug({
+            url,
+            selectedPrefecture,
+            selectedPrefectureCode,
+            error: {
+              status: e?.response?.status,
+              message: e?.message,
+              data: e?.response?.data,
+            },
+          });
+        }
       } finally {
         if (!cancelled) setLessonsLoading(false);
       }
@@ -175,9 +228,9 @@ const Dashboard = (): React.ReactElement => {
     return () => {
       cancelled = true;
     };
-  }, [selectedPrefectureCode]);
+  }, [selectedPrefectureCode, selectedPrefecture]);
 
-  // ✅ D3 map render (same logic, optimized to avoid stale size)
+  // ✅ D3 map render
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -254,6 +307,8 @@ const Dashboard = (): React.ReactElement => {
           const rawName = getRawName(d);
           const code = normalizePrefecture(rawName);
 
+          console.log("[Dashboard] prefecture selected:", { rawName, code });
+
           setSelectedPrefecture(rawName);
           setSelectedPrefectureCode(code);
           setPopup(null);
@@ -277,6 +332,8 @@ const Dashboard = (): React.ReactElement => {
             const rawName = getRawName(d);
             const code = normalizePrefecture(rawName);
 
+            console.log("[Dashboard] marker clicked:", { rawName, code });
+
             setPopup({ x: cx, y: cy, name: rawName });
             setSelectedPrefecture(rawName);
             setSelectedPrefectureCode(code);
@@ -293,7 +350,10 @@ const Dashboard = (): React.ReactElement => {
     });
 
     const initialScale = 1.3;
-    const initialTranslate = [(width * (1.05 - initialScale)) / 2, (height * (1.125 - initialScale)) / 2];
+    const initialTranslate = [
+      (width * (1.05 - initialScale)) / 2,
+      (height * (1.125 - initialScale)) / 2,
+    ];
 
     svg
       .transition()
@@ -314,20 +374,13 @@ const Dashboard = (): React.ReactElement => {
       setSelectedPrefecture(null);
       setSelectedPrefectureCode(null);
       setPopup(null);
+      setLessonsDebug(null);
     });
-  }, [containerSize]); // (logic unchanged)
+  }, [containerSize]); // unchanged
 
   return (
     <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
-      {/* ✅ HAMBURGER MENU FIXED IN SAFE POSITION */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          zIndex: 10,
-        }}
-      >
+      <Box sx={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
         <Bart />
       </Box>
 
@@ -346,7 +399,6 @@ const Dashboard = (): React.ReactElement => {
             background: "#dee2e4",
           }}
         >
-          {/* ✅ MAP SVG */}
           <svg
             ref={svgRef}
             width="100%"
@@ -356,7 +408,6 @@ const Dashboard = (): React.ReactElement => {
             style={{ display: "block" }}
           />
 
-          {/* ✅ POPUP: now driven by prefecture->lessons */}
           {popup && (
             <Box
               sx={{
@@ -373,7 +424,7 @@ const Dashboard = (): React.ReactElement => {
                 display: "flex",
                 flexDirection: "column",
                 gap: "8px",
-                width: "300px",
+                width: "320px",
                 paddingTop: "20px",
                 paddingBottom: "20px",
                 textAlign: "center",
@@ -422,10 +473,31 @@ const Dashboard = (): React.ReactElement => {
                   </Box>
                 )}
               </Box>
+
+              {/* DEBUG: shows what we fetched */}
+              <Box
+                sx={{
+                  mt: 1,
+                  mx: "auto",
+                  width: "100%",
+                  maxHeight: 160,
+                  overflow: "auto",
+                  bgcolor: "rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  borderRadius: 2,
+                  p: 1,
+                  textAlign: "left",
+                  fontFamily: "monospace",
+                  fontSize: 11,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {JSON.stringify(lessonsDebug, null, 2)}
+              </Box>
             </Box>
           )}
 
-          {/* ✅ INFO PANELS (kept unchanged; still static) */}
+          {/* (rest of your UI unchanged) */}
           <Box
             sx={{
               padding: "20px",
@@ -514,7 +586,6 @@ const Dashboard = (): React.ReactElement => {
             </Button>
           </Box>
 
-          {/* Prefecture name display */}
           <Box
             mt={4}
             minHeight="50px"

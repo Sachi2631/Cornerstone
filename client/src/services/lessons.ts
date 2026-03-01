@@ -58,10 +58,10 @@ async function getWithFallback<T>(url: string) {
   try {
     return await api.get<T>(url);
   } catch (err: any) {
-    // Optional backward-compat: if some server is mounted at /lessons not /api/lessons
     const status = err?.response?.status;
     if (status === 404 && url.startsWith("/api/")) {
       const alt = url.replace(/^\/api/, "");
+      console.warn("[Lessons] 404 on", url, "retrying", alt);
       return await api.get<T>(alt);
     }
     throw err;
@@ -78,12 +78,34 @@ export async function listLessons(params?: { prefecture?: string; includeInactiv
 
   const url = sp.toString() ? `${BASE}?${sp.toString()}` : BASE;
 
+  console.log("[Lessons] listLessons ->", url);
+
   const res = await getWithFallback<{ lessons: LessonListItem[] }>(url);
-  return res.data.lessons;
+
+  const lessons = res.data?.lessons ?? [];
+  console.log(
+    "[Lessons] listLessons <-",
+    { count: lessons.length, sample: lessons.slice(0, 5).map((l) => ({ slug: l.slug, title: l.title, pref: l.prefecture, active: l.isActive })) }
+  );
+
+  return lessons;
 }
 
 export async function getLesson(lessonIdOrSlug: string) {
   const id = String(lessonIdOrSlug || "").trim();
-  const res = await getWithFallback<{ lesson: LessonDoc }>(`${BASE}/${encodeURIComponent(id)}`);
+  const url = `${BASE}/${encodeURIComponent(id)}`;
+
+  console.log("[Lessons] getLesson ->", url);
+
+  const res = await getWithFallback<{ lesson: LessonDoc }>(url);
+
+  console.log("[Lessons] getLesson <-", {
+    slug: res.data?.lesson?.slug,
+    title: res.data?.lesson?.title,
+    pref: res.data?.lesson?.prefecture,
+    exercises: (res.data?.lesson as any)?.exercises?.length ?? 0,
+    flashcards: (res.data?.lesson as any)?.flashcards?.length ?? 0,
+  });
+
   return res.data.lesson;
 }
