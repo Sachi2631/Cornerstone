@@ -117,6 +117,8 @@ const Lesson: React.FC = () => {
   // Route should be /lesson/:lessonId where lessonId is your slug (e.g. hiragana-l1-v1)
   const lessonId = String(params.lessonId || "");
 
+  console.log("Route param lessonId:", lessonId);
+  
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<LessonDoc | null>(null);
 

@@ -61,8 +61,8 @@ const AppContent: React.FC = () => {
   const path = location.pathname;
 
   // Hide rules
-  const hideHeader = path === "/lesson";
-  const hideFooter = path === "/lesson" || path === "/dashboard"; // ✅ hide footer on lesson too
+  const hideHeader = path.startsWith("/lesson");
+  const hideFooter = path.startsWith("/lesson") || path === "/dashboard";
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
@@ -116,7 +116,7 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/lesson"
+            path="/lesson/:lessonId"
             element={
               <RequireAuth>
                 <Lesson />
