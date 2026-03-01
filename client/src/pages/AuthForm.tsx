@@ -89,9 +89,12 @@ const AuthForm = (): React.ReactElement => {
       }
 
       setToken(data.token);
+
       notify('Login successful. Redirecting…', 'success');
       const redirectTo = location.state?.from?.pathname || '/dashboard';
-      window.location.assign(redirectTo);
+
+      // soft navigation (keeps SPA state); interceptor will handle future 401s
+      navigate(redirectTo, { replace: true });
     } catch (err: any) {
       notify(err?.response?.data?.message || err?.message || 'Network error', 'error');
     } finally {
@@ -189,13 +192,14 @@ const AuthForm = (): React.ReactElement => {
               <TextField
                 label={mode === 'login' ? 'Email or Username' : 'Email'}
                 name="email"
-                type="email"
+                type={mode === 'login' ? 'text' : 'email'}
                 fullWidth
                 margin="normal"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
               />
+
               <TextField
                 label="Password"
                 name="password"

@@ -67,7 +67,22 @@ export const login: RequestHandler = async (req, res): Promise<void> => {
       return;
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    let match = false;
+
+    if (user.password.startsWith("$2")) {
+      // bcrypt hash
+      match = await bcrypt.compare(password, user.password);
+    } else {
+      // legacy plain password
+      match = password === user.password;
+
+      if (match) {
+        // upgrade password to bcrypt automatically
+        user.password = await bcrypt.hash(password, 10);
+        await user.save();
+      }
+    }
+
     if (!match) {
       res.status(401).json({ message: "Invalid credentials" });
       return;

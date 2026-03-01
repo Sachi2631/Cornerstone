@@ -1,14 +1,5 @@
 import axios, { AxiosError } from "axios";
 
-/**
- * CRA NOTE:
- * - CRA uses process.env.REACT_APP_* env vars (not import.meta.env).
- * - This file intentionally avoids import.meta to prevent webpack warnings.
- *
- * Supported config:
- * - REACT_APP_API_BASE_URL=http://localhost:5001
- */
-
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
@@ -32,6 +23,7 @@ function resolveBaseUrl(): string {
 }
 
 const API_BASE_URL = resolveBaseUrl();
+console.log("[HTTP] API_BASE_URL =", API_BASE_URL);
 
 const TOKEN_KEY = "access_token";
 
@@ -69,12 +61,18 @@ const api = axios.create({
   timeout: 20_000,
 });
 
+function isPublicAuthEndpoint(url?: string) {
+  if (!url) return false;
+  // handles "/api/auth/login" and also full urls if axios ever receives them
+  return url.includes("/api/auth/login") || url.includes("/api/auth/signup");
+}
+
 api.interceptors.request.use((config) => {
   const token = getToken();
-
   config.headers = config.headers ?? {};
 
-  if (token) {
+  // IMPORTANT: don't attach token for login/signup
+  if (token && !isPublicAuthEndpoint(config.url)) {
     (config.headers as any).Authorization = `Bearer ${token}`;
     console.log("[HTTP] attach token: YES", config.method?.toUpperCase(), config.url);
   } else {
@@ -87,15 +85,22 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err: AxiosError<any>) => {
-    if (err.response?.status === 401) {
-      console.warn("[HTTP] 401 from", err.config?.url);
-      clearToken();
+    const status = err.response?.status;
+    const url = err.config?.url;
 
-      // Keep original behavior (no forced redirect), but correct the route
-      if (typeof window !== "undefined" && window.location.pathname !== "/auth") {
-        // window.location.href = "/auth"; // enable if you want auto-redirect
+    if (status === 401) {
+      console.warn("[HTTP] 401 from", url);
+
+      // If a protected route 401s, the token is not usable (missing/expired/secret mismatch)
+      // Clear and force user to auth screen
+      if (!isPublicAuthEndpoint(url)) {
+        clearToken();
+        if (typeof window !== "undefined" && window.location.pathname !== "/auth") {
+          window.location.href = "/auth";
+        }
       }
     }
+
     return Promise.reject(err);
   }
 );
