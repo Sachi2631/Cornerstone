@@ -1,6 +1,20 @@
 // src/pages/Lesson.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, LinearProgress, Stack, Typography, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Button,
+  LinearProgress,
+  Stack,
+  Typography,
+  CircularProgress,
+  Container,
+  Paper,
+  Chip,
+  Divider,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import BugReportIcon from "@mui/icons-material/BugReport";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Flips from "../components/Flips";
@@ -18,7 +32,7 @@ import { getLesson, LessonDoc } from "../services/lessons";
 type ResultCb = (args: { result: "correct" | "incorrect"; detail?: any }) => void;
 type StepSpec = { key: string; graded: boolean; comp: (on: ResultCb) => React.ReactNode };
 
-// ---------- Local prop contracts (align with your actual components) ----------
+// ---------- Local prop contracts ----------
 type CardData = { id: number; front: string; back: string; audio?: string };
 
 interface FlipsProps {
@@ -39,11 +53,9 @@ interface AudioMatchProps {
 interface DragDropProps {
   onResult?: ResultCb;
   prompt?: string;
-
   characterBank?: string[];
   correctAnswer?: string;
   audioUrl?: string;
-
   bankItems?: string[];
   answer?: string[];
   caption?: string;
@@ -105,33 +117,38 @@ function getLessonHeader(lesson: LessonDoc): string {
   return v ? `${t} (${v})` : t;
 }
 
-// Optional: create a stable step key even if exerciseId missing
 function stepKeyFromExercise(ex: any, fallbackIndex: number): string {
   return String(ex?.exerciseId || ex?._id || `${String(ex?.type || "exercise")}-${fallbackIndex}`);
+}
+
+function stepLabelFromKey(key: string): string {
+  if (key === "flips") return "Flashcards";
+  if (key === "fact") return "Fun Fact";
+  if (key === "reward") return "Reward";
+  if (key === "rinfo") return "Notes";
+  if (key.includes("connectTheDots")) return "Connect Dots";
+  if (key.includes("matchAudioLetter")) return "Audio Match";
+  if (key.includes("vocabulary_drag_drop")) return "Drag & Drop";
+  return "Exercise";
 }
 
 const Lesson: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  // Route should be /lesson/:lessonId where lessonId is your slug (e.g. hiragana-l1-v1)
   const lessonId = String(params.lessonId || "");
-
   console.log("Route param lessonId:", lessonId);
-  
+
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<LessonDoc | null>(null);
 
-  // ---- DEBUG (safe; does not alter behavior) ----
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  // ---------------------------------------------
 
   const [step, setStep] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [attemptCount, setAttemptCount] = useState(0);
 
-  // Prevent double-submits from components that can fire multiple times
   const answeredStepRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -148,26 +165,15 @@ const Lesson: React.FC = () => {
 
         const l = await getLesson(lessonId);
 
-        // ---- DEBUG: inspect server payload & critical fields ----
         console.log("[Lesson][debug] lessonId param:", lessonId);
         console.log("[Lesson][debug] raw lesson payload:", l);
-        console.log("[Lesson][debug] keys:", l ? Object.keys(l as any) : null);
-        console.log("[Lesson][debug] slug:", (l as any)?.slug);
-        console.log("[Lesson][debug] _id:", (l as any)?._id);
-        console.log("[Lesson][debug] flashcards length:", ((l as any)?.flashcards || []).length);
-        console.log("[Lesson][debug] exercises length:", ((l as any)?.exercises || []).length);
-        console.log("[Lesson][debug] exercise types:", ((l as any)?.exercises || []).map((x: any) => x?.type));
-        console.log("[Lesson][debug] prefecture:", (l as any)?.prefecture);
-        // ---------------------------------------------
 
         if (!mounted) return;
 
         setLesson(l);
 
-        // ---- DEBUG: keep a snapshot for UI toggle ----
         setDebugInfo({
           lessonIdParam: lessonId,
-          received: l,
           receivedKeys: l ? Object.keys(l as any) : [],
           slug: (l as any)?.slug,
           _id: (l as any)?._id,
@@ -176,9 +182,7 @@ const Lesson: React.FC = () => {
           exerciseTypes: ((l as any)?.exercises || []).map((x: any) => x?.type),
           prefecture: (l as any)?.prefecture,
         });
-        // ---------------------------------------------
 
-        // reset state on lesson change
         setStep(0);
         setCorrectCount(0);
         setAttemptCount(0);
@@ -198,13 +202,11 @@ const Lesson: React.FC = () => {
 
   const lessonKey = useMemo(() => (lesson ? resolveLessonIdentifier(lesson) : ""), [lesson]);
 
-  // Build steps based on exercises.type (connectTheDots, matchAudioLetter, vocabulary_drag_drop)
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
 
     const out: StepSpec[] = [];
 
-    // 1) Flips uses lesson.flashcards (not exercises)
     const flashcards: string[] = (lesson as any).flashcards || [];
     if (flashcards.length) {
       out.push({
@@ -214,7 +216,7 @@ const Lesson: React.FC = () => {
           const cardData: CardData[] = flashcards.map((raw, idx) => ({
             id: idx,
             front: raw,
-            back: "", // you can later populate mnemonic backs if you add them
+            back: "",
           }));
 
           const correctRaw = String((lesson as any).flashcardsCorrect || flashcards[0] || "");
@@ -233,7 +235,6 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 2) Exercises -> component mapping by `type`
     const exercises: any[] = (lesson as any).exercises || [];
     exercises.forEach((ex, i) => {
       const exType = String(ex?.type || "");
@@ -284,11 +285,9 @@ const Lesson: React.FC = () => {
         return;
       }
 
-      // Unknown exercise types: ignore (keeps logic safe)
       console.warn("[Lesson] unknown exercise type:", exType, ex);
     });
 
-    // 3) Fun fact (informational)
     if ((lesson as any).funFact) {
       out.push({
         key: "fact",
@@ -297,7 +296,6 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 4) Achievement -> Reward component (match achievements with rewards)
     if ((lesson as any).achievement?.title || (lesson as any).achievement?.xp !== undefined) {
       out.push({
         key: "reward",
@@ -311,7 +309,6 @@ const Lesson: React.FC = () => {
       });
     }
 
-    // 5) Notes -> RewardInfo page (kept)
     if ((lesson as any).notes) {
       out.push({
         key: "rinfo",
@@ -326,7 +323,6 @@ const Lesson: React.FC = () => {
   const pct = steps.length ? Math.round(((step + 1) / steps.length) * 100) : 0;
   const accuracy = attemptCount ? Math.round((100 * correctCount) / attemptCount) : 0;
 
-  // Start progress (no unhandled promise; uses slug/id)
   useEffect(() => {
     if (!lesson) return;
     if (!isAuthed()) return;
@@ -357,7 +353,6 @@ const Lesson: React.FC = () => {
     createAttempt: boolean;
     stepKey: string;
   }) {
-    // prevent repeated submit from same step
     if (answeredStepRef.current[stepKey]) return;
     answeredStepRef.current[stepKey] = true;
 
@@ -449,7 +444,6 @@ const Lesson: React.FC = () => {
     });
   };
 
-  // If user goes back manually, allow answering again (remove step lock for that step key)
   const handleBack = () => {
     const prevStep = Math.max(0, step - 1);
     const prevKey = steps[prevStep]?.key;
@@ -457,92 +451,240 @@ const Lesson: React.FC = () => {
     setStep(prevStep);
   };
 
+  // ---------- UI states ----------
   if (loading) {
     return (
-      <Box sx={{ px: 3, py: 6, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          bgcolor: "#f7f7fb",
+        }}
+      >
+        <Stack alignItems="center" gap={2}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">
+            Loading lesson…
+          </Typography>
+        </Stack>
       </Box>
     );
   }
 
   if (!lesson || !steps.length) {
     return (
-      <Box sx={{ px: 3, py: 6 }}>
-        <Typography variant="h6">Lesson unavailable.</Typography>
-        <Button sx={{ mt: 2 }} variant="contained" onClick={() => navigate("/dashboard")}>
-          Back to Dashboard
-        </Button>
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#f7f7fb", px: 2 }}>
+        <Paper sx={{ p: 3, borderRadius: 3, maxWidth: 520, width: "100%" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Lesson unavailable
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+            The lesson may be inactive or missing.
+          </Typography>
+          <Button sx={{ mt: 2 }} variant="contained" onClick={() => navigate("/dashboard")}>
+            Back to Dashboard
+          </Button>
+        </Paper>
       </Box>
     );
   }
 
+  const activeKey = steps[step]?.key || String(step);
+  const activeLabel = stepLabelFromKey(activeKey);
+  const isLast = step >= steps.length - 1;
+
   return (
-    <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 3 }, maxWidth: 1000, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" gap={2} mb={2} flexWrap="wrap">
-        <Box sx={{ flex: 1, minWidth: 220 }}>
-          <LinearProgress variant="determinate" value={pct} />
-        </Box>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#f7f7fb",
+        backgroundImage:
+          "radial-gradient(1200px 600px at 20% 10%, rgba(180,61,32,0.12), transparent 55%), radial-gradient(900px 500px at 90% 20%, rgba(33,150,243,0.12), transparent 55%)",
+        pb: { xs: 10, md: 6 }, // space for bottom dock
+      }}
+    >
+      {/* Top chrome */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          backdropFilter: "blur(10px)",
+          bgcolor: "rgba(247,247,251,0.75)",
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 1.5 }}>
+          <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap">
+            <Button
+              startIcon={<ArrowBackIcon />}
+              variant="text"
+              onClick={() => navigate("/dashboard")}
+              sx={{ fontWeight: 700 }}
+            >
+              Dashboard
+            </Button>
 
-        <Typography variant="body2">{pct}%</Typography>
-        <Typography variant="body2" sx={{ ml: 1 }}>
-          Acc: {accuracy}%
-        </Typography>
+            <Box sx={{ flexGrow: 1, minWidth: 200 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.2 }}>
+                {getLessonHeader(lesson)}
+              </Typography>
+              <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 0.5, flexWrap: "wrap" }}>
+                <Chip size="small" label={`${activeLabel} • ${step + 1}/${steps.length}`} />
+                <Chip size="small" color="default" label={`Acc ${accuracy}%`} />
+                <Chip size="small" color="default" label={`${pct}%`} />
+              </Stack>
+            </Box>
 
-        <Box sx={{ flexGrow: 1 }} />
+            <Stack direction="row" alignItems="center" gap={1}>
+              <Button
+                startIcon={<BugReportIcon />}
+                variant="outlined"
+                size="small"
+                onClick={() => setDebugOpen((v) => !v)}
+              >
+                {debugOpen ? "Hide Debug" : "Debug"}
+              </Button>
 
-        <Button variant="text" onClick={() => navigate("/dashboard")}>
-          Save & Exit
-        </Button>
-      </Stack>
+              <Button
+                startIcon={<ExitToAppIcon />}
+                variant="contained"
+                onClick={() => navigate("/dashboard")}
+                sx={{ bgcolor: "#b43d20", "&:hover": { bgcolor: "#9d351c" } }}
+              >
+                Save & Exit
+              </Button>
+            </Stack>
 
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        {getLessonHeader(lesson)}
-      </Typography>
+            <Box sx={{ width: "100%", mt: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={pct}
+                sx={{
+                  height: 10,
+                  borderRadius: 999,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 999,
+                  },
+                }}
+              />
+            </Box>
+          </Stack>
 
-      {/* ---- DEBUG UI (optional) ---- */}
-      <Box sx={{ mb: 2 }}>
-        <Button size="small" variant="outlined" onClick={() => setDebugOpen((v) => !v)}>
-          {debugOpen ? "Hide Debug" : "Show Debug"}
-        </Button>
+          {debugOpen && (
+            <Paper
+              variant="outlined"
+              sx={{
+                mt: 1.5,
+                p: 1.5,
+                borderRadius: 2,
+                maxHeight: 220,
+                overflow: "auto",
+                fontFamily: "monospace",
+                fontSize: 12,
+                whiteSpace: "pre-wrap",
+                bgcolor: "rgba(255,255,255,0.75)",
+              }}
+            >
+              {JSON.stringify(debugInfo, null, 2)}
+            </Paper>
+          )}
+        </Container>
+      </Box>
 
-        {debugOpen && (
-          <Box
-            sx={{
-              mt: 1,
-              p: 2,
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: 1,
-              maxHeight: 260,
-              overflow: "auto",
-              fontFamily: "monospace",
-              fontSize: 12,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {JSON.stringify(debugInfo, null, 2)}
+      {/* Main content */}
+      <Container maxWidth="md" sx={{ pt: { xs: 2, md: 3 } }}>
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 4,
+            border: "1px solid rgba(0,0,0,0.08)",
+            bgcolor: "rgba(255,255,255,0.75)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <Box sx={{ p: { xs: 2, md: 3 } }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 900, letterSpacing: 0.2 }}>
+                {activeLabel}
+              </Typography>
+
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                Step {step + 1} of {steps.length}
+              </Typography>
+            </Stack>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Exercise frame */}
+            <Box
+              sx={{
+                minHeight: { xs: 420, md: 520 },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {steps[step]?.comp(handleResult)}
+            </Box>
           </Box>
-        )}
+        </Paper>
+      </Container>
+
+      {/* Bottom dock (mobile-first) */}
+      <Box
+        sx={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 20,
+          bgcolor: "rgba(255,255,255,0.92)",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 1.25 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+            <Button
+              disabled={step === 0}
+              onClick={handleBack}
+              variant="outlined"
+              sx={{ minWidth: 110, borderRadius: 999, fontWeight: 800 }}
+            >
+              Back
+            </Button>
+
+            <Stack direction="row" gap={1}>
+              <Button
+                onClick={handleSkip}
+                color="warning"
+                variant="outlined"
+                sx={{ minWidth: 110, borderRadius: 999, fontWeight: 800 }}
+              >
+                Skip
+              </Button>
+
+              <Button
+                onClick={handleNext}
+                variant="contained"
+                sx={{
+                  minWidth: 130,
+                  borderRadius: 999,
+                  fontWeight: 900,
+                  bgcolor: "#b43d20",
+                  "&:hover": { bgcolor: "#9d351c" },
+                }}
+              >
+                {isLast ? "Finish" : "Next"}
+              </Button>
+            </Stack>
+          </Stack>
+        </Container>
       </Box>
-      {/* ------------------------------ */}
-
-      <Box sx={{ minHeight: 420, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {steps[step]?.comp(handleResult)}
-      </Box>
-
-      <Stack direction="row" justifyContent="space-between" mt={2}>
-        <Button disabled={step === 0} onClick={handleBack}>
-          Back
-        </Button>
-
-        <Stack direction="row" gap={1}>
-          <Button onClick={handleSkip} color="warning" variant="outlined">
-            Skip
-          </Button>
-          <Button onClick={handleNext} variant="contained">
-            Next
-          </Button>
-        </Stack>
-      </Stack>
     </Box>
   );
 };

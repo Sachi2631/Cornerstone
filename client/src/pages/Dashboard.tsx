@@ -1,4 +1,4 @@
-// src/pages/Dashboard.tsx (FIXED + CLIENT LOGGING)
+// src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Typography, Button, IconButton } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -28,10 +28,10 @@ const Dashboard = (): React.ReactElement => {
   const [prefLessons, setPrefLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
 
-  // debug snapshot shown in popup (optional)
+  // Debug snapshot shown in popup
   const [lessonsDebug, setLessonsDebug] = useState<any>(null);
 
-  // ✅ Prefecture normalization map (JP -> canonical DB value)
+  // ✅ Prefecture normalization map (JP/EN -> canonical DB value)
   const PREF_NAME_TO_CODE = useMemo<Record<string, string>>(
     () => ({
       "北海道": "Hokkaido",
@@ -153,7 +153,7 @@ const Dashboard = (): React.ReactElement => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ fetch lessons for selected prefecture code
+  // ✅ fetch lessons for selected prefecture code + logs + debug panel
   useEffect(() => {
     if (!selectedPrefectureCode) {
       setPrefLessons([]);
@@ -166,7 +166,7 @@ const Dashboard = (): React.ReactElement => {
     void (async (): Promise<void> => {
       setLessonsLoading(true);
 
-      const url = `/api/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`; // <-- FIX
+      const url = `/api/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`;
       console.log("[Dashboard] fetching lessons:", {
         selectedPrefecture,
         selectedPrefectureCode,
@@ -176,10 +176,11 @@ const Dashboard = (): React.ReactElement => {
       try {
         const data = await json<{ lessons: Lesson[] }>(url);
 
-        const lessons = Array.isArray((data as any)?.lessons) ? (data as any).lessons : [];
+        const lessons: Lesson[] = Array.isArray(data?.lessons) ? data.lessons : [];
+
         console.log("[Dashboard] lessons response:", {
           count: lessons.length,
-          sample: lessons.slice(0, 5).map((l) => ({
+          sample: lessons.slice(0, 5).map((l: Lesson) => ({
             slug: l.slug,
             title: l.title,
             prefecture: l.prefecture,
@@ -376,7 +377,7 @@ const Dashboard = (): React.ReactElement => {
       setPopup(null);
       setLessonsDebug(null);
     });
-  }, [containerSize]); // unchanged
+  }, [containerSize]);
 
   return (
     <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
@@ -445,7 +446,7 @@ const Dashboard = (): React.ReactElement => {
                   <Typography variant="body2">No lessons assigned to this prefecture.</Typography>
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {prefLessons.slice(0, 3).map((lesson) => (
+                    {prefLessons.slice(0, 3).map((lesson: Lesson) => (
                       <Button
                         key={lesson.slug}
                         component={Link}
@@ -497,7 +498,7 @@ const Dashboard = (): React.ReactElement => {
             </Box>
           )}
 
-          {/* (rest of your UI unchanged) */}
+          {/* INFO PANELS (unchanged) */}
           <Box
             sx={{
               padding: "20px",
@@ -586,6 +587,7 @@ const Dashboard = (): React.ReactElement => {
             </Button>
           </Box>
 
+          {/* Prefecture name display */}
           <Box
             mt={4}
             minHeight="50px"
