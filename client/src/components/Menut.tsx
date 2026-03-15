@@ -88,8 +88,7 @@ const styles = {
   } as React.CSSProperties,
 
   embeddedThumb: {
-    width: 44,
-    height: 44,
+    width: "100%",
     borderRadius: 12,
     overflow: "hidden",
     background: "#cfcfcf",

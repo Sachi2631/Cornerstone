@@ -113,7 +113,7 @@ const Stories = (): React.ReactElement => {
     <Stack
       direction={{ xs: 'column', md: 'row' }}
       spacing={4}
-      sx={{ alignItems: 'stretch', backgroundColor: 'green', witdh:'40vw', }}
+      sx={{ alignItems: 'stretch', display: 'flex', justifyContent: 'space-evenly', witdh:'40vw', }}
     >
       {/* LEFT STORY CARD */}
       <Box
@@ -121,7 +121,7 @@ const Stories = (): React.ReactElement => {
           height: 220,
           backgroundColor: '#9fb1c4',
           borderRadius: '28px',
-          width: '28vw',
+          width: '30vw',
           p: 4,
           display: 'flex',
           gap: 3,
@@ -161,7 +161,7 @@ const Stories = (): React.ReactElement => {
               mt: 1,
               px: 4,
               height: "60px",
-              width: "12vw",
+              width: "14vw",
               borderRadius: '999px',
               backgroundColor: '#d3d3d3',
               fontSize: '1.4rem',
@@ -170,6 +170,7 @@ const Stories = (): React.ReactElement => {
               color: '#1e1e1e',
               display: "flex",
               alignItems: "center",
+              paddingLeft: "-5vw",
               justifyContent: "center",
               position: "relative", // <-- important
               textAlign: "center",
@@ -190,13 +191,13 @@ const Stories = (): React.ReactElement => {
         </Box>
       </Box>
 
-      <Stack spacing={3} sx={{ width: { xs: '100%', md: 360 } }}>
+      <Stack spacing={3} sx={{ width: { xs: '100%', md: 400 } }}>
         <Box
           sx={{
             backgroundColor: '#e1e1e1',
             borderRadius: '22px',
             p: 2.5,
-            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -230,7 +231,7 @@ const Stories = (): React.ReactElement => {
             backgroundColor: '#e1e1e1',
             borderRadius: '22px',
             p: 2.5,
-            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center">

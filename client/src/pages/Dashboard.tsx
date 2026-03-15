@@ -179,7 +179,7 @@ const Dashboard = (): React.ReactElement => {
         const lessons = Array.isArray((data as any)?.lessons) ? (data as any).lessons : [];
         console.log("[Dashboard] lessons response:", {
           count: lessons.length,
-          sample: lessons.slice(0, 5).map((l) => ({
+          sample: lessons.slice(0, 5).map((l: Lesson) => ({
             slug: l.slug,
             title: l.title,
             prefecture: l.prefecture,
@@ -293,7 +293,7 @@ const Dashboard = (): React.ReactElement => {
           const dy = y1 - y0;
           const x = (x0 + x1) / 2;
           const y = (y0 + y1) / 2;
-          const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height)));
+          const scale = Math.max(1, Math.min(6, 0.6 / Math.max(dx / width, dy / height)));
           const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
           svg
@@ -334,7 +334,19 @@ const Dashboard = (): React.ReactElement => {
 
             console.log("[Dashboard] marker clicked:", { rawName, code });
 
-            setPopup({ x: cx, y: cy, name: rawName });
+            const svgRect = svgRef.current?.getBoundingClientRect();
+
+              if (svgRect) {
+                const screenX = svgRect.left + cx;
+                const screenY = svgRect.top + cy;
+
+                setPopup({
+                  x: screenX,
+                  y: screenY,
+                  name: rawName,
+                });
+              }
+
             setSelectedPrefecture(rawName);
             setSelectedPrefectureCode(code);
           });
@@ -378,6 +390,43 @@ const Dashboard = (): React.ReactElement => {
     });
   }, [containerSize]); // unchanged
 
+  const HEADER_HEIGHT = 64;
+
+
+  const getSafePopupPosition = () => {
+    if (!popup) return { top: 0, left: 0 };
+  
+    const padding = 16;
+    const popupWidth = 320;
+    const popupHeight = 220;
+  
+    let left = popup.x;
+    let top = popup.y;
+  
+    // Adjust left to prevent overflow
+    if (left - popupWidth / 2 < padding) {
+      left = popupWidth / 2 + padding;
+    }
+    if (left + popupWidth / 2 > containerSize.width - padding) {
+      left = containerSize.width - popupWidth / 2 - padding;
+    }
+  
+    // Adjust top to prevent going under header
+    if (top - popupHeight < HEADER_HEIGHT + padding) {
+      top = HEADER_HEIGHT + popupHeight + padding;
+    }
+  
+    // Prevent bottom overflow
+    if (top > containerSize.height - padding) {
+      top = containerSize.height - padding;
+    }
+  
+    return { top, left };
+  };
+  
+
+  const pos = getSafePopupPosition();
+
   return (
     <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
       <Box sx={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
@@ -412,8 +461,8 @@ const Dashboard = (): React.ReactElement => {
             <Box
               sx={{
                 position: "absolute",
-                top: popup.y + 100,
-                left: popup.x,
+                top: pos.top,
+                left: pos.left,
                 transform: "translate(-50%, -100%)",
                 bgcolor: "#d9d9d9",
                 borderRadius: "40px",
@@ -444,7 +493,7 @@ const Dashboard = (): React.ReactElement => {
                 ) : prefLessons.length === 0 ? (
                   <Typography variant="body2">No lessons assigned to this prefecture.</Typography>
                 ) : (
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", gap: "5px", backgroundColor:"green"}}>
                     {prefLessons.slice(0, 3).map((lesson) => (
                       <Button
                         key={lesson.slug}
@@ -470,6 +519,8 @@ const Dashboard = (): React.ReactElement => {
                         {lesson.title} ({lesson.version})
                       </Button>
                     ))}
+
+
                   </Box>
                 )}
               </Box>
@@ -586,23 +637,7 @@ const Dashboard = (): React.ReactElement => {
             </Button>
           </Box>
 
-          <Box
-            mt={4}
-            minHeight="50px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            sx={{
-              opacity: selectedPrefecture ? 1 : 0,
-              transform: selectedPrefecture ? "translateY(0)" : "translateY(20px)",
-              transition: "all 0.5s ease",
-              color: "orange",
-              fontWeight: "bold",
-              fontSize: "1.5rem",
-            }}
-          >
-            {selectedPrefecture && <Typography variant="h5">{selectedPrefecture}</Typography>}
-          </Box>
+          
         </Box>
       </Box>
     </Box>
