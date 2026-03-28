@@ -39,7 +39,6 @@ const Gallery: React.FC = () => {
       maxWidth: 800,
       margin: '50px auto 0',
       padding: '0 8px',
-      backgroundColor: 'red',
     },
     card: {
       width: '100%',
