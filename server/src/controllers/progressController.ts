@@ -2,6 +2,7 @@
 import { RequestHandler } from "express";
 import { UserProgress } from "../models/UserProgress";
 import { Attempt } from "../models/Attempt";
+import { Lesson } from "../models/Lesson";
 import { AuthedRequest } from "../middleware/requireAuth";
 
 export const upsertProgress: RequestHandler = async (req, res): Promise<void> => {
@@ -41,12 +42,17 @@ export const upsertProgress: RequestHandler = async (req, res): Promise<void> =>
 
     const doc = await UserProgress.findOneAndUpdate(
       { userId, lessonId },
-      { status, lastStep, accuracyPct: accuracyPct ?? 0, updatedAt: new Date() },
+      {
+        status,
+        lastStep,
+        accuracyPct: accuracyPct ?? 0,
+        updatedAt: new Date(),
+      },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
     console.log(`[PROGRESS][${rid}] upserted`, {
-      id: doc._id.toString(),
+      id: String(doc._id),
       lessonId: doc.lessonId,
       lastStep: doc.lastStep,
       status: doc.status,
@@ -90,6 +96,72 @@ export const getProgressSummary: RequestHandler = async (req, res): Promise<void
     return;
   } catch (err: any) {
     console.error(`[PROGRESS][${rid}] summary error`, err?.message || err);
+    res.status(500).json({ error: "Internal error", details: err?.message || String(err) });
+    return;
+  }
+};
+
+export const getUpNextLesson: RequestHandler = async (req, res): Promise<void> => {
+  const rid = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  try {
+    const authed = req as AuthedRequest;
+    const userId = authed.user?._id;
+
+    if (!userId) {
+      console.warn(`[PROGRESS][${rid}] up-next unauthorized: missing req.user`);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const latest = await UserProgress.findOne({
+      userId,
+      status: "in_progress",
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    if (!latest) {
+      res.status(200).json({ upNext: null });
+      return;
+    }
+
+    // lessonId is stored as slug
+    const lesson = await Lesson.findOne({ slug: latest.lessonId })
+      .select("slug title version prefecture flashcards")
+      .lean();
+
+    if (!lesson) {
+      res.status(200).json({
+        upNext: {
+          lessonId: latest.lessonId,
+          slug: latest.lessonId,
+          title: "Continue lesson",
+          version: "",
+          prefecture: "",
+          lastStep: latest.lastStep ?? 0,
+          accuracyPct: latest.accuracyPct ?? 0,
+          status: latest.status,
+        },
+      });
+      return;
+    }
+
+    res.status(200).json({
+      upNext: {
+        lessonId: latest.lessonId,
+        slug: lesson.slug,
+        title: lesson.title,
+        version: lesson.version,
+        prefecture: lesson.prefecture,
+        lastStep: latest.lastStep ?? 0,
+        accuracyPct: latest.accuracyPct ?? 0,
+        status: latest.status,
+      },
+    });
+    return;
+  } catch (err: any) {
+    console.error(`[PROGRESS][${rid}] up-next error`, err?.message || err);
     res.status(500).json({ error: "Internal error", details: err?.message || String(err) });
     return;
   }

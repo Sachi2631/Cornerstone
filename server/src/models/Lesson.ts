@@ -1,5 +1,5 @@
 // src/models/Lesson.ts
-import { Schema, model } from "mongoose";
+import { Schema, model, InferSchemaType, HydratedDocument } from "mongoose";
 
 export type PrefectureCode =
   | "Hokkaido" | "Aomori" | "Iwate" | "Miyagi" | "Akita" | "Yamagata" | "Fukushima"
@@ -11,30 +11,6 @@ export type PrefectureCode =
   | "Tokushima" | "Kagawa" | "Ehime" | "Kochi"
   | "Fukuoka" | "Saga" | "Nagasaki" | "Kumamoto" | "Oita" | "Miyazaki" | "Kagoshima" | "Okinawa";
 
-export type Exercise =
-  | {
-      exerciseId: string;
-      type: "connectTheDots";
-      items: string[];
-      correctAnswers: string[];
-      prompt?: string;
-    }
-  | {
-      exerciseId: string;
-      type: "matchAudioLetter";
-      items: string[];
-      correctAnswers: string[];
-      audioUrl?: string;
-      prompt?: string;
-    }
-  | {
-      exerciseId: string;
-      type: "vocabulary_drag_drop";
-      characterBank: string[];
-      correctAnswer: string;
-      prompt?: string;
-    };
-
 const ExerciseSchema = new Schema({
   exerciseId: { type: String, required: true },
   type: {
@@ -42,16 +18,13 @@ const ExerciseSchema = new Schema({
     required: true,
     enum: ["connectTheDots", "matchAudioLetter", "vocabulary_drag_drop"],
   },
-
   items: { type: [String], default: undefined },
   correctAnswers: { type: [String], default: undefined },
-
   audioUrl: { type: String, default: undefined },
   prompt: { type: String, default: undefined },
-
   characterBank: { type: [String], default: undefined },
   correctAnswer: { type: String, default: undefined },
-}); // ✅ has _id per exercise
+});
 
 const AchievementSchema = new Schema(
   { title: { type: String, default: "" }, xp: { type: Number, default: 0 } },
@@ -60,9 +33,7 @@ const AchievementSchema = new Schema(
 
 const LessonSchema = new Schema(
   {
-    // ✅ you switched to slug-based ids
-    slug: { type: String, required: true, unique: true, index: true }, // "hiragana-l1-v1"
-
+    slug: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true },
     version: { type: String, default: "V1" },
 
@@ -73,12 +44,10 @@ const LessonSchema = new Schema(
     exercises: { type: [ExerciseSchema], default: [] },
     achievement: { type: AchievementSchema, default: () => ({ title: "", xp: 0 }) },
 
-    // ✅ prefecture stored in DB (required for dashboard filter)
     prefecture: {
       type: String,
       required: true,
       index: true,
-      // optional enum validation (keeps DB clean)
       enum: [
         "Hokkaido","Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima",
         "Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa",
@@ -102,4 +71,8 @@ LessonSchema.path("exercises").validate(function (arr: any[]) {
   return ids.length === new Set(ids).size;
 }, "Duplicate exerciseId in exercises[]");
 
-export const Lesson = model("Lesson", LessonSchema);
+export type LessonAttrs = InferSchemaType<typeof LessonSchema>;
+export type LessonDoc = HydratedDocument<LessonAttrs>;
+export type LessonLean = LessonAttrs;
+
+export const Lesson = model<LessonAttrs>("Lesson", LessonSchema);
