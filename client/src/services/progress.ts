@@ -1,23 +1,31 @@
-import { fetchJSON, isAuthed } from "./api";
-
-export async function submitAttempt(payload: {
-  lessonId: string; stepIndex: number; result: "correct" | "incorrect"; detail?: any;
-}): Promise<void> {
-  if (!isAuthed()) {
-    console.warn("[CLIENT attempt] SKIP send (not authed)", payload);
-    return;
-  }
-  console.log("[CLIENT attempt] SEND", payload);
-  await fetchJSON("/api/attempts", { method: "POST", body: JSON.stringify(payload) });
+export interface ProgressResponse {
+  lessonId: string;
+  status: "in_progress" | "completed";
+  lastStep: number;
+  accuracyPct?: number;
 }
 
-export async function upsertProgress(payload: {
-  lessonId: string; status: "in_progress" | "completed"; lastStep: number; accuracyPct?: number;
+export async function upsertProgress(data: {
+  lessonId: string;
+  status: "in_progress" | "completed";
+  lastStep: number;
+  accuracyPct?: number;
+}): Promise<ProgressResponse> {
+  const res = await fetch("/api/progress", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  return res.json(); // 👈 THIS is critical
+}
+
+export async function submitAttempt(_: {
+  lessonId: string;
+  stepIndex: number;
+  result: "correct" | "incorrect";
+  detail?: any;
 }): Promise<void> {
-  if (!isAuthed()) {
-    console.warn("[CLIENT progress] SKIP send (not authed)", payload);
-    return;
-  }
-  console.log("[CLIENT progress] SEND", payload);
-  await fetchJSON("/api/progress", { method: "PATCH", body: JSON.stringify(payload) });
+  // You can later send this to backend
+  return;
 }

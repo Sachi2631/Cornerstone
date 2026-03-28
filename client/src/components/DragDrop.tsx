@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { useEffect } from "react";
 import { Box, IconButton, Typography } from "@mui/material";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 
@@ -133,6 +134,12 @@ const DragDrop: React.FC<DragDropProps> = ({
   const dragPayloadRef = useRef<DragPayload | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    setSlots(Array(expectedArr.length).fill(null));
+    setChecked(false);
+    setDragOverIndex(null);
+  }, [expectedArr.length]);
 
   const isComplete = useMemo(() => slots.every((s) => s !== null), [slots]);
 

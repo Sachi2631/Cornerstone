@@ -41,7 +41,7 @@ export const getLessonById: RequestHandler = (req, res) => {
     try {
       const { lessonId } = req.params;
 
-      const query: any = { isActive: true, $or: [{ slug: lessonId }] };
+      const query: any = { $or: [{ slug: lessonId }] };
       if (isObjectId(lessonId)) query.$or.push({ _id: lessonId });
 
       const lesson = await Lesson.findOne(query).lean();

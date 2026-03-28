@@ -425,8 +425,8 @@ const Dashboard = (): React.ReactElement => {
             <Box
               sx={{
                 position: "absolute",
-                top: pos.top,
-                left: pos.left,
+                top: popup.y,
+                left: popup.x,
                 transform: "translate(-50%, -100%)",
                 bgcolor: "#d9d9d9",
                 borderRadius: "40px",
