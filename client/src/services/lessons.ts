@@ -29,7 +29,7 @@ export type LessonDoc = {
   _id: string;
   slug: string;
   title: string;
-  version?: string;
+  version: string;
 
   flashcards: string[];
   funFact?: string;

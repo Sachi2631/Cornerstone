@@ -1,10 +1,16 @@
+// src/routes/progressRoutes.ts
 import { Router } from "express";
-import { getProgressSummary, upsertProgress } from "../controllers/progressController";
+import {
+  upsertProgress,
+  getProgressSummary,
+  getUpNextLesson,
+} from "../controllers/progressController";
 import { requireAuth } from "../middleware/requireAuth";
 
 const router = Router();
 
+router.post("/", requireAuth, upsertProgress);
 router.get("/summary", requireAuth, getProgressSummary);
-router.patch("/", requireAuth, upsertProgress);
+router.get("/up-next", requireAuth, getUpNextLesson);
 
 export default router;
