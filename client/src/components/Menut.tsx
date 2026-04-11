@@ -70,7 +70,7 @@ const styles = {
   } as React.CSSProperties,
 
   embeddedCard: {
-    background: "#d9d9d9",
+    background: "#cfcfcf",
     borderRadius: 16,
     padding: 10,
     display: "flex",
@@ -89,6 +89,7 @@ const styles = {
 
   embeddedThumb: {
     width: "100%",
+    height: "90px",
     borderRadius: 12,
     overflow: "hidden",
     background: "#cfcfcf",
@@ -99,8 +100,9 @@ const styles = {
 
   embeddedImg: {
     width: "100%",
-    height: "100%",
-    objectFit: "cover" as const,
+    height: "auto",
+    maxHeight: "90px",
+    objectFit: "contain",
     display: "block",
   } as React.CSSProperties,
 
@@ -202,7 +204,7 @@ const styles = {
   fixedImg: {
     width: "100%",
     height: "100%",
-    objectFit: "cover",
+    objectFit: "contain",
     display: "block",
   } as React.CSSProperties,
 

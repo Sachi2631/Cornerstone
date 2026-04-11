@@ -386,13 +386,15 @@ const Lesson: React.FC = () => {
 
         <Box mb={3}>{currentStep.comp(onExerciseResult)}</Box>
 
-        {!currentStep.graded && (
-          <Stack direction="row" justifyContent="flex-end">
-            <Button variant="contained" onClick={handleNextUngraded}>
-              Continue
-            </Button>
-          </Stack>
-        )}
+        <Stack direction="row" justifyContent="flex-end" mt={3}>
+          <Button
+            variant="contained"
+            onClick={handleNextUngraded}
+            disabled={step >= steps.length - 1}
+          >
+            {step >= steps.length - 1 ? "Finish" : "Next"}
+          </Button>
+        </Stack>
 
         <Stack direction="row" spacing={1} mt={3} alignItems="center">
           <BugReportIcon fontSize="small" />

@@ -1,5 +1,5 @@
-// src/pages/Dashboard.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+/// src/pages/Dashboard.tsx
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import * as d3 from "d3";
@@ -19,6 +19,10 @@ type Lesson = {
 };
 
 const Dashboard = (): React.ReactElement => {
+  
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const geoDataRef = useRef<any>(null);
+
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
@@ -134,11 +138,11 @@ const Dashboard = (): React.ReactElement => {
     []
   );
 
-  const normalizePrefecture = (raw: string): string | null => {
+  const normalizePrefecture = useCallback((raw: string): string | null => {
     const s = (raw || "").trim();
     if (!s) return null;
     return PREF_NAME_TO_CODE[s] ?? null;
-  };
+  }, [PREF_NAME_TO_CODE]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -227,127 +231,135 @@ const Dashboard = (): React.ReactElement => {
 
   useEffect(() => {
     if (!svgRef.current) return;
-
-    const { width, height } = containerSize;
+  
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-
+  
     const g = svg.append("g");
-
+    gRef.current = g;
+  
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
       });
-
+  
     svg.call(zoom as any);
-
-    void d3.json("/japan.geojson").then((data: any) => {
+  
+    d3.json("/japan.geojson").then((data: any) => {
       if (!data?.features) return;
+      geoDataRef.current = data;
+    });
+  }, []); // ✅ FIX: removed containerSize dependency
 
-      const projection = d3
-        .geoMercator()
-        .center([67.5, 32.5])
-        .scale((width / 1000) * 2200)
-        .translate([width / 2, height / 2]);
-
-      const path = d3.geoPath().projection(projection);
-
-      projection.fitExtent(
+  useEffect(() => {
+    if (!svgRef.current || !gRef.current || !geoDataRef.current) return;
+  
+    const svg = d3.select(svgRef.current);
+    const g = gRef.current;
+    const data = geoDataRef.current;
+  
+    const { width, height } = containerSize;
+  
+    const projection = d3
+      .geoMercator()
+      .fitExtent(
         [
           [60, 40],
           [width - 20, height - 20],
         ],
         data
       );
-
-      const getRawName = (d: any): string =>
-        d?.properties?.nam_ja || d?.properties?.nam || "Unknown Prefecture";
-
-      g.selectAll("path")
-        .data(data.features)
-        .enter()
-        .append("path")
-        .attr("d", path as any)
-        .attr("fill", "#b4441d")
-        .attr("stroke", "#333")
-        .attr("stroke-width", 0.5)
-        .on("mouseover", function () {
-          d3.select(this).attr("fill", "#90caf9");
-        })
-        .on("mouseout", function () {
-          d3.select(this).attr("fill", "#b4441d");
-        })
-        .on("click", function (event: MouseEvent, d: any) {
+  
+    const path = d3.geoPath().projection(projection);
+  
+    const getRawName = (d: any): string =>
+      d?.properties?.nam_ja || d?.properties?.nam || "Unknown Prefecture";
+  
+    // DRAW / UPDATE PATHS
+    const paths = g.selectAll("path").data(data.features);
+  
+    paths
+      .join("path")
+      .attr("d", path as any)
+      .attr("fill", "#b4441d")
+      .attr("stroke", "#333")
+      .attr("stroke-width", 0.5)
+      .on("mouseover", function () {
+        d3.select(this).attr("fill", "#90caf9");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("fill", "#b4441d");
+      })
+      .on("click", function (event: MouseEvent, d: any) {
+        event.stopPropagation();
+  
+        const [[x0, y0], [x1, y1]] = path.bounds(d);
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const x = (x0 + x1) / 2;
+        const y = (y0 + y1) / 2;
+        const scale = Math.max(1, Math.min(6, 0.6 / Math.max(dx / width, dy / height)));
+        const translate = [width / 2 - scale * x, height / 2 - scale * y];
+  
+        svg
+          .transition()
+          .duration(1250)
+          .call(
+            d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale) as any
+          );
+  
+        const rawName = getRawName(d);
+        const code = normalizePrefecture(rawName);
+  
+        setSelectedPrefecture(rawName);
+        setSelectedPrefectureCode(code);
+        setPopup(null);
+      });
+  
+    // CLEAR old markers (important!)
+    g.selectAll("foreignObject").remove();
+  
+    // RE-DRAW markers
+    data.features.forEach((d: any) => {
+      const [cx, cy] = projection(d3.geoCentroid(d)) || [0, 0];
+  
+      const foreignObject = g
+        .append("foreignObject")
+        .attr("x", cx - 10)
+        .attr("y", cy - 18)
+        .attr("width", 30)
+        .attr("height", 30)
+        .style("pointer-events", "auto")
+        .style("cursor", "pointer")
+        .on("click", (event) => {
           event.stopPropagation();
-
-          const [[x0, y0], [x1, y1]] = path.bounds(d);
-          const dx = x1 - x0;
-          const dy = y1 - y0;
-          const x = (x0 + x1) / 2;
-          const y = (y0 + y1) / 2;
-          const scale = Math.max(1, Math.min(6, 0.6 / Math.max(dx / width, dy / height)));
-          const translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-          svg
-            .transition()
-            .duration(1250)
-            .call(
-              zoom.transform as any,
-              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-            );
-
+  
           const rawName = getRawName(d);
           const code = normalizePrefecture(rawName);
-
+  
+          const svgRect = svgRef.current?.getBoundingClientRect();
+  
+          if (svgRect) {
+            const screenX = svgRect.left + cx;
+            const screenY = svgRect.top + cy;
+  
+            setPopup({
+              x: screenX,
+              y: screenY,
+              name: rawName,
+            });
+          }
+  
           setSelectedPrefecture(rawName);
           setSelectedPrefectureCode(code);
-          setPopup(null);
         });
-
-      data.features.forEach((d: any) => {
-        const [cx, cy] = projection(d3.geoCentroid(d)) || [0, 0];
-
-        const foreignObject = g
-          .append("foreignObject")
-          .attr("x", cx - 10)
-          .attr("y", cy - 18)
-          .attr("width", 30)
-          .attr("height", 30)
-          .style("pointer-events", "auto")
-          .style("cursor", "pointer")
-          .on("click", (event) => {
-            event.stopPropagation();
-
-            const rawName = getRawName(d);
-            const code = normalizePrefecture(rawName);
-
-            const svgRect = svgRef.current?.getBoundingClientRect();
-
-            if (svgRect) {
-              const screenX = svgRect.left + cx;
-              const screenY = svgRect.top + cy;
-
-              setPopup({
-                x: screenX,
-                y: screenY,
-                name: rawName,
-              });
-            }
-
-            setSelectedPrefecture(rawName);
-            setSelectedPrefectureCode(code);
-          });
-
-        const div = document.createElement("div");
-        div.style.width = "20px";
-        div.style.height = "30px";
-        foreignObject.node()?.appendChild(div);
-
-        const root = createRoot(div);
-        root.render(<LocationOnIcon sx={{ fontSize: 20, color: "black" }} />);
-      });
+  
+      const div = document.createElement("div");
+      foreignObject.node()?.appendChild(div);
+  
+      div.innerHTML = "";
+      createRoot(div).render(<LocationOnIcon sx={{ fontSize: 20, color: "black" }} />);
     });
   }, [containerSize, normalizePrefecture]);
 
@@ -402,9 +414,24 @@ const Dashboard = (): React.ReactElement => {
                 zIndex: 1000,
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                {popup.name}
-              </Typography>
+              <Box
+                mt={1}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  {popup.name}
+                </Typography>
+
+                <IconButton size="small" sx={{height:"30px", width:"30px"}} onClick={() => setPopup(null)}>
+                  ✖
+                </IconButton>
+              </Box>
+
+              
 
               {lessonsLoading ? (
                 <Typography variant="body2">Loading lessons...</Typography>
@@ -418,11 +445,7 @@ const Dashboard = (): React.ReactElement => {
                 <Typography variant="body2">No lessons found.</Typography>
               )}
 
-              <Box mt={1}>
-                <IconButton size="small" onClick={() => setPopup(null)}>
-                  ✖
-                </IconButton>
-              </Box>
+              
             </Box>
           )}
 
