@@ -1,5 +1,6 @@
 // src/components/Menut.tsx (Bart)
 import React, { useMemo, useState } from "react";
+import { Typography } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 
 type BartVariant = "fixed" | "embedded";
@@ -36,7 +37,7 @@ const styles = {
   embeddedWrap: {
     width: "100%",
     borderRadius: 18,
-    background: "#dee2e4",
+    background: "#cfcfcf",
     border: "1px solid rgba(0,0,0,0.10)",
     boxShadow: "0 10px 26px rgba(0,0,0,0.12)",
     overflow: "hidden",
@@ -183,7 +184,7 @@ const styles = {
     marginLeft: "18px",
     width: "110px",
     textAlign: "center",
-    backgroundColor: "#d9d9d9",
+    backgroundColor: "#cfcfcf",
     borderRadius: "12px",
     padding: "8px",
     boxSizing: "border-box",
@@ -249,7 +250,9 @@ const Bart: React.FC<BartProps> = ({ variant = "fixed", title = "Quick Menu", cl
     return (
       <div style={styles.embeddedWrap} className={className}>
         <div style={styles.embeddedHeader}>
-          <h3 style={styles.embeddedTitle}>{title}</h3>
+        <Typography sx={{fontWeight: 900, fontSize: 16, color: "#111", letterSpacing: "-0.01em",}}>
+          {title}
+        </Typography>
           <div style={styles.embeddedHint}>Pick a section</div>
         </div>
 
