@@ -1,14 +1,15 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 
 type ResultCb = (r: { result: "correct" | "incorrect"; detail?: any }) => void;
 
 type AudioMatchProps = {
   onResult?: ResultCb;
-  options: string[];          // choices shown (already normalized, e.g. ["あ","い","う"])
-  correctAnswer: string;      // e.g. "あ"
-  audioUrl?: string;          // optional
-  prompt?: string;            // optional
+  options: string[];
+  correctAnswer: string;
+  audioUrl?: string;
+  prompt?: string;
 };
 
 const AudioMatch: React.FC<AudioMatchProps> = ({
@@ -23,16 +24,21 @@ const AudioMatch: React.FC<AudioMatchProps> = ({
 
   const choices = useMemo(() => options ?? [], [options]);
 
-  const play = async () => {
+  // FIX: playing resets on "ended"/"error", not on play() resolve.
+  // audio.play() resolves when playback *starts* — not when it finishes.
+  const play = () => {
     if (!audioUrl || !audioRef.current) return;
-    try {
-      setPlaying(true);
-      await audioRef.current.play();
-    } catch (e) {
+    const audio = audioRef.current;
+
+    audio.onended = () => setPlaying(false);
+    audio.onerror = () => setPlaying(false);
+
+    audio.currentTime = 0;
+    setPlaying(true);
+    audio.play().catch((e) => {
       console.error("Audio playback failed:", e);
-    } finally {
       setPlaying(false);
-    }
+    });
   };
 
   const choose = (label: string) => {
@@ -49,21 +55,38 @@ const AudioMatch: React.FC<AudioMatchProps> = ({
       </Typography>
 
       {audioUrl ? (
-        <>
+        <Box mb={2}>
           <audio ref={audioRef} src={audioUrl} preload="auto" />
-          <Button variant="contained" onClick={() => void play()} disabled={playing}>
-            {playing ? "Playing…" : "Play ▶"}
+          <Button
+            variant="contained"
+            startIcon={<VolumeUpIcon />}
+            onClick={play}
+            disabled={playing}
+          >
+            {playing ? "Playing…" : "Play Audio"}
           </Button>
-        </>
+        </Box>
       ) : (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" mb={2}>
           Audio not available for this exercise.
         </Typography>
       )}
 
-      <Stack direction="row" spacing={2} justifyContent="center" mt={3} flexWrap="wrap">
+      <Stack
+        direction="row"
+        spacing={2}
+        justifyContent="center"
+        mt={3}
+        flexWrap="wrap"
+        useFlexGap
+      >
         {choices.map((c) => (
-          <Button key={c} variant="outlined" onClick={() => choose(c)} sx={{ minWidth: 64, mt: 1 }}>
+          <Button
+            key={c}
+            variant="outlined"
+            onClick={() => choose(c)}
+            sx={{ minWidth: 64, mt: 1, fontSize: "1.3rem" }}
+          >
             {c}
           </Button>
         ))}

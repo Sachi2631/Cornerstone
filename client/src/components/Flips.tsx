@@ -1,16 +1,22 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Box, Grid, IconButton, Button, useMediaQuery, useTheme, Typography } from "@mui/material";
+import {
+  Box,
+  Grid,
+  IconButton,
+  Button,
+  useMediaQuery,
+  useTheme,
+  Typography,
+} from "@mui/material";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 
-type CardData = { id: number; front: string; back: string; audio?: string };
+// FIX: back is now optional — Lesson.tsx doesn't provide it
+type CardData = { id: number; front: string; back?: string; audio?: string };
 
 type FlipsProps = {
   onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
   prompt?: string;
-
-  /** which card id is the correct answer (must match cards[].id) */
   correctCardId?: number;
-
   cards?: CardData[];
 };
 
@@ -22,7 +28,8 @@ const defaultCards: CardData[] = [
 
 const Flips: React.FC<FlipsProps> = ({
   onResult,
-  prompt = "Flip the cards, then select the correct one.",
+  // FIX: prompt updated to reflect review purpose (not quiz)
+  prompt = "Flip each card to review, then select one.",
   correctCardId = 0,
   cards = defaultCards,
 }) => {
@@ -32,7 +39,8 @@ const Flips: React.FC<FlipsProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const toggleFlip = (id: number) => setFlipped((p) => ({ ...p, [id]: !p[id] }));
+  const toggleFlip = (id: number) =>
+    setFlipped((p) => ({ ...p, [id]: !p[id] }));
 
   const playAudio = (src?: string) => {
     if (!src) return;
@@ -40,14 +48,16 @@ const Flips: React.FC<FlipsProps> = ({
     void a.play();
   };
 
-  const allFlipped = useMemo(() => cards.every((c) => flipped[c.id]), [cards, flipped]);
+  const allFlipped = useMemo(
+    () => cards.every((c) => flipped[c.id]),
+    [cards, flipped]
+  );
 
   const selectAnswer = (pickedId: number) => {
     if (answeredRef.current) return;
     answeredRef.current = true;
 
     const correct = pickedId === correctCardId;
-
     onResult?.({
       result: correct ? "correct" : "incorrect",
       detail: {
@@ -61,8 +71,18 @@ const Flips: React.FC<FlipsProps> = ({
   const renderCard = (card: CardData) => {
     const isFlipped = !!flipped[card.id];
 
+    // FIX: fall back to front text if back is missing (lesson cards only provide front)
+    const backContent = card.back ?? card.front;
+
     return (
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 1,
+        }}
+      >
         <Box
           sx={{
             perspective: "1000px",
@@ -98,6 +118,8 @@ const Flips: React.FC<FlipsProps> = ({
                 fontSize: "2.3rem",
                 fontWeight: 600,
                 userSelect: "none",
+                px: 1,
+                textAlign: "center",
               }}
             >
               {card.front}
@@ -114,25 +136,31 @@ const Flips: React.FC<FlipsProps> = ({
                 justifyContent: "center",
                 border: "2px solid #ccc",
                 borderRadius: 3,
-                bgcolor: "#fff",
+                bgcolor: "#f0f4ff",
                 boxShadow: 3,
-                fontSize: "1.05rem",
+                fontSize: backContent.length > 20 ? "0.95rem" : "1.15rem",
                 fontWeight: 500,
-                padding: 1,
+                padding: 2,
                 textAlign: "center",
                 userSelect: "none",
                 transform: "rotateY(180deg)",
               }}
             >
-              {card.back}
+              {backContent}
             </Box>
           </Box>
         </Box>
 
         <Box display="flex" gap={1} alignItems="center">
-          <IconButton onClick={() => playAudio(card.audio)} title="Play audio" size="small">
-            <VolumeUpIcon color="primary" />
-          </IconButton>
+          {card.audio && (
+            <IconButton
+              onClick={() => playAudio(card.audio)}
+              title="Play audio"
+              size="small"
+            >
+              <VolumeUpIcon color="primary" />
+            </IconButton>
+          )}
 
           <Button
             variant="outlined"
@@ -156,17 +184,34 @@ const Flips: React.FC<FlipsProps> = ({
   }
 
   return (
-    <Box display="flex" flexDirection="column" px={3} py={2} width="100%" maxWidth={900}>
+    <Box
+      display="flex"
+      flexDirection="column"
+      px={{ xs: 1, sm: 3 }}
+      py={2}
+      width="100%"
+      maxWidth={900}
+    >
       <Box textAlign="center" mb={2}>
         <Typography fontWeight={700}>{prompt}</Typography>
         <Typography variant="body2" color="text.secondary">
-          Flip all cards, then select one.
+          {allFlipped
+            ? "All flipped — select the one you want."
+            : `Flip all ${cards.length} cards first.`}
         </Typography>
       </Box>
 
       <Grid container spacing={2} justifyContent="center">
         {cards.map((card) => (
-          <Grid item key={card.id} xs={12} sm={6} md={4} display="flex" justifyContent="center">
+          <Grid
+            item
+            key={card.id}
+            xs={12}
+            sm={6}
+            md={4}
+            display="flex"
+            justifyContent="center"
+          >
             {renderCard(card)}
           </Grid>
         ))}
