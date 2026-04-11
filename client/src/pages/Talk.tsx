@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import Bart from '../components/Menut'; // ✅ Your hamburger menu
+import Bart from '../components/Menut';
 
 const Talk = (): React.ReactElement => {
   const [isRecording, setIsRecording] = useState(false);
@@ -10,9 +10,20 @@ const Talk = (): React.ReactElement => {
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null); // <-- plain Uint8Array
+
+  // FIX (TS): explicitly typed as Uint8Array<ArrayBuffer> — TypeScript 5.x tightened
+  // Uint8Array to be generic. Uint8Array<ArrayBufferLike> (which includes SharedArrayBuffer)
+  // is no longer assignable to the ArrayBuffer-only overload of getByteTimeDomainData.
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null); // for cleanup
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // FIX (stale closure): isRecording is React state — its value is captured at the time
+  // draw() is called, which is before setIsRecording(true) has taken effect.
+  // The animation loop saw isRecording=false and immediately bailed every time.
+  // A ref is set synchronously so the loop always sees the current value.
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -25,7 +36,9 @@ const Talk = (): React.ReactElement => {
       recognition.onresult = (event: any) => {
         const lastResult = event.results?.[event.resultIndex];
         if (lastResult?.isFinal) {
-          setTranscript((prev) => (prev ? `${prev} ${lastResult[0].transcript}` : lastResult[0].transcript));
+          setTranscript((prev) =>
+            prev ? `${prev} ${lastResult[0].transcript}` : lastResult[0].transcript
+          );
         }
       };
 
@@ -35,11 +48,13 @@ const Talk = (): React.ReactElement => {
 
   const startRecording = async () => {
     setTranscript('');
+
+    // FIX: set ref synchronously BEFORE calling draw() so the loop sees true immediately
+    isRecordingRef.current = true;
     setIsRecording(true);
 
     recognitionRef.current?.start();
 
-    // Setup audio + analyser
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     streamRef.current = stream;
 
@@ -54,24 +69,23 @@ const Talk = (): React.ReactElement => {
     src.connect(analyser);
     analyserRef.current = analyser;
 
-    // Create the byte buffer (no generics)
-    dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+    // FIX (TS): cast to Uint8Array<ArrayBuffer> so it matches the ref type and
+    // satisfies getByteTimeDomainData's parameter type without a workaround cast.
+    dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
 
     draw();
   };
 
   const stopRecording = () => {
+    // FIX: clear ref synchronously so the animation loop stops on the next frame
+    isRecordingRef.current = false;
     setIsRecording(false);
-    recognitionRef.current?.stop();
 
-    // Release mic
+    recognitionRef.current?.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-
-    // Close audio context
     audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
-
     analyserRef.current = null;
     sourceRef.current = null;
     dataArrayRef.current = null;
@@ -80,21 +94,24 @@ const Talk = (): React.ReactElement => {
   const draw = () => {
     if (!analyserRef.current || !canvasRef.current) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
     const drawWaveform = () => {
-      if (!isRecording || !analyserRef.current || !dataArrayRef.current || !canvasRef.current) return;
+      // FIX: check isRecordingRef.current (always current), not isRecording (stale closure)
+      if (
+        !isRecordingRef.current ||
+        !analyserRef.current ||
+        !dataArrayRef.current ||
+        !canvasRef.current
+      ) return;
 
-      // If your TS lib complains, keep this cast on this line only:
-      analyserRef.current.getByteTimeDomainData(dataArrayRef.current as unknown as Uint8Array);
+      // FIX (TS): no cast needed here anymore — types match cleanly
+      analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
 
-      const c = canvasRef.current!;
-      const g = c.getContext('2d')!;
+      const c = canvasRef.current;
+      const g = c.getContext('2d');
+      if (!g) return;
+
       g.clearRect(0, 0, c.width, c.height);
 
-      // Fancy gradient stroke
       const gradient = g.createLinearGradient(0, 0, c.width, 0);
       gradient.addColorStop(0, '#ff6b6b');
       gradient.addColorStop(0.5, '#feca57');
@@ -106,14 +123,13 @@ const Talk = (): React.ReactElement => {
       g.shadowColor = '#ff6b6b';
       g.beginPath();
 
-      const data = dataArrayRef.current!;
+      const data = dataArrayRef.current;
       const sliceWidth = c.width / data.length;
       let x = 0;
 
       for (let i = 0; i < data.length; i++) {
-        const v = (data[i] - 128) / 128.0; // normalize -1..1
-        const y = c.height / 2 + v * 100;  // amplify
-
+        const v = (data[i] - 128) / 128.0;
+        const y = c.height / 2 + v * 80;
         i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
         x += sliceWidth;
       }
@@ -121,7 +137,8 @@ const Talk = (): React.ReactElement => {
       g.lineTo(c.width, c.height / 2);
       g.stroke();
 
-      if (isRecording) requestAnimationFrame(drawWaveform);
+      // FIX: loop continues only while ref is true
+      if (isRecordingRef.current) requestAnimationFrame(drawWaveform);
     };
 
     requestAnimationFrame(drawWaveform);
@@ -129,7 +146,6 @@ const Talk = (): React.ReactElement => {
 
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
-      {/* Menu trigger (positioning handled in component) */}
       <Bart />
 
       <Box
@@ -150,15 +166,24 @@ const Talk = (): React.ReactElement => {
           Speak and see your words magically appear!
         </Typography>
 
-        {/* Waveform Canvas */}
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={100}
-          style={{ backgroundColor: 'white', borderRadius: '8px', marginBottom: '24px' }}
-        />
+        {/* FIX (responsive): was fixed width={600} which overflows on mobile.
+            Canvas keeps its 600-wide intrinsic resolution for quality but
+            scales down via CSS width:100% inside a maxWidth:600 container. */}
+        <Box sx={{ width: '100%', maxWidth: 600, mb: 3 }}>
+          <canvas
+            ref={canvasRef}
+            width={600}
+            height={100}
+            style={{
+              width: '100%',
+              height: 'auto',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              display: 'block',
+            }}
+          />
+        </Box>
 
-        {/* Start/Stop Button */}
         <Button
           variant="contained"
           color={isRecording ? 'secondary' : 'primary'}
@@ -168,12 +193,11 @@ const Talk = (): React.ReactElement => {
           {isRecording ? 'Stop Recording' : 'Start Recording'}
         </Button>
 
-        {/* Transcript */}
         <Box
           bgcolor="#f5f5f5"
           p={3}
           borderRadius={4}
-          width="80%"
+          width={{ xs: '95%', sm: '80%' }}
           minHeight="100px"
           textAlign="left"
           mb={5}

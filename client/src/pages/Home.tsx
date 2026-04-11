@@ -25,7 +25,9 @@ const Home = (): React.ReactElement => {
   const isTabletDown = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
 
-  const isAuthed = Boolean(localStorage.getItem("authToken"));
+  // FIX: was "authToken" — api.ts stores the token under "access_token".
+  // This meant logged-in users were always treated as guests.
+  const isAuthed = Boolean(localStorage.getItem("access_token"));
 
   const go = (loggedInPath: string, publicPath: string) => {
     navigate(isAuthed ? loggedInPath : publicPath);
@@ -94,7 +96,7 @@ const Home = (): React.ReactElement => {
             alignItems="center"
             sx={{ pt: { xs: 6, sm: 8 }, pb: { xs: 6, sm: 8 } }}
           >
-            {/* LEFT SIDE */}
+            {/* LEFT */}
             <Grid item xs={12} md={7}>
               <Box sx={{ textAlign: { xs: "center", md: "left" } }}>
                 <Typography
@@ -116,10 +118,7 @@ const Home = (): React.ReactElement => {
 
                 <Stack
                   spacing={1.5}
-                  sx={{
-                    width: { xs: "100%", sm: 420 },
-                    mx: { xs: "auto", md: 0 },
-                  }}
+                  sx={{ width: { xs: "100%", sm: 420 }, mx: { xs: "auto", md: 0 } }}
                 >
                   <Button
                     variant="contained"
@@ -137,7 +136,7 @@ const Home = (): React.ReactElement => {
 
                   <Button
                     variant="outlined"
-                    onClick={() => go("/lesson", "/auth")}
+                    onClick={() => go("/dashboard", "/auth")}
                     sx={{
                       color: "#b43d20",
                       borderColor: "rgba(180,61,32,0.65)",
@@ -183,7 +182,7 @@ const Home = (): React.ReactElement => {
               </Box>
             </Grid>
 
-            {/* RIGHT SIDE – QUICK SAMPLE */}
+            {/* RIGHT */}
             <Grid item xs={12} md={5}>
               <Card
                 elevation={8}
@@ -194,7 +193,11 @@ const Home = (): React.ReactElement => {
                 }}
               >
                 <CardContent sx={{ textAlign: "left" }}>
-                  <Typography variant="subtitle2" fontWeight={900} sx={{ opacity: 0.75 }}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={900}
+                    sx={{ opacity: 0.75 }}
+                  >
                     Try a quick sample
                   </Typography>
 
@@ -203,7 +206,7 @@ const Home = (): React.ReactElement => {
                   </Typography>
 
                   <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
-                    “はじめまして” — Nice to meet you
+                    "はじめまして" — Nice to meet you
                   </Typography>
 
                   <Button
@@ -218,7 +221,7 @@ const Home = (): React.ReactElement => {
                       color: "#b43d20",
                       fontWeight: 900,
                     }}
-                    onClick={() => go("/lesson", "/auth")}
+                    onClick={() => go("/dashboard", "/auth")}
                   >
                     Open Sample Lesson
                   </Button>
@@ -233,7 +236,11 @@ const Home = (): React.ReactElement => {
       {sectionBox(
         "#91a7b9",
         <>
-          <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold" gutterBottom>
+          <Typography
+            variant={isMobile ? "h5" : "h4"}
+            fontWeight="bold"
+            gutterBottom
+          >
             About Us
           </Typography>
           <Typography align="center">
@@ -248,7 +255,11 @@ const Home = (): React.ReactElement => {
       {sectionBox(
         "#d3d3d3",
         <>
-          <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold" gutterBottom>
+          <Typography
+            variant={isMobile ? "h5" : "h4"}
+            fontWeight="bold"
+            gutterBottom
+          >
             Features
           </Typography>
           <Grid container spacing={3}>
