@@ -10,19 +10,9 @@ const Talk = (): React.ReactElement => {
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-
-  // FIX (TS): explicitly typed as Uint8Array<ArrayBuffer> — TypeScript 5.x tightened
-  // Uint8Array to be generic. Uint8Array<ArrayBufferLike> (which includes SharedArrayBuffer)
-  // is no longer assignable to the ArrayBuffer-only overload of getByteTimeDomainData.
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
-
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
-  // FIX (stale closure): isRecording is React state — its value is captured at the time
-  // draw() is called, which is before setIsRecording(true) has taken effect.
-  // The animation loop saw isRecording=false and immediately bailed every time.
-  // A ref is set synchronously so the loop always sees the current value.
   const isRecordingRef = useRef(false);
 
   useEffect(() => {
@@ -30,6 +20,7 @@ const Talk = (): React.ReactElement => {
       const SpeechRecognition =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
+
       recognition.continuous = true;
       recognition.lang = 'en-US';
 
@@ -47,98 +38,113 @@ const Talk = (): React.ReactElement => {
   }, []);
 
   const startRecording = async () => {
-    setTranscript('');
+    try {
+      setTranscript('');
+      isRecordingRef.current = true;
+      setIsRecording(true);
 
-    // FIX: set ref synchronously BEFORE calling draw() so the loop sees true immediately
-    isRecordingRef.current = true;
-    setIsRecording(true);
+      recognitionRef.current?.start();
 
-    recognitionRef.current?.start();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    streamRef.current = stream;
+      const ac = new AudioContext();
+      audioContextRef.current = ac;
 
-    const ac = new AudioContext();
-    audioContextRef.current = ac;
+      const src = ac.createMediaStreamSource(stream);
+      sourceRef.current = src;
 
-    const src = ac.createMediaStreamSource(stream);
-    sourceRef.current = src;
+      const analyser = ac.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      analyserRef.current = analyser;
 
-    const analyser = ac.createAnalyser();
-    analyser.fftSize = 2048;
-    src.connect(analyser);
-    analyserRef.current = analyser;
+      dataArrayRef.current = new Uint8Array(
+        new ArrayBuffer(analyser.frequencyBinCount)
+      );
 
-    // FIX (TS): cast to Uint8Array<ArrayBuffer> so it matches the ref type and
-    // satisfies getByteTimeDomainData's parameter type without a workaround cast.
-    dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
-
-    draw();
+      draw();
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      isRecordingRef.current = false;
+      setIsRecording(false);
+    }
   };
 
   const stopRecording = () => {
-    // FIX: clear ref synchronously so the animation loop stops on the next frame
     isRecordingRef.current = false;
     setIsRecording(false);
 
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
+
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+
     audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
+
     analyserRef.current = null;
     sourceRef.current = null;
     dataArrayRef.current = null;
   };
 
   const draw = () => {
-    if (!analyserRef.current || !canvasRef.current) return;
+    if (!analyserRef.current || !canvasRef.current || !dataArrayRef.current) return;
 
     const drawWaveform = () => {
-      // FIX: check isRecordingRef.current (always current), not isRecording (stale closure)
       if (
         !isRecordingRef.current ||
         !analyserRef.current ||
-        !dataArrayRef.current ||
-        !canvasRef.current
-      ) return;
+        !canvasRef.current ||
+        !dataArrayRef.current
+      ) {
+        return;
+      }
 
-      // FIX (TS): no cast needed here anymore — types match cleanly
       analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
 
-      const c = canvasRef.current;
-      const g = c.getContext('2d');
-      if (!g) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      g.clearRect(0, 0, c.width, c.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const gradient = g.createLinearGradient(0, 0, c.width, 0);
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
       gradient.addColorStop(0, '#ff6b6b');
       gradient.addColorStop(0.5, '#feca57');
       gradient.addColorStop(1, '#48dbfb');
 
-      g.lineWidth = 4;
-      g.strokeStyle = gradient;
-      g.shadowBlur = 15;
-      g.shadowColor = '#ff6b6b';
-      g.beginPath();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = gradient;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#ff6b6b';
+      ctx.beginPath();
 
       const data = dataArrayRef.current;
-      const sliceWidth = c.width / data.length;
+      const sliceWidth = canvas.width / data.length;
       let x = 0;
 
       for (let i = 0; i < data.length; i++) {
         const v = (data[i] - 128) / 128.0;
-        const y = c.height / 2 + v * 80;
-        i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+        const y = canvas.height / 2 + v * 80;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+
         x += sliceWidth;
       }
 
-      g.lineTo(c.width, c.height / 2);
-      g.stroke();
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
 
-      // FIX: loop continues only while ref is true
-      if (isRecordingRef.current) requestAnimationFrame(drawWaveform);
+      if (isRecordingRef.current) {
+        requestAnimationFrame(drawWaveform);
+      }
     };
 
     requestAnimationFrame(drawWaveform);
@@ -162,13 +168,11 @@ const Talk = (): React.ReactElement => {
         <Typography variant="h3" mb={3}>
           Talk Page
         </Typography>
+
         <Typography variant="h6" mb={4}>
           Speak and see your words magically appear!
         </Typography>
 
-        {/* FIX (responsive): was fixed width={600} which overflows on mobile.
-            Canvas keeps its 600-wide intrinsic resolution for quality but
-            scales down via CSS width:100% inside a maxWidth:600 container. */}
         <Box sx={{ width: '100%', maxWidth: 600, mb: 3 }}>
           <canvas
             ref={canvasRef}
