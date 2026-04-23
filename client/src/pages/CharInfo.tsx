@@ -8,118 +8,131 @@ const CharInfo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const char = id ? getCharacterById(id) : undefined;
 
-  const styles = {
-    body: {
-      textAlign: 'center' as const,
-      backgroundColor: '#dee2e4',
-      minHeight: '100vh',
-      padding: '20px 12px',
-      margin: 0,
-      fontFamily: 'sans-serif',
-      position: 'relative' as const,
-    },
-    main: {
-      display: 'flex',
-      flexDirection: 'row' as const,
-      justifyContent: 'center',
-      gap: '24px',
-      marginTop: '20px',
-      flexWrap: 'wrap' as const,
-    },
-    img: {
-      height: '48vh',
-      marginLeft: '30px',
-      maxHeight: 420,
-      width: 300,
-      backgroundColor: '#d3d3d3',
-      borderRadius: '30px',
-    },
-    caption: {
-      textAlign: 'left' as const,
-      padding: '20px',
-      width: 'min(680px, 30vw)',
-      borderRadius: '16px',
-    },
-    p: {
-      fontSize: '18px',
-      lineHeight: 1.5,
-      fontWeight:100,
-      margin: 0,
-    },
-    backWrap: { marginTop: 20, textAlign: 'center' as const },
-  };
-
   if (!char) {
     return (
-      <div style={styles.body}>
-        <Box
+      <Box
         sx={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          zIndex: 10,
+          textAlign: 'center',
+          backgroundColor: '#dee2e4',
+          minHeight: '100vh',
+          padding: '20px 12px',
+          position: 'relative',
+          fontFamily: 'sans-serif',
         }}
       >
-        <Bart />
-      </Box>
+        <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+          <Bart />
+        </Box>
         <h2>Character not found</h2>
         <Button variant="outlined" component={RouterLink} to="/gallery">
           Back to Gallery
         </Button>
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div style={styles.body}>
+    <Box
+      sx={{
+        textAlign: 'center',
+        backgroundColor: '#dee2e4',
+        minHeight: '100vh',
+        padding: { xs: '20px 12px', sm: '20px 24px' },
+        position: 'relative',
+        fontFamily: 'sans-serif',
+      }}
+    >
       <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
         <Bart />
       </Box>
 
       <h2>Gallery</h2>
-      <div style={styles.main}>
-        <div>
-          <div style={styles.img}></div>
-          <p style={{ ...styles.p, marginTop: 16}}>Met: {char.met}</p>
-        </div>
-        <div style={styles.caption}>
-          <h3 id="name" style={{ marginTop: 0 }}>{char.name}</h3>
-          <p id="info" style={styles.p}>{char.description}</p>
+
+      {/* FIX: was flexDirection:'row' with fixed img width:300 and caption width:'min(680px,30vw)'.
+          On mobile 30vw ≈ 90px — far too narrow to read. Now stacks vertically on small screens. */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'center',
+          alignItems: { xs: 'center', md: 'flex-start' },
+          gap: { xs: 2, md: '24px' },
+          marginTop: '20px',
+        }}
+      >
+        {/* Character image */}
+        <Box>
+          <Box
+            sx={{
+              height: { xs: 240, sm: '48vh' },
+              maxHeight: 420,
+              width: { xs: '80vw', sm: 300 },
+              maxWidth: 300,
+              backgroundColor: '#d3d3d3',
+              borderRadius: '30px',
+              mx: 'auto',
+            }}
+          />
+          <p
+            style={{
+              fontSize: '18px',
+              lineHeight: 1.5,
+              fontWeight: 100,
+              marginTop: 16,
+              textAlign: 'left',
+            }}
+          >
+            Met: {char.met}
+          </p>
+        </Box>
+
+        {/* Character info — FIX: was width:'min(680px,30vw)' → ~90px on phones */}
+        <Box
+          sx={{
+            textAlign: 'left',
+            padding: '20px',
+            width: { xs: '90vw', sm: '80vw', md: 'min(680px, 45vw)' },
+            maxWidth: 680,
+            borderRadius: '16px',
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>{char.name}</h3>
+          <p style={{ fontSize: '18px', lineHeight: 1.5, fontWeight: 100, margin: 0 }}>
+            {char.description}
+          </p>
 
           <h3 style={{ marginTop: 16 }}>Abilities</h3>
           {char.abilities.map((ab, idx) => (
             <div key={idx} style={{ marginBottom: 8 }}>
               <h4 style={{ margin: '10px 20px' }}>{ab.name}</h4>
-              <p style={{ ...styles.p, margin: '10px 20px' }}>{ab.effect}</p>
+              <p style={{ fontSize: '18px', lineHeight: 1.5, fontWeight: 100, margin: '10px 20px' }}>
+                {ab.effect}
+              </p>
             </div>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div style={styles.backWrap}>
-      <Button
-        variant="outlined"
-        component={RouterLink}
-        to="/gallery"
-        sx={{
-          backgroundColor: '#92a6ba',
-          fontSize:'16px',
-          height:'50px',
-          width:'200px',
-          color: '#000',
-          borderColor: '#92a6ba',
-          textTransform: 'none',
-          '&:hover': {
-            backgroundColor: '#7a92a8',
-            borderColor: '#7a92a8',
-          },
-        }}
-      >
-        Back to Gallery
-      </Button>
-
-      </div>
-    </div>
+      <Box sx={{ marginTop: 3, textAlign: 'center' }}>
+        <Button
+          variant="outlined"
+          component={RouterLink}
+          to="/gallery"
+          sx={{
+            backgroundColor: '#92a6ba',
+            fontSize: '16px',
+            height: '50px',
+            width: { xs: '80vw', sm: '200px' },
+            color: '#000',
+            borderColor: '#92a6ba',
+            textTransform: 'none',
+            '&:hover': { backgroundColor: '#7a92a8', borderColor: '#7a92a8' },
+          }}
+        >
+          Back to Gallery
+        </Button>
+      </Box>
+    </Box>
   );
 };
 

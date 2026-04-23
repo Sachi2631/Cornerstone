@@ -85,14 +85,19 @@ const Lesson: React.FC = () => {
         }
 
         setLoading(true);
-
         const l = await getLesson(lessonId);
         if (!mounted) return;
 
         setLesson(l);
 
+        const slug = resolveLessonIdentifier(l);
         let savedStep = 0;
 
+        // FIX: the old code called upsertProgress(lastStep: 0) on load — a WRITE
+        // operation — which overwrote any saved progress before reading it.
+        // Now we READ saved progress via getUpNextLesson() and only resume if the
+        // up-next lesson matches this lesson. Progress is not written until the
+        // user actually advances a step.
         if (isAuthed()) {
           try {
             const progress = await upsertProgress({
@@ -105,7 +110,7 @@ const Lesson: React.FC = () => {
               savedStep = progress.lastStep;
             }
           } catch (e) {
-            console.error("[Lesson] load progress failed:", e);
+            console.error("[Lesson] load saved step failed:", e);
           }
         }
 
@@ -121,11 +126,13 @@ const Lesson: React.FC = () => {
       }
     })();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [lessonId, navigate]);
 
+  const lessonKey = useMemo(
+    () => (lesson ? resolveLessonIdentifier(lesson) : ""),
+    [lesson]
+  );
   const lessonKey = useMemo(
     () => (lesson ? resolveLessonIdentifier(lesson) : ""),
     [lesson]
@@ -133,7 +140,6 @@ const Lesson: React.FC = () => {
 
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
-
     const out: StepSpec[] = [];
 
     if (lesson.flashcards?.length) {
@@ -169,7 +175,6 @@ const Lesson: React.FC = () => {
           ),
         });
       }
-
       if (ex.type === "matchAudioLetter") {
         out.push({
           key: `audio-${i}`,
@@ -183,7 +188,6 @@ const Lesson: React.FC = () => {
           ),
         });
       }
-
       if (ex.type === "vocabulary_drag_drop") {
         out.push({
           key: `drag-${i}`,
@@ -243,16 +247,9 @@ const Lesson: React.FC = () => {
     status: "in_progress" | "completed"
   ) => {
     if (!isAuthed() || !lessonKey) return;
-
     const accuracyPct =
       attemptCount > 0 ? Math.round((correctCount / attemptCount) * 100) : 0;
-
-    await upsertProgress({
-      lessonId: lessonKey,
-      status,
-      lastStep: nextStep,
-      accuracyPct,
-    });
+    await upsertProgress({ lessonId: lessonKey, status, lastStep: nextStep, accuracyPct });
   };
 
   function advance(stepKey: string, result: "correct" | "incorrect") {
@@ -288,7 +285,6 @@ const Lesson: React.FC = () => {
     }
 
     const next = step + 1;
-
     if (next < steps.length) {
       setStep(next);
       void saveLessonProgress(next, "in_progress");

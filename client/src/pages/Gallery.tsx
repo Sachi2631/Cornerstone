@@ -32,21 +32,12 @@ const Gallery: React.FC = () => {
       height: '28px',
       backgroundColor: '#333',
     },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '80px',
-      maxWidth: 800,
-      margin: '50px auto 0',
-      padding: '0 8px',
-    },
     card: {
       width: '100%',
       aspectRatio: '1 / 1.25',
       backgroundColor: '#989291',
       borderRadius: '17px',
     } as React.CSSProperties,
-
     cardWrap: { textDecoration: 'none', color: 'inherit' },
     part: { width: '100%' },
     title: { marginTop: 8 },
@@ -72,7 +63,10 @@ const Gallery: React.FC = () => {
 
       <div style={styles.topRow}>
         <button
-          style={{ ...styles.tabBtn, ...(activeTab === 'characters' ? styles.tabBtnActive : {}) }}
+          style={{
+            ...styles.tabBtn,
+            ...(activeTab === 'characters' ? styles.tabBtnActive : {}),
+          }}
           onClick={() => setActiveTab('characters')}
         >
           Characters
@@ -81,40 +75,58 @@ const Gallery: React.FC = () => {
         <div style={styles.divider} />
 
         <button
-          style={{ ...styles.tabBtn, ...(activeTab === 'items' ? styles.tabBtnActive : {}) }}
+          style={{
+            ...styles.tabBtn,
+            ...(activeTab === 'items' ? styles.tabBtnActive : {}),
+          }}
           onClick={() => setActiveTab('items')}
         >
           Items
         </button>
       </div>
 
+      {/* FIX: gap was hard-coded at 80px which left almost no room for cards on mobile.
+          Now uses responsive MUI sx so gap scales with screen size. */}
       {activeTab === 'characters' && (
-        <div style={styles.grid}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: { xs: '20px', sm: '40px', md: '60px' },
+            maxWidth: 800,
+            margin: '50px auto 0',
+            padding: '0 8px',
+          }}
+        >
           {CHARACTERS.map((c) => (
-            <Link
-              key={c.id}
-              to={`/characters/${c.id}`}
-              style={styles.cardWrap}
-            >
+            <Link key={c.id} to={`/characters/${c.id}`} style={styles.cardWrap}>
               <div style={styles.part}>
                 <div style={styles.card} />
                 <h3 style={styles.title}>{c.name}</h3>
               </div>
             </Link>
           ))}
-        </div>
+        </Box>
       )}
 
       {activeTab === 'items' && (
-        <div style={styles.grid}>
-          {/* Dummy items for now */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: { xs: '20px', sm: '40px', md: '60px' },
+            maxWidth: 800,
+            margin: '50px auto 0',
+            padding: '0 8px',
+          }}
+        >
           {['Simple Katana', 'Mystic Fan', 'Lucky Charm', 'Onigiri'].map((name, i) => (
             <div key={i} style={styles.part}>
               <div style={styles.card} />
               <h3 style={styles.title}>{name}</h3>
             </div>
           ))}
-        </div>
+        </Box>
       )}
     </Box>
   );

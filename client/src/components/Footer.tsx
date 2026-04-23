@@ -1,6 +1,32 @@
 import React from "react";
-import { Box, Typography, Button, Container, Divider, Stack } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Divider,
+  Stack,
+} from "@mui/material";
 import { Link } from "react-router-dom";
+
+// FIX: Footer links now point only to routes that actually exist in App.tsx.
+// Placeholder links (Donate, Mobile App, etc.) are marked and can be uncommented
+// once those pages are built.
+const footerLinks: { label: string; to: string }[] = [
+  { label: "Gallery", to: "/gallery" },
+  { label: "Stories", to: "/stories" },
+  { label: "Fun Facts", to: "/funfacts" },
+  { label: "Resources", to: "/resources" },
+  { label: "Watch", to: "/watch" },
+  { label: "Talk", to: "/talk" },
+  // Uncomment when pages exist:
+  // { label: "About Us", to: "/about" },
+  // { label: "Donate", to: "/donate" },
+  // { label: "FAQs", to: "/faqs" },
+  // { label: "Help Center", to: "/help" },
+  // { label: "Contact", to: "/contact" },
+  // { label: "Mobile App", to: "/mobile" },
+];
 
 const Footer = (): React.ReactElement => {
   return (
@@ -10,7 +36,7 @@ const Footer = (): React.ReactElement => {
         mt: "auto",
         bgcolor: "background.paper",
         borderTop: "1px solid rgba(0,0,0,0.10)",
-        overflowX: "hidden", // ✅ hard guard
+        overflowX: "hidden",
       }}
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
@@ -26,7 +52,11 @@ const Footer = (): React.ReactElement => {
             }}
           >
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6" fontWeight={900} sx={{ letterSpacing: "-0.02em" }}>
+              <Typography
+                variant="h6"
+                fontWeight={900}
+                sx={{ letterSpacing: "-0.02em" }}
+              >
                 Nihon-Go!
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.75, mt: 0.5 }}>
@@ -67,14 +97,7 @@ const Footer = (): React.ReactElement => {
               overflowX: "hidden",
             }}
           >
-            {[
-              { label: "About Us", to: "/about" },
-              { label: "Donate", to: "/donate" },
-              { label: "FAQs", to: "/faqs" },
-              { label: "Help Center", to: "/help" },
-              { label: "Contact", to: "/contact" },
-              { label: "Mobile App", to: "/mobile" },
-            ].map((x) => (
+            {footerLinks.map((x) => (
               <Button
                 key={x.label}
                 component={Link}
