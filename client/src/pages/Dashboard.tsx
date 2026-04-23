@@ -1,11 +1,12 @@
-/// src/pages/Dashboard.tsx
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
+// src/pages/Dashboard.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Box, Typography, Button, IconButton } from "@mui/material";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import * as d3 from "d3";
+import { createRoot } from "react-dom/client";
 import Bart from "../components/Menut";
 import { Link } from "react-router-dom";
 import { json } from "../services/api";
-import { getUpNextLesson, UpNextLesson } from "../services/progress";
 
 type Lesson = {
   slug: string;
@@ -17,249 +18,378 @@ type Lesson = {
 };
 
 const Dashboard = (): React.ReactElement => {
-  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // FIX 1: geoData as STATE (not a ref) so the drawing effect re-runs when data loads.
-  // A plain ref assignment (geoDataRef.current = data) never triggers re-renders,
-  // meaning the drawing effect ran once with null data and never fired again.
-  const [geoData, setGeoData] = useState<any>(null);
-
-  // FIX 3: zoom stored in a ref so click handlers can call zoomRef.current.transform
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-
-  const [selectedPrefectureCode, setSelectedPrefectureCode] = useState<string | null>(null);
+  const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null); // display name (geojson)
+  const [selectedPrefectureCode, setSelectedPrefectureCode] = useState<string | null>(null); // canonical (DB)
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   const [popup, setPopup] = useState<{ x: number; y: number; name: string } | null>(null);
 
   const [prefLessons, setPrefLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
 
-  const [upNext, setUpNext] = useState<UpNextLesson | null>(null);
-  const [upNextLoading, setUpNextLoading] = useState(false);
+  // Debug snapshot shown in popup
+  const [lessonsDebug, setLessonsDebug] = useState<any>(null);
 
+  // ✅ Prefecture normalization map (JP/EN -> canonical DB value)
   const PREF_NAME_TO_CODE = useMemo<Record<string, string>>(
     () => ({
-      "北海道": "Hokkaido", "青森県": "Aomori", "岩手県": "Iwate",
-      "宮城県": "Miyagi", "秋田県": "Akita", "山形県": "Yamagata",
-      "福島県": "Fukushima", "茨城県": "Ibaraki", "栃木県": "Tochigi",
-      "群馬県": "Gunma", "埼玉県": "Saitama", "千葉県": "Chiba",
-      "東京都": "Tokyo", "神奈川県": "Kanagawa", "新潟県": "Niigata",
-      "富山県": "Toyama", "石川県": "Ishikawa", "福井県": "Fukui",
-      "山梨県": "Yamanashi", "長野県": "Nagano", "岐阜県": "Gifu",
-      "静岡県": "Shizuoka", "愛知県": "Aichi", "三重県": "Mie",
-      "滋賀県": "Shiga", "京都府": "Kyoto", "大阪府": "Osaka",
-      "兵庫県": "Hyogo", "奈良県": "Nara", "和歌山県": "Wakayama",
-      "鳥取県": "Tottori", "島根県": "Shimane", "岡山県": "Okayama",
-      "広島県": "Hiroshima", "山口県": "Yamaguchi", "徳島県": "Tokushima",
-      "香川県": "Kagawa", "愛媛県": "Ehime", "高知県": "Kochi",
-      "福岡県": "Fukuoka", "佐賀県": "Saga", "長崎県": "Nagasaki",
-      "熊本県": "Kumamoto", "大分県": "Oita", "宮崎県": "Miyazaki",
-      "鹿児島県": "Kagoshima", "沖縄県": "Okinawa",
-      // English passthrough so stored English codes also resolve
-      Hokkaido: "Hokkaido", Aomori: "Aomori", Iwate: "Iwate",
-      Miyagi: "Miyagi", Akita: "Akita", Yamagata: "Yamagata",
-      Fukushima: "Fukushima", Ibaraki: "Ibaraki", Tochigi: "Tochigi",
-      Gunma: "Gunma", Saitama: "Saitama", Chiba: "Chiba",
-      Tokyo: "Tokyo", Kanagawa: "Kanagawa", Niigata: "Niigata",
-      Toyama: "Toyama", Ishikawa: "Ishikawa", Fukui: "Fukui",
-      Yamanashi: "Yamanashi", Nagano: "Nagano", Gifu: "Gifu",
-      Shizuoka: "Shizuoka", Aichi: "Aichi", Mie: "Mie",
-      Shiga: "Shiga", Kyoto: "Kyoto", Osaka: "Osaka",
-      Hyogo: "Hyogo", Nara: "Nara", Wakayama: "Wakayama",
-      Tottori: "Tottori", Shimane: "Shimane", Okayama: "Okayama",
-      Hiroshima: "Hiroshima", Yamaguchi: "Yamaguchi", Tokushima: "Tokushima",
-      Kagawa: "Kagawa", Ehime: "Ehime", Kochi: "Kochi",
-      Fukuoka: "Fukuoka", Saga: "Saga", Nagasaki: "Nagasaki",
-      Kumamoto: "Kumamoto", Oita: "Oita", Miyazaki: "Miyazaki",
-      Kagoshima: "Kagoshima", Okinawa: "Okinawa",
+      "北海道": "Hokkaido",
+      "青森県": "Aomori",
+      "岩手県": "Iwate",
+      "宮城県": "Miyagi",
+      "秋田県": "Akita",
+      "山形県": "Yamagata",
+      "福島県": "Fukushima",
+      "茨城県": "Ibaraki",
+      "栃木県": "Tochigi",
+      "群馬県": "Gunma",
+      "埼玉県": "Saitama",
+      "千葉県": "Chiba",
+      "東京都": "Tokyo",
+      "神奈川県": "Kanagawa",
+      "新潟県": "Niigata",
+      "富山県": "Toyama",
+      "石川県": "Ishikawa",
+      "福井県": "Fukui",
+      "山梨県": "Yamanashi",
+      "長野県": "Nagano",
+      "岐阜県": "Gifu",
+      "静岡県": "Shizuoka",
+      "愛知県": "Aichi",
+      "三重県": "Mie",
+      "滋賀県": "Shiga",
+      "京都府": "Kyoto",
+      "大阪府": "Osaka",
+      "兵庫県": "Hyogo",
+      "奈良県": "Nara",
+      "和歌山県": "Wakayama",
+      "鳥取県": "Tottori",
+      "島根県": "Shimane",
+      "岡山県": "Okayama",
+      "広島県": "Hiroshima",
+      "山口県": "Yamaguchi",
+      "徳島県": "Tokushima",
+      "香川県": "Kagawa",
+      "愛媛県": "Ehime",
+      "高知県": "Kochi",
+      "福岡県": "Fukuoka",
+      "佐賀県": "Saga",
+      "長崎県": "Nagasaki",
+      "熊本県": "Kumamoto",
+      "大分県": "Oita",
+      "宮崎県": "Miyazaki",
+      "鹿児島県": "Kagoshima",
+      "沖縄県": "Okinawa",
+
+      // English passthrough
+      Hokkaido: "Hokkaido",
+      Aomori: "Aomori",
+      Iwate: "Iwate",
+      Miyagi: "Miyagi",
+      Akita: "Akita",
+      Yamagata: "Yamagata",
+      Fukushima: "Fukushima",
+      Ibaraki: "Ibaraki",
+      Tochigi: "Tochigi",
+      Gunma: "Gunma",
+      Saitama: "Saitama",
+      Chiba: "Chiba",
+      Tokyo: "Tokyo",
+      Kanagawa: "Kanagawa",
+      Niigata: "Niigata",
+      Toyama: "Toyama",
+      Ishikawa: "Ishikawa",
+      Fukui: "Fukui",
+      Yamanashi: "Yamanashi",
+      Nagano: "Nagano",
+      Gifu: "Gifu",
+      Shizuoka: "Shizuoka",
+      Aichi: "Aichi",
+      Mie: "Mie",
+      Shiga: "Shiga",
+      Kyoto: "Kyoto",
+      Osaka: "Osaka",
+      Hyogo: "Hyogo",
+      Nara: "Nara",
+      Wakayama: "Wakayama",
+      Tottori: "Tottori",
+      Shimane: "Shimane",
+      Okayama: "Okayama",
+      Hiroshima: "Hiroshima",
+      Yamaguchi: "Yamaguchi",
+      Tokushima: "Tokushima",
+      Kagawa: "Kagawa",
+      Ehime: "Ehime",
+      Kochi: "Kochi",
+      Fukuoka: "Fukuoka",
+      Saga: "Saga",
+      Nagasaki: "Nagasaki",
+      Kumamoto: "Kumamoto",
+      Oita: "Oita",
+      Miyazaki: "Miyazaki",
+      Kagoshima: "Kagoshima",
+      Okinawa: "Okinawa",
     }),
     []
   );
 
-  const normalizePrefecture = useCallback(
-    (raw: string): string | null => {
-      const s = (raw || "").trim();
-      if (!s) return null;
-      return PREF_NAME_TO_CODE[s] ?? null;
-    },
-    [PREF_NAME_TO_CODE]
-  );
+  const normalizePrefecture = (raw: string): string | null => {
+    const s = (raw || "").trim();
+    if (!s) return null;
+    return PREF_NAME_TO_CODE[s] ?? null;
+  };
 
-  // Responsive container size
+  // ✅ responsive container sizing
   useEffect(() => {
     const handleResize = () => {
       const width = Math.min(window.innerWidth * 0.9, 1200);
-      setContainerSize({ width, height: width * 0.625 });
+      const height = width * 0.625;
+      setContainerSize({ width, height });
     };
+
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Load up-next lesson
+  // ✅ fetch lessons for selected prefecture code + logs + debug panel
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        setUpNextLoading(true);
-        const data = await getUpNextLesson();
-        if (!cancelled) setUpNext(data);
-      } catch (e) {
-        console.error("[Dashboard] up-next failed:", e);
-        if (!cancelled) setUpNext(null);
-      } finally {
-        if (!cancelled) setUpNextLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    if (!selectedPrefectureCode) {
+      setPrefLessons([]);
+      setLessonsDebug(null);
+      return;
+    }
 
-  // Load lessons for clicked prefecture
-  useEffect(() => {
-    if (!selectedPrefectureCode) { setPrefLessons([]); return; }
     let cancelled = false;
+
     void (async (): Promise<void> => {
       setLessonsLoading(true);
+
+      const url = `/api/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`;
+      console.log("[Dashboard] fetching lessons:", {
+        selectedPrefecture,
+        selectedPrefectureCode,
+        url,
+      });
+
       try {
-        const data = await json<{ lessons: Lesson[] }>(
-          `/api/lessons?prefecture=${encodeURIComponent(selectedPrefectureCode)}`
-        );
-        if (!cancelled) setPrefLessons(Array.isArray(data?.lessons) ? data.lessons : []);
-      } catch {
-        if (!cancelled) setPrefLessons([]);
+        const data = await json<{ lessons: Lesson[] }>(url);
+
+        const lessons: Lesson[] = Array.isArray(data?.lessons) ? data.lessons : [];
+
+        console.log("[Dashboard] lessons response:", {
+          count: lessons.length,
+          sample: lessons.slice(0, 5).map((l: Lesson) => ({
+            slug: l.slug,
+            title: l.title,
+            prefecture: l.prefecture,
+            version: l.version,
+            isActive: l.isActive,
+          })),
+          raw: data,
+        });
+
+        if (!cancelled) {
+          setPrefLessons(lessons);
+          setLessonsDebug({
+            url,
+            selectedPrefecture,
+            selectedPrefectureCode,
+            count: lessons.length,
+            sample: lessons.slice(0, 5),
+          });
+        }
+      } catch (e: any) {
+        console.error("[Dashboard] lessons fetch failed:", {
+          url,
+          status: e?.response?.status,
+          message: e?.message,
+          data: e?.response?.data,
+        });
+
+        if (!cancelled) {
+          setPrefLessons([]);
+          setLessonsDebug({
+            url,
+            selectedPrefecture,
+            selectedPrefectureCode,
+            error: {
+              status: e?.response?.status,
+              message: e?.message,
+              data: e?.response?.data,
+            },
+          });
+        }
       } finally {
         if (!cancelled) setLessonsLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [selectedPrefectureCode]);
 
-  // ─── Effect 1: one-time SVG + zoom setup, then load GeoJSON ───────────────
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPrefectureCode, selectedPrefecture]);
+
+  // ✅ D3 map render
   useEffect(() => {
     if (!svgRef.current) return;
-    const svg = d3.select(svgRef.current);
-    const g = svg.append("g");
-    gRef.current = g;
 
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 8])
-      .on("zoom", (event) => g.attr("transform", event.transform));
-
-    // FIX 3: store zoom in ref — click handlers need it for zoom.transform
-    zoomRef.current = zoom;
-    svg.call(zoom as any);
-
-    d3.json("/japan.geojson")
-      .then((data: any) => {
-        if (data?.features) {
-          // FIX 1: setState triggers the drawing effect below
-          setGeoData(data);
-        }
-      })
-      .catch((e) => console.error("[Dashboard] GeoJSON load failed:", e));
-
-    return () => { g.remove(); };
-  }, []);
-
-  // ─── Effect 2: draw/update map whenever geoData or size changes ────────────
-  // FIX 1: this effect now has `geoData` in deps — it fires when data arrives
-  useEffect(() => {
-    if (!svgRef.current || !gRef.current || !geoData) return;
-
-    const svg = d3.select(svgRef.current);
-    const g = gRef.current;
     const { width, height } = containerSize;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
 
-    const projection = d3.geoMercator().fitExtent(
-      [[60, 40], [width - 20, height - 20]],
-      geoData
-    );
-    const path = d3.geoPath().projection(projection);
+    const g = svg.append("g");
 
-    const getRawName = (d: any): string =>
-      d?.properties?.nam_ja || d?.properties?.nam || "Unknown Prefecture";
-
-    // Prefecture fill paths
-    g.selectAll<SVGPathElement, any>("path.pref-path")
-      .data(geoData.features)
-      .join((enter) =>
-        enter.append("path").attr("class", "pref-path")
-      )
-      .attr("d", path as any)
-      .attr("fill", "#b4441d")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 0.5)
-      .style("cursor", "pointer")
-      .on("mouseover", function () {
-        d3.select(this).attr("fill", "#90caf9");
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("fill", "#b4441d");
-      })
-      .on("click", function (event: MouseEvent, d: any) {
-        event.stopPropagation();
-
-        const [[x0, y0], [x1, y1]] = path.bounds(d);
-        const x = (x0 + x1) / 2;
-        const y = (y0 + y1) / 2;
-        const scale = Math.max(
-          1,
-          Math.min(6, 0.6 / Math.max((x1 - x0) / width, (y1 - y0) / height))
-        );
-
-        // FIX 3: correct zoom transition — was calling zoomIdentity directly on
-        // the selection which doesn't work. Must pass zoom behavior + transform.
-        if (zoomRef.current) {
-          svg.transition().duration(1250).call(
-            zoomRef.current.transform as any,
-            d3.zoomIdentity
-              .translate(width / 2 - scale * x, height / 2 - scale * y)
-              .scale(scale)
-          );
-        }
-
-        const rawName = getRawName(d);
-        setSelectedPrefectureCode(normalizePrefecture(rawName));
-        setPopup(null);
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 8])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
       });
 
-    // FIX 4: replace createRoot-in-loop (memory leak) with D3-native circle markers.
-    // createRoot created a new React root per prefecture per resize — hundreds of
-    // orphaned React trees. Simple SVG circles are the right tool here.
-    g.selectAll("circle.pref-marker").remove();
+    svg.call(zoom as any);
 
-    geoData.features.forEach((d: any) => {
-      const centroid = projection(d3.geoCentroid(d));
-      if (!centroid) return;
-      const [cx, cy] = centroid;
+    void d3.json("/japan.geojson").then((data: any) => {
+      if (!data?.features) return;
 
-      g.append("circle")
-        .attr("class", "pref-marker")
-        .attr("cx", cx)
-        .attr("cy", cy)
-        .attr("r", 4)
-        .attr("fill", "#1a1a1a")
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 1.2)
-        .style("cursor", "pointer")
-        .style("pointer-events", "all")
+      const projection = d3
+        .geoMercator()
+        .center([67.5, 32.5])
+        .scale((width / 1000) * 2200)
+        .translate([width / 2, height / 2]);
+
+      const path = d3.geoPath().projection(projection);
+
+      projection.fitExtent(
+        [
+          [60, 40],
+          [width - 20, height - 20],
+        ],
+        data
+      );
+
+      const getRawName = (d: any): string =>
+        d?.properties?.nam_ja || d?.properties?.nam || "Unknown Prefecture";
+
+      g.selectAll("path")
+        .data(data.features)
+        .enter()
+        .append("path")
+        .attr("d", path as any)
+        .attr("fill", "#b4441d")
+        .attr("stroke", "#333")
+        .attr("stroke-width", 0.5)
         .on("mouseover", function () {
-          d3.select(this).attr("r", 6).attr("fill", "#b4441d");
+          d3.select(this).attr("fill", "#90caf9");
         })
         .on("mouseout", function () {
-          d3.select(this).attr("r", 4).attr("fill", "#1a1a1a");
+          d3.select(this).attr("fill", "#b4441d");
         })
-        .on("click", (event: MouseEvent) => {
+        .on("click", function (event: MouseEvent, d: any) {
           event.stopPropagation();
+
+          const [[x0, y0], [x1, y1]] = path.bounds(d);
+          const dx = x1 - x0;
+          const dy = y1 - y0;
+          const x = (x0 + x1) / 2;
+          const y = (y0 + y1) / 2;
+          const scale = Math.max(1, Math.min(6, 0.6 / Math.max(dx / width, dy / height)));
+          const translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+          svg
+            .transition()
+            .duration(1250)
+            .call(
+              zoom.transform as any,
+              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+            );
+
           const rawName = getRawName(d);
-          // FIX: event.clientX/Y is always accurate regardless of zoom level.
-          // The old approach (svgRect.left + cx) was wrong after the user panned/zoomed.
-          setPopup({ x: event.clientX, y: event.clientY, name: rawName });
-          setSelectedPrefectureCode(normalizePrefecture(rawName));
+          const code = normalizePrefecture(rawName);
+
+          console.log("[Dashboard] prefecture selected:", { rawName, code });
+
+          setSelectedPrefecture(rawName);
+          setSelectedPrefectureCode(code);
+          setPopup(null);
         });
+
+      // teardrop markers
+      data.features.forEach((d: any) => {
+        const [cx, cy] = projection(d3.geoCentroid(d)) || [0, 0];
+
+        const foreignObject = g
+          .append("foreignObject")
+          .attr("x", cx - 10)
+          .attr("y", cy - 18)
+          .attr("width", 30)
+          .attr("height", 30)
+          .style("pointer-events", "auto")
+          .style("cursor", "pointer")
+          .on("click", (event) => {
+            event.stopPropagation();
+
+            const rawName = getRawName(d);
+            const code = normalizePrefecture(rawName);
+
+            console.log("[Dashboard] marker clicked:", { rawName, code });
+
+            const svgRect = svgRef.current?.getBoundingClientRect();
+
+              if (svgRect) {
+                const screenX = svgRect.left + cx;
+                const screenY = svgRect.top + cy;
+
+                setPopup({
+                  x: screenX,
+                  y: screenY,
+                  name: rawName,
+                });
+              }
+
+            setSelectedPrefecture(rawName);
+            setSelectedPrefectureCode(code);
+          });
+
+        const div = document.createElement("div");
+        div.style.width = "20px";
+        div.style.height = "30px";
+        foreignObject.node()?.appendChild(div);
+
+        const root = createRoot(div);
+        root.render(<LocationOnIcon sx={{ fontSize: 20, color: "black" }} />);
+      });
     });
-  }, [geoData, containerSize, normalizePrefecture]);
+
+    const initialScale = 1.3;
+    const initialTranslate = [
+      (width * (1.05 - initialScale)) / 2,
+      (height * (1.125 - initialScale)) / 2,
+    ];
+
+    svg
+      .transition()
+      .duration(0)
+      .call(
+        zoom.transform as any,
+        d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+      );
+
+    svg.on("click", () => {
+      svg
+        .transition()
+        .duration(1250)
+        .call(
+          zoom.transform as any,
+          d3.zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale)
+        );
+      setSelectedPrefecture(null);
+      setSelectedPrefectureCode(null);
+      setPopup(null);
+      setLessonsDebug(null);
+    });
+  }, [containerSize]);
 
   return (
     <Box position="relative" width="100vw" minHeight="100vh" bgcolor="white">
@@ -267,8 +397,11 @@ const Dashboard = (): React.ReactElement => {
         <Bart />
       </Box>
 
-      <Box component="main" width="100vw">
+      <Box component="main" flexGrow={1} display="flex" flexDirection="column" justifyContent="center" width="100vw">
         <Box
+          display="flex"
+          flexDirection="row"
+          justifyContent="flex-end"
           sx={{
             width: "100vw",
             aspectRatio: "16/11",
@@ -279,80 +412,119 @@ const Dashboard = (): React.ReactElement => {
             background: "#dee2e4",
           }}
         >
-          {/* FIX 2: viewBox was "200 0 W H" — the 200 x-offset pushed most of Japan
-              off-screen to the left. Changed to "0 0 W H". */}
           <svg
             ref={svgRef}
             width="100%"
             height="100%"
-            viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+            viewBox={`200 0 ${containerSize.width} ${containerSize.height}`}
             preserveAspectRatio="xMidYMid meet"
             style={{ display: "block" }}
           />
 
-          {/* Prefecture popup */}
           {popup && (
             <Box
               sx={{
-                position: "fixed",
-                top: popup.y - 90,
-                left: popup.x + 14,
-                backgroundColor: "#d7ccc8",
-                borderRadius: "16px",
-                p: 2,
-                minWidth: 220,
-                maxWidth: 280,
-                boxShadow: 6,
-                zIndex: 1000,
+                position: "absolute",
+                top: popup.y,
+                left: popup.x,
+                transform: "translate(-50%, -100%)",
+                bgcolor: "#d9d9d9",
+                borderRadius: "40px",
+                padding: "12px",
+                boxShadow: 3,
+                zIndex: 20,
+                pointerEvents: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                width: "320px",
+                paddingTop: "20px",
+                paddingBottom: "20px",
+                textAlign: "center",
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 1,
-                }}
-              >
-                <Typography variant="h6" fontWeight="bold" noWrap>
-                  {popup.name}
-                </Typography>
-                <IconButton
-                  size="small"
-                  sx={{ height: 30, width: 30, ml: 1 }}
-                  onClick={() => setPopup(null)}
-                >
-                  ✖
-                </IconButton>
+              <Typography variant="subtitle1" sx={{ fontSize: "18px", textAlign: "center" }}>
+                {popup.name}
+              </Typography>
+
+              <Typography variant="body2" sx={{ textAlign: "center", opacity: 0.8 }}>
+                {selectedPrefectureCode ? `Prefecture: ${selectedPrefectureCode}` : "Prefecture not mapped yet"}
+              </Typography>
+
+              <Box sx={{ mt: 1 }}>
+                {lessonsLoading ? (
+                  <Typography variant="body2">Loading lessons...</Typography>
+                ) : prefLessons.length === 0 ? (
+                  <Typography variant="body2">No lessons assigned to this prefecture.</Typography>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {prefLessons.slice(0, 3).map((lesson: Lesson) => (
+                      <Button
+                        key={lesson.slug}
+                        component={Link}
+                        to={`/lesson/${lesson.slug}`}
+                        sx={{
+                          height: "44px",
+                          borderRadius: "30px",
+                          backgroundColor: "#92a6ba",
+                          border: "none",
+                          fontWeight: 300,
+                          textTransform: "none",
+                          margin: "0 auto",
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "10px",
+                          width: "100%",
+                          "&:hover": { backgroundColor: "#7a92a8" },
+                        }}
+                      >
+                        {lesson.title} ({lesson.version})
+                      </Button>
+                    ))}
+
+
+                  </Box>
+                )}
               </Box>
 
-              {lessonsLoading ? (
-                <Typography variant="body2">Loading lessons…</Typography>
-              ) : prefLessons.length > 0 ? (
-                prefLessons.map((lesson) => (
-                  <Typography key={lesson.slug} variant="body2" sx={{ mb: 0.5 }}>
-                    • {lesson.title} ({lesson.version})
-                  </Typography>
-                ))
-              ) : (
-                <Typography variant="body2">No lessons found.</Typography>
-              )}
+              {/* DEBUG: shows what we fetched */}
+              <Box
+                sx={{
+                  mt: 1,
+                  mx: "auto",
+                  width: "100%",
+                  maxHeight: 160,
+                  overflow: "auto",
+                  bgcolor: "rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  borderRadius: 2,
+                  p: 1,
+                  textAlign: "left",
+                  fontFamily: "monospace",
+                  fontSize: 11,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {JSON.stringify(lessonsDebug, null, 2)}
+              </Box>
             </Box>
           )}
 
-          {/* Up Next panel — FIX: was "18vw" hard-coded, unusable on mobile */}
+          {/* INFO PANELS (unchanged) */}
           <Box
             sx={{
-              position: "absolute",
-              top: "5vh",
-              right: "5vw",
-              p: "20px",
-              width: { xs: "60vw", sm: "180px", md: "18vw" },
-              maxWidth: 240,
+              padding: "20px",
+              width: "18vw",
               borderRadius: "10px",
+              marginRight: "5vw",
               bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
               boxShadow: 3,
               zIndex: 1,
+              marginTop: "5vh",
+              position: "absolute",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -360,58 +532,92 @@ const Dashboard = (): React.ReactElement => {
             </Typography>
 
             <Box sx={{ textAlign: "center" }}>
-              {upNextLoading ? (
-                <Typography variant="body2">Loading…</Typography>
-              ) : !upNext ? (
-                <Typography variant="body2">No saved lesson yet.</Typography>
-              ) : (
-                <>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-                    {upNext.title}
-                    {upNext.version ? ` (${upNext.version})` : ""}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 100 }}>
-                    Prefecture: {upNext.prefecture || "—"}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 100 }}>
-                    Resume from step {upNext.lastStep + 1}
-                  </Typography>
-                  <IconButton
-                    aria-label={`Resume ${upNext.title}`}
-                    component={Link}
-                    to={`/lesson/${upNext.slug}`}
-                  >
-                    <img
-                      src="assets/Play Button 2.png"
-                      alt="Play"
-                      style={{ height: "50px" }}
-                    />
-                  </IconButton>
-                </>
-              )}
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                Unit 1 Lesson 1
+              </Typography>
+
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 100 }}>
+                Goal: Learn the first three letters of the Japanese alphabet
+              </Typography>
+
+              <IconButton aria-label="Open Unit 1 Lesson 1" onClick={() => alert("Open Unit 1 Lesson 1")}>
+                <img src="assets/Play Button 2.png" alt="Play" style={{ height: "50px" }} />
+              </IconButton>
+
+              <Typography variant="body1" sx={{ fontWeight: 600, mt: 3, mb: 1 }}>
+                Grammar Lesson 1
+              </Typography>
+
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 100 }}>
+                Goal: Learn how to use これ、それ、は
+              </Typography>
+
+              <IconButton aria-label="Open Grammar Lesson 1" onClick={() => alert("Open Grammar Lesson 1")}>
+                <img src="assets/Play Button 2.png" alt="Play" style={{ height: "50px" }} />
+              </IconButton>
             </Box>
           </Box>
 
-          {/* Stories panel — FIX: was "22vw" hard-coded */}
           <Box
             sx={{
-              position: "absolute",
-              left: "7vw",
-              bottom: "8vh",
-              backgroundColor: "#8c9cab",
-              borderRadius: "20px",
-              p: 3,
-              width: { xs: "60vw", sm: "200px", md: "22vw" },
-              maxWidth: 300,
+              padding: "20px",
+              width: "18vw",
+              borderRadius: "10px",
+              marginRight: "5vw",
+              bgcolor: "#d3d3d3",
+              paddingLeft: "20px",
               boxShadow: 3,
+              zIndex: 1,
+              position: "absolute",
+              marginTop: "65vh",
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, textAlign: "center", mb: 1 }}>
-              Stories
+            <Typography variant="h6" sx={{ fontWeight: 400, mb: 2 }}>
+              Stories:
             </Typography>
-            <Typography variant="body1" sx={{ textAlign: "center" }}>
-              Continue your journey through Japanese culture and stories.
-            </Typography>
+
+            <Button
+              sx={{
+                width: "18vw",
+                height: "60px",
+                borderRadius: "10px",
+                backgroundColor: "#92a6ba",
+                border: "none",
+                fontWeight: 100,
+                fontSize: "18px",
+                mt: "50px",
+                textTransform: "none",
+                margin: "0 auto",
+                color: "#000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                "&:hover": { backgroundColor: "#7a92a8" },
+              }}
+            >
+              Momotaro
+              <img src="assets/Arrow.png" alt="Momotaro" style={{ height: "30px" }} />
+            </Button>
+          </Box>
+
+          {/* Prefecture name display */}
+          <Box
+            mt={4}
+            minHeight="50px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              opacity: selectedPrefecture ? 1 : 0,
+              transform: selectedPrefecture ? "translateY(0)" : "translateY(20px)",
+              transition: "all 0.5s ease",
+              color: "orange",
+              fontWeight: "bold",
+              fontSize: "1.5rem",
+            }}
+          >
+            {selectedPrefecture && <Typography variant="h5">{selectedPrefecture}</Typography>}
           </Box>
         </Box>
       </Box>
