@@ -25,11 +25,12 @@ import Fact from "../components/Fact";
 import Reward from "../components/Rewards";
 import RInfo from "../components/RewardInfo";
 
-import { upsertProgress } from "../services/progress";
+// import { getProgress, upsertProgress } from "../services/progress";
 import { isAuthed } from "../services/api";
 import { getLesson, LessonDoc } from "../services/lessons";
 
 type ResultCb = (args: { result: "correct" | "incorrect"; detail?: any }) => void;
+
 type StepSpec = {
   key: string;
   graded: boolean;
@@ -45,7 +46,7 @@ const RewardC = Reward as any;
 const RInfoC = RInfo as any;
 
 function resolveLessonIdentifier(lesson: LessonDoc): string {
-  return String(lesson.slug || "");
+  return lesson.slug || (lesson as any)._id || (lesson as any).id || "";
 }
 
 function stepLabelFromKey(key: string): string {
@@ -78,6 +79,11 @@ const Lesson: React.FC = () => {
 
     void (async () => {
       try {
+        if (!lessonId) {
+          navigate("/dashboard");
+          return;
+        }
+
         setLoading(true);
 
         const l = await getLesson(lessonId);
@@ -95,8 +101,7 @@ const Lesson: React.FC = () => {
               lastStep: 0,
               accuracyPct: 0,
             });
-
-            if (typeof progress?.lastStep === "number") {
+            if (progress && typeof progress.lastStep === "number") {
               savedStep = progress.lastStep;
             }
           } catch (e) {
@@ -104,7 +109,7 @@ const Lesson: React.FC = () => {
           }
         }
 
-        setStep(savedStep);
+        setStep(savedStep); // clamped later once steps exist
         setCorrectCount(0);
         setAttemptCount(0);
         answeredStepRef.current = {};
@@ -121,7 +126,10 @@ const Lesson: React.FC = () => {
     };
   }, [lessonId, navigate]);
 
-  const lessonKey = useMemo(() => (lesson ? resolveLessonIdentifier(lesson) : ""), [lesson]);
+  const lessonKey = useMemo(
+    () => (lesson ? resolveLessonIdentifier(lesson) : ""),
+    [lesson]
+  );
 
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
@@ -132,13 +140,14 @@ const Lesson: React.FC = () => {
       out.push({
         key: "flips",
         graded: true,
-        comp: (on: ResultCb) => (
+        comp: (on) => (
           <FlipsC
             onResult={on}
             cards={lesson.flashcards.map((f: string, i: number) => ({
               id: i,
               front: f,
             }))}
+            correctCardId={0}
           />
         ),
       });
@@ -149,7 +158,15 @@ const Lesson: React.FC = () => {
         out.push({
           key: `dots-${i}`,
           graded: true,
-          comp: (on: ResultCb) => <DotsC onResult={on} pairs={ex.items} />,
+          comp: (on) => (
+            <DotsC
+              onResult={on}
+              pairs={(ex.items || []).map((s: string) => {
+                const [hiragana, katakana] = String(s).split("/");
+                return { hiragana, katakana };
+              })}
+            />
+          ),
         });
       }
 
@@ -157,10 +174,10 @@ const Lesson: React.FC = () => {
         out.push({
           key: `audio-${i}`,
           graded: true,
-          comp: (on: ResultCb) => (
+          comp: (on) => (
             <AudioC
               onResult={on}
-              options={ex.items}
+              options={ex.items || []}
               correctAnswer={ex.correctAnswers?.[0]}
             />
           ),
@@ -171,10 +188,10 @@ const Lesson: React.FC = () => {
         out.push({
           key: `drag-${i}`,
           graded: true,
-          comp: (on: ResultCb) => (
+          comp: (on) => (
             <DragC
               onResult={on}
-              characterBank={ex.characterBank}
+              characterBank={ex.characterBank || []}
               correctAnswer={ex.correctAnswer}
             />
           ),
@@ -214,6 +231,13 @@ const Lesson: React.FC = () => {
     return out;
   }, [lesson]);
 
+  // ✅ Clamp step AFTER steps exist
+  useEffect(() => {
+    if (steps.length > 0) {
+      setStep((prev) => Math.min(prev, steps.length - 1));
+    }
+  }, [steps.length]);
+
   const saveLessonProgress = async (
     nextStep: number,
     status: "in_progress" | "completed"
@@ -236,7 +260,8 @@ const Lesson: React.FC = () => {
     answeredStepRef.current[stepKey] = true;
 
     const nextAttemptCount = attemptCount + 1;
-    const nextCorrectCount = result === "correct" ? correctCount + 1 : correctCount;
+    const nextCorrectCount =
+      result === "correct" ? correctCount + 1 : correctCount;
 
     setAttemptCount(nextAttemptCount);
     if (result === "correct") setCorrectCount(nextCorrectCount);
@@ -245,32 +270,11 @@ const Lesson: React.FC = () => {
 
     if (next < steps.length) {
       setStep(next);
-
-      const accuracyPct =
-        nextAttemptCount > 0 ? Math.round((nextCorrectCount / nextAttemptCount) * 100) : 0;
-
-      void upsertProgress({
-        lessonId: lessonKey,
-        status: "in_progress",
-        lastStep: next,
-        accuracyPct,
-      }).catch((e) => {
-        console.error("[Lesson] progress save failed:", e);
-      });
+      void saveLessonProgress(next, "in_progress");
     } else {
-      const accuracyPct =
-        nextAttemptCount > 0 ? Math.round((nextCorrectCount / nextAttemptCount) * 100) : 0;
-
-      void upsertProgress({
-        lessonId: lessonKey,
-        status: "completed",
-        lastStep: step,
-        accuracyPct,
-      })
-        .catch((e) => {
-          console.error("[Lesson] completion save failed:", e);
-        })
-        .finally(() => navigate("/dashboard"));
+      void saveLessonProgress(step, "completed").finally(() =>
+        navigate("/dashboard")
+      );
     }
   }
 
@@ -287,34 +291,11 @@ const Lesson: React.FC = () => {
 
     if (next < steps.length) {
       setStep(next);
-      void saveLessonProgress(next, "in_progress").catch((e) =>
-        console.error("[Lesson] progress save failed:", e)
+      void saveLessonProgress(next, "in_progress");
+    } else {
+      void saveLessonProgress(step, "completed").finally(() =>
+        navigate("/dashboard")
       );
-    } else {
-      void saveLessonProgress(step, "completed")
-        .catch((e) => console.error("[Lesson] completion save failed:", e))
-        .finally(() => navigate("/dashboard"));
-    }
-  };
-
-  const handleNextUngraded = async () => {
-    const next = step + 1;
-
-    if (next < steps.length) {
-      setStep(next);
-      try {
-        await saveLessonProgress(next, "in_progress");
-      } catch (e) {
-        console.error("[Lesson] ungraded save failed:", e);
-      }
-    } else {
-      try {
-        await saveLessonProgress(step, "completed");
-      } catch (e) {
-        console.error("[Lesson] final ungraded save failed:", e);
-      } finally {
-        navigate("/dashboard");
-      }
     }
   };
 
@@ -346,62 +327,24 @@ const Lesson: React.FC = () => {
   }
 
   const currentStep = steps[step];
-  const progressPct = steps.length > 0 ? ((step + 1) / steps.length) * 100 : 0;
+  const progressPct = ((step + 1) / steps.length) * 100;
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            onClick={() => navigate("/dashboard")}
-          >
-            Back
-          </Button>
-
-          <Button
-            startIcon={<ExitToAppIcon />}
-            variant="contained"
-            onClick={handleSaveAndExit}
-            disabled={savingExit}
-          >
+        <Stack direction="row" justifyContent="space-between" mb={2}>
+          <Button onClick={() => navigate("/dashboard")}>Back</Button>
+          <Button onClick={handleSaveAndExit}>
             {savingExit ? "Saving..." : "Save & Exit"}
           </Button>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-          <Chip label={lesson.title} />
-          <Chip label={`Step ${step + 1} / ${steps.length}`} />
-          <Chip label={stepLabelFromKey(currentStep.key)} />
-        </Stack>
+        <Chip label={lesson.title} />
+        <LinearProgress value={progressPct} variant="determinate" sx={{ my: 2 }} />
 
-        <LinearProgress
-          variant="determinate"
-          value={progressPct}
-          sx={{ mb: 3, height: 10, borderRadius: 999 }}
-        />
-
-        <Divider sx={{ mb: 3 }} />
-
-        <Box mb={3}>{currentStep.comp(onExerciseResult)}</Box>
-
-        <Stack direction="row" justifyContent="flex-end" mt={3}>
-          <Button
-            variant="contained"
-            onClick={handleNextUngraded}
-            disabled={step >= steps.length - 1}
-          >
-            {step >= steps.length - 1 ? "Finish" : "Next"}
-          </Button>
-        </Stack>
-
-        <Stack direction="row" spacing={1} mt={3} alignItems="center">
-          <BugReportIcon fontSize="small" />
-          <Typography variant="body2" color="text.secondary">
-            Accuracy: {attemptCount > 0 ? Math.round((correctCount / attemptCount) * 100) : 0}%
-          </Typography>
-        </Stack>
+        <Box mb={3}>
+          {currentStep ? currentStep.comp(onExerciseResult) : "Invalid step"}
+        </Box>
       </Paper>
     </Container>
   );
