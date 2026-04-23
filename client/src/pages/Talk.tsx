@@ -10,7 +10,7 @@ const Talk = (): React.ReactElement => {
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isRecordingRef = useRef(false);
@@ -59,9 +59,7 @@ const Talk = (): React.ReactElement => {
       src.connect(analyser);
       analyserRef.current = analyser;
 
-      dataArrayRef.current = new Uint8Array(
-        new ArrayBuffer(analyser.frequencyBinCount)
-      );
+      dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
 
       draw();
     } catch (error) {
@@ -103,7 +101,9 @@ const Talk = (): React.ReactElement => {
         return;
       }
 
-      analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+      analyserRef.current.getByteTimeDomainData(
+        dataArrayRef.current as unknown as Uint8Array<ArrayBuffer>
+      );
 
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
