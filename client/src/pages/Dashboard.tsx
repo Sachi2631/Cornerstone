@@ -1,4 +1,4 @@
-/// src/pages/Dashboard.tsx
+// src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Box, Typography, IconButton, CircularProgress } from "@mui/material";
 import * as d3 from "d3";
@@ -26,7 +26,6 @@ const Dashboard = (): React.ReactElement => {
 
   const [selectedPrefectureCode, setSelectedPrefectureCode] = useState<string | null>(null);
   const [isZoomedIn, setIsZoomedIn] = useState(false);
-  // containerSize is driven by the actual container element, not the window
   const [containerSize, setContainerSize] = useState({ width: 900, height: 600 });
   const [popup, setPopup] = useState<{ x: number; y: number; name: string } | null>(null);
 
@@ -36,7 +35,6 @@ const Dashboard = (): React.ReactElement => {
   const [upNext, setUpNext] = useState<UpNextLesson | null>(null);
   const [upNextLoading, setUpNextLoading] = useState(false);
 
-  // ── Prefecture name → English code map ──────────────────────────────────────
   const PREF_NAME_TO_CODE = useMemo<Record<string, string>>(
     () => ({
       "北海道": "Hokkaido", "青森県": "Aomori", "岩手県": "Iwate",
@@ -55,7 +53,6 @@ const Dashboard = (): React.ReactElement => {
       "福岡県": "Fukuoka", "佐賀県": "Saga", "長崎県": "Nagasaki",
       "熊本県": "Kumamoto", "大分県": "Oita", "宮崎県": "Miyazaki",
       "鹿児島県": "Kagoshima", "沖縄県": "Okinawa",
-      // English passthrough
       Hokkaido: "Hokkaido", Aomori: "Aomori", Iwate: "Iwate",
       Miyagi: "Miyagi", Akita: "Akita", Yamagata: "Yamagata",
       Fukushima: "Fukushima", Ibaraki: "Ibaraki", Tochigi: "Tochigi",
@@ -85,7 +82,6 @@ const Dashboard = (): React.ReactElement => {
     [PREF_NAME_TO_CODE]
   );
 
-  // ── Zoom-out helper (resets to identity) ────────────────────────────────────
   const resetZoom = useCallback(() => {
     if (!svgRef.current || !zoomRef.current) return;
     d3.select(svgRef.current)
@@ -97,7 +93,9 @@ const Dashboard = (): React.ReactElement => {
     setPopup(null);
   }, []);
 
-  // ── Responsive: measure the actual container element ───────────────────────
+  // ── Measure map container (fires on first paint + every resize) ─────────────
+  // The container is a flex child so its height = 100vh − Bart's height,
+  // whatever that turns out to be at runtime.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -106,9 +104,10 @@ const Dashboard = (): React.ReactElement => {
       if (width > 0 && height > 0) setContainerSize({ width, height });
     });
     ro.observe(el);
-    // seed immediately
-    const { width, height } = el.getBoundingClientRect();
-    if (width > 0 && height > 0) setContainerSize({ width, height });
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setContainerSize({ width: rect.width, height: rect.height });
+    }
     return () => ro.disconnect();
   }, []);
 
@@ -130,7 +129,7 @@ const Dashboard = (): React.ReactElement => {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Load lessons for clicked prefecture ─────────────────────────────────────
+  // ── Load lessons for selected prefecture ─────────────────────────────────────
   useEffect(() => {
     if (!selectedPrefectureCode) { setPrefLessons([]); return; }
     let cancelled = false;
@@ -173,7 +172,7 @@ const Dashboard = (): React.ReactElement => {
     return () => { g.remove(); };
   }, []);
 
-  // ── Effect 2: draw/update map whenever geoData, size, or resetZoom changes ──
+  // ── Effect 2: draw/redraw map ────────────────────────────────────────────────
   useEffect(() => {
     if (!svgRef.current || !gRef.current || !geoData) return;
 
@@ -190,22 +189,17 @@ const Dashboard = (): React.ReactElement => {
     const getRawName = (d: any): string =>
       d?.properties?.nam_ja || d?.properties?.nam || "Unknown Prefecture";
 
-    // ── Sea background rect: click → zoom out ──────────────────────────────
-    // Must be the FIRST child so it sits behind all prefectures.
+    // Sea background — click to zoom out
     g.selectAll("rect.sea-bg").remove();
     g.insert("rect", ":first-child")
       .attr("class", "sea-bg")
-      .attr("x", -9999)
-      .attr("y", -9999)
-      .attr("width", 99999)
-      .attr("height", 99999)
+      .attr("x", -9999).attr("y", -9999)
+      .attr("width", 99999).attr("height", 99999)
       .attr("fill", "transparent")
       .style("cursor", "default")
-      .on("click", () => {
-        resetZoom();
-      });
+      .on("click", () => resetZoom());
 
-    // ── Prefecture fill paths ───────────────────────────────────────────────
+    // Prefecture paths
     g.selectAll<SVGPathElement, any>("path.pref-path")
       .data(geoData.features)
       .join((enter) => enter.append("path").attr("class", "pref-path"))
@@ -221,19 +215,14 @@ const Dashboard = (): React.ReactElement => {
         d3.select(this).attr("fill", "#b4441d").attr("stroke-width", 0.6);
       })
       .on("click", function (event: MouseEvent, d: any) {
-        event.stopPropagation(); // prevent bubble to sea-bg
+        event.stopPropagation();
 
-        const bounds = path.bounds(d);
-        const [[x0, y0], [x1, y1]] = bounds;
+        const [[x0, y0], [x1, y1]] = path.bounds(d);
         const cx = (x0 + x1) / 2;
         const cy = (y0 + y1) / 2;
-
-        // Scale so the prefecture fills ~60% of the viewport
-        const prefW = x1 - x0;
-        const prefH = y1 - y0;
         const scale = Math.max(
           1.5,
-          Math.min(8, Math.min((width * 0.6) / prefW, (height * 0.6) / prefH))
+          Math.min(8, Math.min((width * 0.6) / (x1 - x0), (height * 0.6) / (y1 - y0)))
         );
 
         if (zoomRef.current) {
@@ -251,19 +240,15 @@ const Dashboard = (): React.ReactElement => {
         setPopup({ x: event.clientX, y: event.clientY, name: rawName });
       });
 
-    // ── Prefecture dot markers ──────────────────────────────────────────────
-    // Remove stale markers first, then redraw for current projection
+    // Dot markers
     g.selectAll("circle.pref-marker").remove();
-
     geoData.features.forEach((d: any) => {
       const centroid = projection(d3.geoCentroid(d));
       if (!centroid) return;
-      const [markerX, markerY] = centroid;
-
+      const [mx, my] = centroid;
       g.append("circle")
         .attr("class", "pref-marker")
-        .attr("cx", markerX)
-        .attr("cy", markerY)
+        .attr("cx", mx).attr("cy", my)
         .attr("r", 3.5)
         .attr("fill", "rgba(255,255,255,0.85)")
         .attr("stroke", "#b4441d")
@@ -277,7 +262,7 @@ const Dashboard = (): React.ReactElement => {
           d3.select(this).attr("r", 3.5).attr("fill", "rgba(255,255,255,0.85)").attr("stroke", "#b4441d");
         })
         .on("click", (event: MouseEvent) => {
-          event.stopPropagation(); // prevent bubble to sea-bg
+          event.stopPropagation();
           const rawName = getRawName(d);
           setPopup({ x: event.clientX, y: event.clientY, name: rawName });
           setSelectedPrefectureCode(normalizePrefecture(rawName));
@@ -285,52 +270,52 @@ const Dashboard = (): React.ReactElement => {
     });
   }, [geoData, containerSize, normalizePrefecture, resetZoom]);
 
+  // ────────────────────────────────────────────────────────────────────────────
+  //
+  //  Layout model (the key insight):
+  //
+  //  ┌──────────────────────────────────────┐  ← height: 100vh, flex column,
+  //  │  <Bart />  flex-shrink: 0            │    overflow: hidden
+  //  │  (natural height — no hardcoding)    │
+  //  ├──────────────────────────────────────┤
+  //  │  map container  flex: 1, minH: 0     │  ← always = 100vh − Bart height
+  //  │  ResizeObserver feeds containerSize  │    regardless of Bart's actual px
+  //  └──────────────────────────────────────┘
+  //
+  // ────────────────────────────────────────────────────────────────────────────
   return (
-    // Root fills the full viewport — overflow hidden prevents any scroll
     <Box
       sx={{
-        position: "fixed",
-        inset: 0,
-        bgcolor: "#dee2e4",
-        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
+        bgcolor: "#dee2e4",
       }}
     >
-      {/* ── Nav bar ──────────────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 16,
-          left: 16,
-          zIndex: 20,
-        }}
-      >
+      {/* Header — takes its natural height, never overlaps map */}
+      <Box sx={{ flexShrink: 0 }}>
         <Bart />
       </Box>
 
-      {/* ── Map fills remaining height ───────────────────────────────────────── */}
+      {/* Map area — fills exactly the remaining viewport height */}
       <Box
         ref={containerRef}
         sx={{
           flex: 1,
-          position: "relative",
-          width: "100%",
-          height: "100%",
+          minHeight: 0,       // ← critical: without this, a flex child won't
+          position: "relative", //   shrink below its content height in some browsers
           overflow: "hidden",
         }}
       >
-        {/* The SVG map */}
         <svg
           ref={svgRef}
-          width="100%"
-          height="100%"
+          style={{ display: "block", width: "100%", height: "100%" }}
           viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
           preserveAspectRatio="xMidYMid meet"
-          style={{ display: "block", width: "100%", height: "100%" }}
         />
 
-        {/* ── Zoom-out hint badge (visible only when zoomed in) ──────────────── */}
+        {/* Zoom-out hint badge */}
         <Box
           sx={{
             position: "absolute",
@@ -347,15 +332,15 @@ const Dashboard = (): React.ReactElement => {
             letterSpacing: "0.04em",
             pointerEvents: "none",
             backdropFilter: "blur(6px)",
-            transition: "opacity 0.3s",
-            opacity: isZoomedIn ? 1 : 0,
             whiteSpace: "nowrap",
+            transition: "opacity 0.35s",
+            opacity: isZoomedIn ? 1 : 0,
           }}
         >
           Click the sea to zoom out
         </Box>
 
-        {/* ── Prefecture popup ──────────────────────────────────────────────── */}
+        {/* Prefecture popup — position: fixed so it's relative to viewport */}
         {popup && (
           <Box
             sx={{
@@ -369,19 +354,15 @@ const Dashboard = (): React.ReactElement => {
               maxWidth: 280,
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
               border: "1px solid rgba(0,0,0,0.08)",
-              zIndex: 1000,
               backdropFilter: "blur(8px)",
+              zIndex: 1000,
             }}
           >
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.25 }}>
               <Typography variant="h6" fontWeight={800} noWrap sx={{ fontSize: "1rem" }}>
                 {popup.name}
               </Typography>
-              <IconButton
-                size="small"
-                onClick={() => { setPopup(null); }}
-                sx={{ ml: 1, color: "text.secondary", "&:hover": { color: "text.primary" } }}
-              >
+              <IconButton size="small" onClick={() => setPopup(null)} sx={{ ml: 1, color: "text.secondary" }}>
                 ✕
               </IconButton>
             </Box>
@@ -405,27 +386,21 @@ const Dashboard = (): React.ReactElement => {
                     px: 1,
                     borderRadius: "8px",
                     mb: 0.5,
-                    "&:hover": { bgcolor: "rgba(180,68,29,0.07)" },
                     transition: "background 0.15s",
+                    "&:hover": { bgcolor: "rgba(180,68,29,0.07)" },
                   }}
                 >
-                  <Typography variant="body2" fontWeight={600}>
-                    {lesson.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {lesson.version}
-                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>{lesson.title}</Typography>
+                  <Typography variant="caption" color="text.secondary">{lesson.version}</Typography>
                 </Box>
               ))
             ) : (
-              <Typography variant="body2" color="text.secondary">
-                No lessons available yet.
-              </Typography>
+              <Typography variant="body2" color="text.secondary">No lessons available yet.</Typography>
             )}
           </Box>
         )}
 
-        {/* ── Up Next panel ─────────────────────────────────────────────────── */}
+        {/* Up Next panel */}
         <Box
           sx={{
             position: "absolute",
@@ -442,9 +417,7 @@ const Dashboard = (): React.ReactElement => {
             zIndex: 10,
           }}
         >
-          <Typography
-            sx={{ fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#b4441d", mb: 1.5 }}
-          >
+          <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#b4441d", mb: 1.5 }}>
             Up Next
           </Typography>
 
@@ -454,21 +427,14 @@ const Dashboard = (): React.ReactElement => {
               <Typography variant="body2" color="text.secondary">Loading…</Typography>
             </Box>
           ) : !upNext ? (
-            <Typography variant="body2" color="text.secondary">
-              No saved lesson yet.
-            </Typography>
+            <Typography variant="body2" color="text.secondary">No saved lesson yet.</Typography>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
               <Typography sx={{ fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.3 }}>
                 {upNext.title}{upNext.version ? ` (${upNext.version})` : ""}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {upNext.prefecture || "—"}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Step {upNext.lastStep + 1}
-              </Typography>
-
+              <Typography variant="caption" color="text.secondary">{upNext.prefecture || "—"}</Typography>
+              <Typography variant="caption" color="text.secondary">Step {upNext.lastStep + 1}</Typography>
               <IconButton
                 aria-label={`Resume ${upNext.title}`}
                 component={Link}
@@ -491,7 +457,7 @@ const Dashboard = (): React.ReactElement => {
           )}
         </Box>
 
-        {/* ── Stories panel ─────────────────────────────────────────────────── */}
+        {/* Stories panel */}
         <Box
           sx={{
             position: "absolute",
@@ -507,9 +473,7 @@ const Dashboard = (): React.ReactElement => {
             zIndex: 10,
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 0.5 }}>
-            Stories
-          </Typography>
+          <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 0.5 }}>Stories</Typography>
           <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.5 }}>
             Continue your journey through Japanese culture and stories.
           </Typography>
