@@ -102,7 +102,7 @@ const Talk = (): React.ReactElement => {
       }
 
       analyserRef.current.getByteTimeDomainData(
-        dataArrayRef.current as unknown as Uint8Array<ArrayBuffer>
+        dataArrayRef.current
       );
 
       const canvas = canvasRef.current;
