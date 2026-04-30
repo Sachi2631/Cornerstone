@@ -1,31 +1,53 @@
-export interface ProgressResponse {
-  lessonId: string;
-  status: "in_progress" | "completed";
-  lastStep: number;
-  accuracyPct?: number;
-}
+// src/services/progress.ts
+import { json } from "./api";
 
-export async function upsertProgress(data: {
+export type ProgressStatus = "in_progress" | "completed";
+
+export type ProgressDoc = {
+  _id?: string;
+  userId?: string;
   lessonId: string;
-  status: "in_progress" | "completed";
+  status: ProgressStatus;
   lastStep: number;
   accuracyPct?: number;
-}): Promise<ProgressResponse> {
-  const res = await fetch("/api/progress", {
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpNextLesson = {
+  lessonId: string;
+  slug: string;
+  title: string;
+  version?: string;
+  prefecture?: string;
+  lastStep: number;
+  accuracyPct?: number;
+  status: ProgressStatus;
+};
+
+export async function upsertProgress(payload: {
+  lessonId: string;
+  status: ProgressStatus;
+  lastStep: number;
+  accuracyPct?: number;
+}): Promise<ProgressDoc> {
+  return json<ProgressDoc>("/api/progress", {
     method: "POST",
-    body: JSON.stringify(data),
-    headers: { "Content-Type": "application/json" },
+    data: payload,
   });
-
-  return res.json(); // 👈 THIS is critical
 }
 
-export async function submitAttempt(_: {
+export async function submitAttempt(payload: {
   lessonId: string;
   stepIndex: number;
   result: "correct" | "incorrect";
   detail?: any;
 }): Promise<void> {
-  // You can later send this to backend
+  // Wire up to backend when ready
   return;
+}
+
+export async function getUpNextLesson(): Promise<UpNextLesson | null> {
+  const data = await json<{ upNext: UpNextLesson | null }>("/api/progress/up-next");
+  return data?.upNext ?? null;
 }
