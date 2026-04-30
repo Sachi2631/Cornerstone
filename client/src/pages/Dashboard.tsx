@@ -339,7 +339,6 @@ const Dashboard = (): React.ReactElement => {
             position: "absolute",
             bottom: 24,
             left: "50%",
-            transform: "translateX(-50%)",
             bgcolor: "rgba(0,0,0,0.6)",
             color: "#fff",
             borderRadius: 999,
