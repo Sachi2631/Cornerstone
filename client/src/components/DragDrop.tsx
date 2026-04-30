@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, IconButton, Typography } from "@mui/material";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import GraphicEqRoundedIcon from "@mui/icons-material/GraphicEqRounded";
 
 type DragPayload =
-  | { source: "bank"; char: string; bankIndex: number }
-  | { source: "drop"; slotIndex: number; char: string; bankIndex: number };
+  | { source: "bank"; char: string }
+  | { source: "drop"; slotIndex: number; char: string };
 
 type DragDropProps = {
   prompt?: string;
@@ -20,108 +21,6 @@ type DragDropProps = {
 const defaultBank = ["あ", "い", "う", "え", "お"];
 const defaultAnswerArr = ["あ", "い", "う"];
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    fontFamily: "Inter, system-ui, Arial, sans-serif",
-    textAlign: "center",
-    display: "flex",
-    flexDirection: "column",
-    width: "100%",
-    maxWidth: 900,
-    alignItems: "center",
-    margin: "20px auto",
-    gap: 16,
-    padding: "0 8px",
-    boxSizing: "border-box",
-  },
-  header: { margin: 0, fontWeight: 700, fontSize: 18 },
-  sub: { margin: 0, color: "#6b7280" },
-  mediaRow: {
-    display: "flex",
-    gap: 16,
-    alignItems: "center",
-    flexDirection: "column",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-  dropStrip: {
-    display: "flex",
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    alignItems: "center",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  slot: {
-    width: 56,
-    height: 56,
-    borderRadius: 10,
-    border: "2px dashed #cbd5e1",
-    background: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 26,
-    userSelect: "none",
-  },
-  slotFilled: { borderStyle: "solid", borderColor: "#d1d5db", cursor: "grab" },
-  bank: {
-    display: "flex",
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    minHeight: 80,
-    alignItems: "center",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    width: "100%",
-  },
-  item: {
-    width: 56,
-    height: 56,
-    border: "2px solid #d1d5db",
-    borderRadius: 10,
-    cursor: "grab",
-    fontSize: 26,
-    userSelect: "none",
-    background: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 1px 1px rgba(0,0,0,.04)",
-    transition: "opacity 150ms ease",
-  },
-  // FIX: used items are visually greyed out and non-interactive
-  itemUsed: {
-    opacity: 0.3,
-    cursor: "default",
-    pointerEvents: "none",
-  },
-  controls: {
-    display: "flex",
-    gap: 8,
-    marginTop: 8,
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  btn: {
-    padding: "10px 14px",
-    borderRadius: 8,
-    border: "1px solid #d1d5db",
-    background: "white",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-  btnPrimary: { background: "#111827", color: "white", borderColor: "#111827" },
-  feedback: { fontSize: 14, minHeight: 22 },
-};
-
 const DragDrop: React.FC<DragDropProps> = ({
   prompt = "Build the correct word",
   caption = "",
@@ -136,23 +35,11 @@ const DragDrop: React.FC<DragDropProps> = ({
 
   const expectedArr = useMemo(() => {
     if (Array.isArray(answer) && answer.length) return answer;
-    if (typeof correctAnswer === "string" && correctAnswer.length)
-      return correctAnswer.split("");
+    if (typeof correctAnswer === "string" && correctAnswer.length) return correctAnswer.split("");
     return defaultAnswerArr;
   }, [answer, correctAnswer]);
 
-  const [slots, setSlots] = useState<(string | null)[]>(() =>
-    Array(expectedArr.length).fill(null)
-  );
-  // FIX: track which bank indices are placed in slots
-  const [usedBankIndices, setUsedBankIndices] = useState<Set<number>>(
-    () => new Set()
-  );
-  // FIX: each slot stores the bankIndex it came from so we can return it
-  const [slotBankIndices, setSlotBankIndices] = useState<(number | null)[]>(() =>
-    Array(expectedArr.length).fill(null)
-  );
-
+  const [slots, setSlots] = useState<(string | null)[]>(() => Array(expectedArr.length).fill(null));
   const [checked, setChecked] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragPayloadRef = useRef<DragPayload | null>(null);
@@ -161,8 +48,6 @@ const DragDrop: React.FC<DragDropProps> = ({
 
   useEffect(() => {
     setSlots(Array(expectedArr.length).fill(null));
-    setSlotBankIndices(Array(expectedArr.length).fill(null));
-    setUsedBankIndices(new Set());
     setChecked(false);
     setDragOverIndex(null);
   }, [expectedArr.length]);
@@ -170,117 +55,52 @@ const DragDrop: React.FC<DragDropProps> = ({
   const isComplete = useMemo(() => slots.every((s) => s !== null), [slots]);
   const built = useMemo(() => slots.map((x) => x ?? "").join(""), [slots]);
   const expectedStr = useMemo(() => expectedArr.join(""), [expectedArr]);
-  const isCorrect = useMemo(
-    () => isComplete && built === expectedStr,
-    [isComplete, built, expectedStr]
-  );
+  const isCorrect = useMemo(() => isComplete && built === expectedStr, [isComplete, built, expectedStr]);
 
-  const onDragStartBank = (
-    e: React.DragEvent<HTMLDivElement>,
-    char: string,
-    bankIndex: number
-  ) => {
-    if (usedBankIndices.has(bankIndex)) return;
-    const payload: DragPayload = { source: "bank", char, bankIndex };
+  // Drag helpers
+  const onDragStartBank = (e: React.DragEvent<HTMLDivElement>, char: string) => {
+    const payload: DragPayload = { source: "bank", char };
     dragPayloadRef.current = payload;
     e.dataTransfer.setData("application/json", JSON.stringify(payload));
-    e.dataTransfer.effectAllowed = "copyMove";
+    e.dataTransfer.effectAllowed = "copy";
   };
 
-  const onDragStartSlot = (
-    e: React.DragEvent<HTMLDivElement>,
-    slotIndex: number
-  ) => {
+  const onDragStartSlot = (e: React.DragEvent<HTMLDivElement>, slotIndex: number) => {
     const char = slots[slotIndex];
-    const bankIndex = slotBankIndices[slotIndex];
-    if (!char || bankIndex === null) return;
-    const payload: DragPayload = {
-      source: "drop",
-      slotIndex,
-      char,
-      bankIndex,
-    };
+    if (!char) return;
+    const payload: DragPayload = { source: "drop", slotIndex, char };
     dragPayloadRef.current = payload;
     e.dataTransfer.setData("application/json", JSON.stringify(payload));
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const readPayload = (
-    e: React.DragEvent<HTMLDivElement>
-  ): DragPayload | null => {
+  const readPayload = (e: React.DragEvent<HTMLDivElement>): DragPayload | null => {
     try {
-      const raw =
-        e.dataTransfer.getData("application/json") ||
-        JSON.stringify(dragPayloadRef.current);
+      const raw = e.dataTransfer.getData("application/json") || JSON.stringify(dragPayloadRef.current);
       return raw ? (JSON.parse(raw) as DragPayload) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
-  const onDragOverSlot = (
-    e: React.DragEvent<HTMLDivElement>,
-    slotIndex: number
-  ) => {
-    e.preventDefault();
-    setDragOverIndex(slotIndex);
-  };
-
-  const onDropSlot = (
-    e: React.DragEvent<HTMLDivElement>,
-    targetIndex: number
-  ) => {
+  const onDropSlot = (e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
     e.preventDefault();
     setDragOverIndex(null);
     const payload = readPayload(e);
     if (!payload) return;
 
     if (payload.source === "bank") {
-      // FIX: don't allow placing if slot is already filled
-      if (slots[targetIndex] !== null) return;
-      setSlots((prev) => {
-        const next = [...prev];
-        next[targetIndex] = payload.char;
-        return next;
-      });
-      setSlotBankIndices((prev) => {
-        const next = [...prev];
-        next[targetIndex] = payload.bankIndex;
-        return next;
-      });
-      // FIX: mark bank index as used
-      setUsedBankIndices((prev) => new Set([...prev, payload.bankIndex]));
+      // Always overwrite — same item can be placed multiple times
+      setSlots((prev) => { const next = [...prev]; next[targetIndex] = payload.char; return next; });
       return;
     }
 
     if (payload.source === "drop") {
       const from = payload.slotIndex;
       if (from === targetIndex) return;
-      const movingChar = slots[from];
-      if (movingChar == null) return;
-
       setSlots((prev) => {
         const next = [...prev];
-        if (next[targetIndex] === null) {
-          next[targetIndex] = movingChar;
-          next[from] = null;
-        } else {
-          const tmp = next[targetIndex];
-          next[targetIndex] = movingChar;
-          next[from] = tmp;
-        }
-        return next;
-      });
-      setSlotBankIndices((prev) => {
-        const next = [...prev];
-        if (next[targetIndex] === null) {
-          next[targetIndex] = payload.bankIndex;
-          next[from] = null;
-        } else {
-          const tmp = next[targetIndex];
-          next[targetIndex] = payload.bankIndex;
-          next[from] = tmp;
-        }
+        const tmp = next[targetIndex]; // may be null or another char
+        next[targetIndex] = payload.char;
+        next[from] = tmp; // swap: puts displaced char back, or clears if target was empty
         return next;
       });
     }
@@ -290,40 +110,21 @@ const DragDrop: React.FC<DragDropProps> = ({
     e.preventDefault();
     const payload = readPayload(e);
     if (!payload || payload.source !== "drop") return;
+    // Dragging a slot item back to the bank clears that slot
+    setSlots((prev) => { const next = [...prev]; next[payload.slotIndex] = null; return next; });
+  };
 
-    const from = payload.slotIndex;
-    const bankIdx = payload.bankIndex;
-
-    setSlots((prev) => {
-      const next = [...prev];
-      next[from] = null;
-      return next;
-    });
-    setSlotBankIndices((prev) => {
-      const next = [...prev];
-      next[from] = null;
-      return next;
-    });
-    // FIX: free the bank index when returned
-    setUsedBankIndices((prev) => {
-      const next = new Set(prev);
-      next.delete(bankIdx);
-      return next;
-    });
+  const clearSlot = (i: number) => {
+    setSlots((prev) => { const next = [...prev]; next[i] = null; return next; });
   };
 
   const handleCheck = () => {
     setChecked(true);
-    onResult?.({
-      result: built === expectedStr ? "correct" : "incorrect",
-      detail: { slots, built, expected: expectedStr, expectedArr },
-    });
+    onResult?.({ result: built === expectedStr ? "correct" : "incorrect", detail: { slots, built, expected: expectedStr, expectedArr } });
   };
 
   const reset = () => {
     setSlots(Array(expectedArr.length).fill(null));
-    setSlotBankIndices(Array(expectedArr.length).fill(null));
-    setUsedBankIndices(new Set());
     setChecked(false);
     setDragOverIndex(null);
   };
@@ -335,155 +136,229 @@ const DragDrop: React.FC<DragDropProps> = ({
     audio.onerror = () => setPlaying(false);
     audio.currentTime = 0;
     setPlaying(true);
-    audio.play().catch((e) => {
-      console.error("Audio playback failed:", e);
-      setPlaying(false);
-    });
+    audio.play().catch(() => setPlaying(false));
   };
 
   return (
-    <div style={styles.container}>
-      <h3 style={styles.header}>{prompt}</h3>
-      {caption ? <p style={styles.sub}>{caption}</p> : null}
+    <Box sx={{ width: "100%", maxWidth: 680, mx: "auto", px: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", gap: 2.5 }}>
 
-      <div style={styles.mediaRow}>
+      {/* Prompt */}
+      <Box sx={{ textAlign: "center" }}>
+        <Typography sx={{ fontWeight: 700, fontSize: { xs: "1rem", sm: "1.1rem" }, color: "#1C1917" }}>
+          {prompt}
+        </Typography>
+        {caption ? (
+          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>{caption}</Typography>
+        ) : null}
+      </Box>
+
+      {/* Image + Audio row */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
         <Box
           sx={{
-            height: { xs: 120, sm: 160 },
-            width: { xs: 120, sm: 160 },
-            borderStyle: "solid",
-            borderWidth: "1px",
-            borderRadius: "12px",
-            bgcolor: "#f3f4f6",
+            width: { xs: 100, sm: 130 },
+            height: { xs: 100, sm: 130 },
+            borderRadius: "16px",
+            bgcolor: "#F3F4F6",
+            border: "1px solid rgba(0,0,0,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
+        >
+          <Typography sx={{ fontSize: "2.5rem" }}>🖼️</Typography>
+        </Box>
+
         {audioUrl ? (
           <>
             <audio ref={audioRef} src={audioUrl} preload="auto" />
-            <IconButton onClick={play} disabled={playing}>
-              <VolumeUpIcon color="primary" />
+            <IconButton
+              onClick={play}
+              disabled={playing}
+              sx={{
+                width: 52,
+                height: 52,
+                bgcolor: playing ? "rgba(180,61,32,0.08)" : "#B43D20",
+                color: playing ? "#B43D20" : "#fff",
+                border: playing ? "2px solid #B43D20" : "none",
+                "&:hover": { bgcolor: playing ? "rgba(180,61,32,0.12)" : "#9D351C" },
+                "&.Mui-disabled": { bgcolor: "rgba(180,61,32,0.2)", color: "#B43D20" },
+                transition: "all 0.2s",
+                boxShadow: playing ? "none" : "0 4px 14px rgba(180,61,32,0.35)",
+              }}
+            >
+              {playing ? <GraphicEqRoundedIcon /> : <VolumeUpRoundedIcon />}
             </IconButton>
           </>
         ) : (
-          <Typography variant="caption" color="text.secondary">
-            No audio for this exercise
-          </Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>No audio</Typography>
         )}
-      </div>
+      </Box>
 
       {/* Drop strip */}
-      <div
-        style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.25,
+          p: 1.5,
+          borderRadius: "14px",
+          bgcolor: "#F9F7F4",
+          border: "1px solid rgba(0,0,0,0.08)",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          width: "100%",
+        }}
+        onDrop={(e) => e.preventDefault()}
+        onDragOver={(e) => e.preventDefault()}
       >
-        <div style={styles.dropStrip} onDrop={(e) => e.preventDefault()}>
-          {slots.map((char, i) => {
-            const isOver = dragOverIndex === i;
-            const slotCorrect = char != null && expectedArr[i] === char;
+        {slots.map((char, i) => {
+          const isOver = dragOverIndex === i;
+          const slotCorrect = checked && char != null && expectedArr[i] === char;
+          const slotWrong = checked && char != null && expectedArr[i] !== char;
 
-            return (
-              <div
-                key={i}
-                role="button"
-                aria-label={`slot ${i + 1}`}
-                draggable={char !== null}
-                onDragStart={(e) => onDragStartSlot(e, i)}
-                onDragOver={(e) => onDragOverSlot(e, i)}
-                onDrop={(e) => onDropSlot(e, i)}
-                onDragLeave={() => setDragOverIndex(null)}
-                onDoubleClick={() => {
-                  const bankIdx = slotBankIndices[i];
-                  setSlots((prev) => {
-                    const next = [...prev];
-                    next[i] = null;
-                    return next;
-                  });
-                  setSlotBankIndices((prev) => {
-                    const next = [...prev];
-                    next[i] = null;
-                    return next;
-                  });
-                  if (bankIdx !== null) {
-                    setUsedBankIndices((prev) => {
-                      const next = new Set(prev);
-                      next.delete(bankIdx);
-                      return next;
-                    });
-                  }
-                }}
-                style={{
-                  ...styles.slot,
-                  ...(char ? styles.slotFilled : {}),
-                  outline: isOver ? "2px solid #60a5fa" : "none",
-                  boxShadow: isOver ? "0 0 0 4px rgba(96,165,250,.25)" : "none",
-                  borderColor:
-                    checked && char !== null
-                      ? slotCorrect
-                        ? "#10b981"
-                        : "#ef4444"
-                      : (styles.slot as any).borderColor,
-                  color:
-                    checked && char !== null
-                      ? slotCorrect
-                        ? "#065f46"
-                        : "#7f1d1d"
-                      : "inherit",
-                }}
-              >
-                {char ?? ""}
-              </div>
-            );
-          })}
-        </div>
+          return (
+            <Box
+              key={i}
+              role="button"
+              aria-label={`slot ${i + 1}`}
+              draggable={char !== null}
+              onDragStart={(e) => onDragStartSlot(e, i)}
+              onDragOver={(e) => { e.preventDefault(); setDragOverIndex(i); }}
+              onDrop={(e) => onDropSlot(e, i)}
+              onDragLeave={() => setDragOverIndex(null)}
+              onDoubleClick={() => clearSlot(i)}
+              sx={{
+                width: { xs: 52, sm: 62 },
+                height: { xs: 52, sm: 62 },
+                borderRadius: "12px",
+                border: `2px ${char ? "solid" : "dashed"} ${
+                  isOver ? "#60A5FA" : slotCorrect ? "#059669" : slotWrong ? "#DC2626" : char ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.2)"
+                }`,
+                bgcolor: slotCorrect ? "rgba(5,150,105,0.06)" : slotWrong ? "rgba(220,38,38,0.06)" : isOver ? "rgba(96,165,250,0.08)" : "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: { xs: "1.5rem", sm: "1.8rem" },
+                cursor: char ? "grab" : "default",
+                userSelect: "none",
+                transition: "border-color 0.2s, background-color 0.2s",
+                boxShadow: isOver ? "0 0 0 4px rgba(96,165,250,0.2)" : "none",
+                color: slotCorrect ? "#065F46" : slotWrong ? "#7F1D1D" : "inherit",
+              }}
+            >
+              {char ?? ""}
+            </Box>
+          );
+        })}
+      </Box>
 
-        <Typography variant="body2" color="text.secondary">
-          {built.length ? `Built: ${built}` : `Built: —`}
-        </Typography>
-      </div>
+      {/* Built word display */}
+      <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600 }}>
+        {built.length ? `→ ${built}` : "Drag characters into the slots above"}
+      </Typography>
 
       {/* Bank */}
-      <div style={{ width: "100%" }}>
-        <div
-          style={styles.bank}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDropBank}
-        >
-          {bank.map((char, idx) => {
-            const isUsed = usedBankIndices.has(idx);
-            return (
-              <div
-                key={`${char}-${idx}`}
-                draggable={!isUsed}
-                onDragStart={(e) => onDragStartBank(e, char, idx)}
-                style={{
-                  ...styles.item,
-                  ...(isUsed ? styles.itemUsed : {}),
-                }}
-                title={isUsed ? "Already placed" : "Drag to a slot"}
-              >
-                {char}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.25,
+          p: 1.5,
+          borderRadius: "14px",
+          bgcolor: "#F9F7F4",
+          border: "1px solid rgba(0,0,0,0.08)",
+          minHeight: 76,
+          flexWrap: "wrap",
+          justifyContent: "center",
+          width: "100%",
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDropBank}
+      >
+        {bank.map((char, idx) => (
+          <Box
+            key={`${char}-${idx}`}
+            draggable
+            onDragStart={(e) => onDragStartBank(e, char)}
+            title="Drag to a slot"
+            sx={{
+              width: { xs: 52, sm: 62 },
+              height: { xs: 52, sm: 62 },
+              border: "2px solid rgba(0,0,0,0.1)",
+              borderRadius: "12px",
+              cursor: "grab",
+              fontSize: { xs: "1.5rem", sm: "1.8rem" },
+              userSelect: "none",
+              bgcolor: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              "&:hover": { transform: "translateY(-2px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", borderColor: "#B43D20" },
+            }}
+          >
+            {char}
+          </Box>
+        ))}
+      </Box>
 
-      <div style={styles.controls}>
-        <button
-          style={{ ...styles.btn, ...styles.btnPrimary }}
+      {/* Controls */}
+      <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", justifyContent: "center" }}>
+        <Box
+          component="button"
           onClick={handleCheck}
           disabled={!isComplete}
+          sx={{
+            px: 3,
+            py: 1.25,
+            borderRadius: 999,
+            border: "none",
+            bgcolor: isComplete ? "#B43D20" : "rgba(0,0,0,0.08)",
+            color: isComplete ? "#fff" : "rgba(0,0,0,0.35)",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            cursor: isComplete ? "pointer" : "default",
+            transition: "all 0.2s",
+            boxShadow: isComplete ? "0 4px 14px rgba(180,61,32,0.35)" : "none",
+            "&:hover": isComplete ? { bgcolor: "#9D351C" } : {},
+          }}
         >
           Check
-        </button>
-        <button style={styles.btn} onClick={reset}>
+        </Box>
+        <Box
+          component="button"
+          onClick={reset}
+          sx={{
+            px: 3,
+            py: 1.25,
+            borderRadius: 999,
+            border: "1px solid rgba(0,0,0,0.15)",
+            bgcolor: "#fff",
+            color: "#6B7280",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            "&:hover": { bgcolor: "#F9F7F4" },
+          }}
+        >
           Reset
-        </button>
-      </div>
+        </Box>
+      </Box>
 
-      <div style={styles.feedback}>
-        {checked && (isCorrect ? "✅ Correct!" : "❌ Not quite — keep trying.")}
-      </div>
-    </div>
+      {/* Feedback */}
+      {checked && (
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: "0.95rem",
+            color: isCorrect ? "#059669" : "#DC2626",
+          }}
+        >
+          {isCorrect ? "✓ Correct!" : "✗ Not quite — try again."}
+        </Typography>
+      )}
+    </Box>
   );
 };
 
