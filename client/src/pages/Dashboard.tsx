@@ -221,7 +221,7 @@ const Dashboard = (): React.ReactElement => {
         const cy = (y0 + y1) / 2;
         const scale = Math.max(
           1.5,
-          Math.min(8, Math.min((width * 0.6) / (x1 - x0), (height * 0.6) / (y1 - y0)))
+          Math.min(8, Math.min((width * 0.35) / (x1 - x0), (height * 0.35) / (y1 - y0)))
         );
         if (zoomRef.current) {
           svg.transition().duration(900).ease(d3.easeCubicInOut).call(
