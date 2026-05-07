@@ -10,7 +10,6 @@ import {
   Container,
   Paper,
   Chip,
-  Divider,
   IconButton,
   Tooltip,
 } from "@mui/material";
@@ -42,6 +41,7 @@ interface FlipsProps {
   correctCardId?: number;
   cards?: CardData[];
 }
+
 interface AudioMatchProps {
   onResult?: ResultCb;
   options: string[];
@@ -49,29 +49,37 @@ interface AudioMatchProps {
   audioUrl?: string;
   prompt?: string;
 }
+
 interface DragDropProps {
   onResult?: ResultCb;
   prompt?: string;
   characterBank?: string[];
   correctAnswer?: string;
   audioUrl?: string;
+  imageUrl?: string;
+  image?: string;
   bankItems?: string[];
   answer?: string[];
   caption?: string;
 }
+
 export type DotMatchPair = { hiragana: string; katakana: string };
+
 interface DotMatchProps {
   onResult?: ResultCb;
   pairs: DotMatchPair[];
 }
+
 interface FactProps {
   title: string;
   description: string;
 }
+
 interface RewardProps {
   title: string;
   xp: number | string;
 }
+
 interface RewardInfoProps {
   title: string;
   description: string;
@@ -89,10 +97,12 @@ function splitPair(s: string): DotMatchPair {
   const [hiragana, katakana] = String(s).split("/");
   return { hiragana: hiragana ?? s, katakana: katakana ?? "" };
 }
+
 function normalizeChoiceLabel(s: string): string {
   const [a] = String(s).split("/");
   return a ?? s;
 }
+
 function resolveLessonIdentifier(lesson: LessonDoc): string {
   return (
     String((lesson as any).slug || "") ||
@@ -101,14 +111,17 @@ function resolveLessonIdentifier(lesson: LessonDoc): string {
     String((lesson as any)._id || "")
   );
 }
+
 function getLessonHeader(lesson: LessonDoc): string {
   const t = String((lesson as any).title || "Lesson");
   const v = String((lesson as any).version || "");
   return v ? `${t} (${v})` : t;
 }
+
 function stepKeyFromExercise(ex: any, fallbackIndex: number): string {
   return String(ex?.exerciseId || ex?._id || `${String(ex?.type || "exercise")}-${fallbackIndex}`);
 }
+
 function stepLabelFromKey(key: string): string {
   if (key === "flips") return "Flashcards";
   if (key === "fact") return "Fun Fact";
@@ -120,7 +133,6 @@ function stepLabelFromKey(key: string): string {
   return "Exercise";
 }
 
-// Step icon map
 const STEP_ICONS: Record<string, string> = {
   flips: "🃏",
   fact: "💡",
@@ -130,11 +142,17 @@ const STEP_ICONS: Record<string, string> = {
   matchAudioLetter: "🎧",
   vocabulary_drag_drop: "✋",
 };
+
 function stepIcon(key: string): string {
   for (const [k, v] of Object.entries(STEP_ICONS)) {
     if (key.includes(k)) return v;
   }
   return "📌";
+}
+
+function resolveExerciseImage(ex: any): string | undefined {
+  const image = String(ex?.imageUrl || ex?.image || "").trim();
+  return image || undefined;
 }
 
 const Lesson: React.FC = () => {
@@ -154,12 +172,20 @@ const Lesson: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+
     void (async (): Promise<void> => {
       try {
         setLoading(true);
-        if (!lessonId) { navigate("/dashboard", { replace: true }); return; }
+
+        if (!lessonId) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+
         const l = await getLesson(lessonId);
+
         if (!mounted) return;
+
         setLesson(l);
         setDebugInfo({
           lessonIdParam: lessonId,
@@ -169,8 +195,14 @@ const Lesson: React.FC = () => {
           flashcardsLen: ((l as any)?.flashcards || []).length,
           exercisesLen: ((l as any)?.exercises || []).length,
           exerciseTypes: ((l as any)?.exercises || []).map((x: any) => x?.type),
+          exerciseImages: ((l as any)?.exercises || []).map((x: any) => ({
+            exerciseId: x?.exerciseId,
+            imageUrl: x?.imageUrl,
+            image: x?.image,
+          })),
           prefecture: (l as any)?.prefecture,
         });
+
         setStep(0);
         setCorrectCount(0);
         setAttemptCount(0);
@@ -182,13 +214,17 @@ const Lesson: React.FC = () => {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, [lessonId, navigate]);
 
   const lessonKey = useMemo(() => (lesson ? resolveLessonIdentifier(lesson) : ""), [lesson]);
 
   const steps: StepSpec[] = useMemo(() => {
     if (!lesson) return [];
+
     const out: StepSpec[] = [];
     const flashcards: string[] = (lesson as any).flashcards || [];
 
@@ -197,16 +233,30 @@ const Lesson: React.FC = () => {
         key: "flips",
         graded: true,
         comp: (on) => {
-          const cardData: CardData[] = flashcards.map((raw, idx) => ({ id: idx, front: raw, back: "" }));
+          const cardData: CardData[] = flashcards.map((raw, idx) => ({
+            id: idx,
+            front: raw,
+            back: "",
+          }));
+
           const correctRaw = String((lesson as any).flashcardsCorrect || flashcards[0] || "");
           const idx = flashcards.findIndex((x) => x === correctRaw);
           const correctId = idx >= 0 ? idx : 0;
-          return <FlipsC onResult={on} prompt="Flip the cards, then select the correct one." cards={cardData} correctCardId={correctId} />;
+
+          return (
+            <FlipsC
+              onResult={on}
+              prompt="Flip the cards, then select the correct one."
+              cards={cardData}
+              correctCardId={correctId}
+            />
+          );
         },
       });
     }
 
     const exercises: any[] = (lesson as any).exercises || [];
+
     exercises.forEach((ex, i) => {
       const exType = String(ex?.type || "");
       const key = stepKeyFromExercise(ex, i);
@@ -219,28 +269,45 @@ const Lesson: React.FC = () => {
         });
         return;
       }
+
       if (exType === "matchAudioLetter") {
         const options = (ex.items || []).map(normalizeChoiceLabel);
         const correctAnswer = normalizeChoiceLabel((ex.correctAnswers || [])[0] || options[0] || "");
+
         out.push({
           key,
           graded: true,
           comp: (on) => (
-            <AudioC onResult={on} options={options} correctAnswer={correctAnswer} audioUrl={ex.audioUrl} prompt={ex.prompt || "Listen and choose the right character"} />
+            <AudioC
+              onResult={on}
+              options={options}
+              correctAnswer={correctAnswer}
+              audioUrl={ex.audioUrl}
+              prompt={ex.prompt || "Listen and choose the right character"}
+            />
           ),
         });
         return;
       }
+
       if (exType === "vocabulary_drag_drop") {
         out.push({
           key,
           graded: true,
           comp: (on) => (
-            <DragC onResult={on} prompt={ex.prompt || "Build the correct word"} characterBank={ex.characterBank || []} correctAnswer={ex.correctAnswer} audioUrl={ex.audioUrl} />
+            <DragC
+              onResult={on}
+              prompt={ex.prompt || "Build the correct word"}
+              characterBank={ex.characterBank || []}
+              correctAnswer={ex.correctAnswer}
+              audioUrl={ex.audioUrl}
+              imageUrl={resolveExerciseImage(ex)}
+            />
           ),
         });
         return;
       }
+
       console.warn("[Lesson] unknown exercise type:", exType, ex);
     });
 
@@ -251,13 +318,20 @@ const Lesson: React.FC = () => {
         comp: () => <FactC title="Fun Fact" description={String((lesson as any).funFact || "")} />,
       });
     }
+
     if ((lesson as any).achievement?.title || (lesson as any).achievement?.xp !== undefined) {
       out.push({
         key: "reward",
         graded: false,
-        comp: () => <RewardC title={String((lesson as any).achievement?.title || "Lesson Complete!")} xp={(lesson as any).achievement?.xp ?? 0} />,
+        comp: () => (
+          <RewardC
+            title={String((lesson as any).achievement?.title || "Lesson Complete!")}
+            xp={(lesson as any).achievement?.xp ?? 0}
+          />
+        ),
       });
     }
+
     if ((lesson as any).notes) {
       out.push({
         key: "rinfo",
@@ -265,6 +339,7 @@ const Lesson: React.FC = () => {
         comp: () => <RInfoC title="Notes" description={String((lesson as any).notes || "")} />,
       });
     }
+
     return out;
   }, [lesson]);
 
@@ -273,17 +348,34 @@ const Lesson: React.FC = () => {
 
   useEffect(() => {
     if (!lesson || !isAuthed() || !lessonKey) return;
+
     void (async (): Promise<void> => {
       try {
-        await upsertProgress({ lessonId: lessonKey, status: "in_progress", lastStep: 0, accuracyPct: 0 });
+        await upsertProgress({
+          lessonId: lessonKey,
+          status: "in_progress",
+          lastStep: 0,
+          accuracyPct: 0,
+        });
       } catch (e) {
         console.error("[Progress] upsert failed:", e);
       }
     })();
   }, [lesson, lessonKey]);
 
-  function advance({ result, detail, createAttempt, stepKey }: { result: "correct" | "incorrect"; detail?: any; createAttempt: boolean; stepKey: string }) {
+  function advance({
+    result,
+    detail,
+    createAttempt,
+    stepKey,
+  }: {
+    result: "correct" | "incorrect";
+    detail?: any;
+    createAttempt: boolean;
+    stepKey: string;
+  }) {
     if (answeredStepRef.current[stepKey]) return;
+
     answeredStepRef.current[stepKey] = true;
 
     const isLastStep = step >= steps.length - 1;
@@ -301,25 +393,48 @@ const Lesson: React.FC = () => {
     if (!isLastStep) {
       const nextStep = step + 1;
       setStep(nextStep);
+
       if (lesson && isAuthed() && lessonKey) {
-        void upsertProgress({ lessonId: lessonKey, status: "in_progress", lastStep: nextStep, accuracyPct: nextAccuracy });
+        void upsertProgress({
+          lessonId: lessonKey,
+          status: "in_progress",
+          lastStep: nextStep,
+          accuracyPct: nextAccuracy,
+        });
       }
     } else {
       if (lesson && isAuthed() && lessonKey) {
-        void upsertProgress({ lessonId: lessonKey, status: "completed", lastStep: step, accuracyPct: nextAccuracy });
+        void upsertProgress({
+          lessonId: lessonKey,
+          status: "completed",
+          lastStep: step,
+          accuracyPct: nextAccuracy,
+        });
       }
+
       navigate("/dashboard");
     }
   }
 
   const handleResult = (args: { result: "correct" | "incorrect"; detail?: any }) => {
     const k = steps[step]?.key || String(step);
+
     if (args.result === "correct") {
-      setTimeout(() => { advance({ ...args, createAttempt: true, stepKey: k }); }, 900);
+      setTimeout(() => {
+        advance({ ...args, createAttempt: true, stepKey: k });
+      }, 900);
     } else {
-      setTimeout(() => { setAttemptCount((c) => c + 1); }, 700);
+      setTimeout(() => {
+        setAttemptCount((c) => c + 1);
+      }, 700);
+
       if (lesson && isAuthed() && lessonKey) {
-        void submitAttempt({ lessonId: lessonKey, stepIndex: step, result: "incorrect", detail: args.detail });
+        void submitAttempt({
+          lessonId: lessonKey,
+          stepIndex: step,
+          result: "incorrect",
+          detail: args.detail,
+        });
       }
     }
   };
@@ -327,12 +442,19 @@ const Lesson: React.FC = () => {
   const handleSkip = safe(async () => {
     const graded = steps[step]?.graded ?? false;
     const k = steps[step]?.key || String(step);
-    advance({ result: "incorrect", detail: { skipped: true }, createAttempt: graded, stepKey: k });
+
+    advance({
+      result: "incorrect",
+      detail: { skipped: true },
+      createAttempt: graded,
+      stepKey: k,
+    });
   });
 
   const handleNext = () => {
     const graded = steps[step]?.graded ?? false;
     const k = steps[step]?.key || String(step);
+
     advance({
       result: graded ? "incorrect" : "correct",
       detail: graded ? { nextOnGraded: true } : { informational: true },
@@ -344,11 +466,12 @@ const Lesson: React.FC = () => {
   const handleBack = () => {
     const prevStep = Math.max(0, step - 1);
     const prevKey = steps[prevStep]?.key;
+
     if (prevKey) delete answeredStepRef.current[prevKey];
+
     setStep(prevStep);
   };
 
-  // ─── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#F9F7F4" }}>
@@ -362,17 +485,39 @@ const Lesson: React.FC = () => {
     );
   }
 
-  // ─── Empty ──────────────────────────────────────────────────────────────────
   if (!lesson || !steps.length) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#F9F7F4", px: 2 }}>
-        <Paper elevation={0} sx={{ p: 4, borderRadius: 4, maxWidth: 480, width: "100%", border: "1px solid rgba(0,0,0,0.08)", textAlign: "center" }}>
-          <Typography variant="h2" sx={{ mb: 1 }}>📭</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Lesson unavailable</Typography>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            maxWidth: 480,
+            width: "100%",
+            border: "1px solid rgba(0,0,0,0.08)",
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="h2" sx={{ mb: 1 }}>
+            📭
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+            Lesson unavailable
+          </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
             This lesson may be inactive or missing content.
           </Typography>
-          <Button variant="contained" onClick={() => navigate("/dashboard")} sx={{ bgcolor: "#B43D20", "&:hover": { bgcolor: "#9D351C" }, borderRadius: 999, fontWeight: 700 }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/dashboard")}
+            sx={{
+              bgcolor: "#B43D20",
+              "&:hover": { bgcolor: "#9D351C" },
+              borderRadius: 999,
+              fontWeight: 700,
+            }}
+          >
             Back to Dashboard
           </Button>
         </Paper>
@@ -384,11 +529,8 @@ const Lesson: React.FC = () => {
   const activeLabel = stepLabelFromKey(activeKey);
   const isLast = step >= steps.length - 1;
 
-  // ─── Main render ─────────────────────────────────────────────────────────────
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#F9F7F4", pb: { xs: 12, md: 8 } }}>
-
-      {/* ── Top Chrome ───────────────────────────────────────────────────────── */}
       <Box
         sx={{
           position: "sticky",
@@ -400,63 +542,85 @@ const Lesson: React.FC = () => {
         }}
       >
         <Container maxWidth="md" sx={{ py: 1.5 }}>
-          {/* Row 1: nav + title + actions */}
           <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-
-            {/* Back */}
             <Button
               startIcon={<ArrowBackRoundedIcon />}
               variant="text"
               onClick={() => navigate("/dashboard")}
-              sx={{ fontWeight: 700, color: "text.secondary", "&:hover": { color: "text.primary" }, minWidth: 0 }}
+              sx={{
+                fontWeight: 700,
+                color: "text.secondary",
+                "&:hover": { color: "text.primary" },
+                minWidth: 0,
+              }}
             >
               Back
             </Button>
 
-            {/* Title + chips */}
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography
                 noWrap
-                sx={{ fontWeight: 900, fontSize: { xs: "0.95rem", sm: "1.05rem" }, letterSpacing: "-0.01em" }}
+                sx={{
+                  fontWeight: 900,
+                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
+                  letterSpacing: "-0.01em",
+                }}
               >
                 {getLessonHeader(lesson)}
               </Typography>
+
               <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap" sx={{ mt: 0.25 }}>
                 <Chip
                   size="small"
                   label={`${stepIcon(activeKey)} ${activeLabel} · ${step + 1}/${steps.length}`}
                   sx={{ fontWeight: 700, fontSize: "0.72rem", height: 22 }}
                 />
+
                 {attemptCount > 0 && (
                   <Chip
                     size="small"
                     label={`${accuracy}% acc`}
-                    sx={{ fontWeight: 700, fontSize: "0.72rem", height: 22, bgcolor: accuracy >= 70 ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.1)", color: accuracy >= 70 ? "#059669" : "#DC2626" }}
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: "0.72rem",
+                      height: 22,
+                      bgcolor: accuracy >= 70 ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.1)",
+                      color: accuracy >= 70 ? "#059669" : "#DC2626",
+                    }}
                   />
                 )}
               </Stack>
             </Box>
 
-            {/* Actions */}
             <Stack direction="row" gap={0.75} alignItems="center">
               <Tooltip title={debugOpen ? "Hide debug" : "Debug"}>
-                <IconButton size="small" onClick={() => setDebugOpen((v) => !v)} sx={{ color: "text.secondary" }}>
+                <IconButton
+                  size="small"
+                  onClick={() => setDebugOpen((v) => !v)}
+                  sx={{ color: "text.secondary" }}
+                >
                   <BugReportOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
+
               <Button
                 startIcon={<LogoutRoundedIcon />}
                 variant="contained"
                 size="small"
                 onClick={() => navigate("/dashboard")}
-                sx={{ bgcolor: "#B43D20", "&:hover": { bgcolor: "#9D351C" }, borderRadius: 999, fontWeight: 700, fontSize: "0.78rem" }}
+                sx={{
+                  bgcolor: "#B43D20",
+                  "&:hover": { bgcolor: "#9D351C" },
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  fontSize: "0.78rem",
+                }}
               >
                 Save & Exit
               </Button>
             </Stack>
           </Stack>
 
-          {/* Row 2: progress bar */}
           <Box sx={{ mt: 1.25 }}>
             <LinearProgress
               variant="determinate"
@@ -465,16 +629,29 @@ const Lesson: React.FC = () => {
                 height: 6,
                 borderRadius: 999,
                 bgcolor: "rgba(0,0,0,0.06)",
-                "& .MuiLinearProgress-bar": { borderRadius: 999, bgcolor: "#B43D20", transition: "transform 0.5s ease" },
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 999,
+                  bgcolor: "#B43D20",
+                  transition: "transform 0.5s ease",
+                },
               }}
             />
           </Box>
 
-          {/* Debug panel */}
           {debugOpen && (
             <Paper
               variant="outlined"
-              sx={{ mt: 1.5, p: 1.5, borderRadius: 2, maxHeight: 200, overflow: "auto", fontFamily: "monospace", fontSize: 11, whiteSpace: "pre-wrap", bgcolor: "rgba(0,0,0,0.02)" }}
+              sx={{
+                mt: 1.5,
+                p: 1.5,
+                borderRadius: 2,
+                maxHeight: 200,
+                overflow: "auto",
+                fontFamily: "monospace",
+                fontSize: 11,
+                whiteSpace: "pre-wrap",
+                bgcolor: "rgba(0,0,0,0.02)",
+              }}
             >
               {JSON.stringify(debugInfo, null, 2)}
             </Paper>
@@ -482,7 +659,6 @@ const Lesson: React.FC = () => {
         </Container>
       </Box>
 
-      {/* ── Main content ─────────────────────────────────────────────────────── */}
       <Container maxWidth="md" sx={{ pt: { xs: 2.5, md: 3.5 } }}>
         <Paper
           elevation={0}
@@ -494,7 +670,6 @@ const Lesson: React.FC = () => {
             overflow: "hidden",
           }}
         >
-          {/* Card header strip */}
           <Box
             sx={{
               px: { xs: 2.5, md: 3.5 },
@@ -513,12 +688,12 @@ const Lesson: React.FC = () => {
                 {activeLabel}
               </Typography>
             </Stack>
+
             <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
               Step {step + 1} of {steps.length}
             </Typography>
           </Box>
 
-          {/* Exercise frame */}
           <Box
             sx={{
               minHeight: { xs: 400, md: 480 },
@@ -538,7 +713,6 @@ const Lesson: React.FC = () => {
         </Paper>
       </Container>
 
-      {/* ── Bottom Dock ──────────────────────────────────────────────────────── */}
       <Box
         sx={{
           position: "fixed",
@@ -557,7 +731,13 @@ const Lesson: React.FC = () => {
               disabled={step === 0}
               onClick={handleBack}
               variant="outlined"
-              sx={{ minWidth: 96, borderRadius: 999, fontWeight: 700, borderColor: "rgba(0,0,0,0.15)", color: "text.secondary" }}
+              sx={{
+                minWidth: 96,
+                borderRadius: 999,
+                fontWeight: 700,
+                borderColor: "rgba(0,0,0,0.15)",
+                color: "text.secondary",
+              }}
             >
               ← Back
             </Button>
@@ -566,10 +746,16 @@ const Lesson: React.FC = () => {
               <Button
                 onClick={handleSkip}
                 variant="text"
-                sx={{ minWidth: 80, borderRadius: 999, fontWeight: 700, color: "text.secondary" }}
+                sx={{
+                  minWidth: 80,
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  color: "text.secondary",
+                }}
               >
                 Skip
               </Button>
+
               <Button
                 onClick={handleNext}
                 variant="contained"

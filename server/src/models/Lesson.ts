@@ -11,20 +11,32 @@ export type PrefectureCode =
   | "Tokushima" | "Kagawa" | "Ehime" | "Kochi"
   | "Fukuoka" | "Saga" | "Nagasaki" | "Kumamoto" | "Oita" | "Miyazaki" | "Kagoshima" | "Okinawa";
 
-const ExerciseSchema = new Schema({
-  exerciseId: { type: String, required: true },
-  type: {
-    type: String,
-    required: true,
-    enum: ["connectTheDots", "matchAudioLetter", "vocabulary_drag_drop"],
+const ExerciseSchema = new Schema(
+  {
+    exerciseId: { type: String, required: true },
+    type: {
+      type: String,
+      required: true,
+      enum: ["connectTheDots", "matchAudioLetter", "vocabulary_drag_drop"],
+    },
+
+    items: { type: [String], default: undefined },
+    correctAnswers: { type: [String], default: undefined },
+
+    audioUrl: { type: String, default: undefined },
+    prompt: { type: String, default: undefined },
+
+    characterBank: { type: [String], default: undefined },
+    correctAnswer: { type: String, default: undefined },
+
+    // Preferred field for client usage.
+    imageUrl: { type: String, default: undefined },
+
+    // Backward-compatible field because your DB screenshot already uses "image".
+    image: { type: String, default: undefined },
   },
-  items: { type: [String], default: undefined },
-  correctAnswers: { type: [String], default: undefined },
-  audioUrl: { type: String, default: undefined },
-  prompt: { type: String, default: undefined },
-  characterBank: { type: [String], default: undefined },
-  correctAnswer: { type: String, default: undefined },
-});
+  { _id: false }
+);
 
 const AchievementSchema = new Schema(
   { title: { type: String, default: "" }, xp: { type: Number, default: 0 } },

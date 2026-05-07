@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, IconButton, Typography } from "@mui/material";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import GraphicEqRoundedIcon from "@mui/icons-material/GraphicEqRounded";
+import ImageNotSupportedRoundedIcon from "@mui/icons-material/ImageNotSupportedRounded";
 
 type DragPayload =
   | { source: "bank"; char: string }
@@ -12,6 +13,13 @@ type DragDropProps = {
   characterBank?: string[];
   correctAnswer?: string;
   audioUrl?: string;
+
+  // Preferred field.
+  imageUrl?: string;
+
+  // Backward-compatible field if DB uses "image".
+  image?: string;
+
   bankItems?: string[];
   answer?: string[];
   caption?: string;
@@ -28,10 +36,13 @@ const DragDrop: React.FC<DragDropProps> = ({
   characterBank,
   correctAnswer,
   audioUrl,
+  imageUrl,
+  image,
   bankItems,
   answer,
 }) => {
   const bank = characterBank ?? bankItems ?? defaultBank;
+  const resolvedImageUrl = String(imageUrl || image || "").trim();
 
   const expectedArr = useMemo(() => {
     if (Array.isArray(answer) && answer.length) return answer;
@@ -42,8 +53,11 @@ const DragDrop: React.FC<DragDropProps> = ({
   const [slots, setSlots] = useState<(string | null)[]>(() => Array(expectedArr.length).fill(null));
   const [checked, setChecked] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+
   const dragPayloadRef = useRef<DragPayload | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -52,12 +66,15 @@ const DragDrop: React.FC<DragDropProps> = ({
     setDragOverIndex(null);
   }, [expectedArr.length]);
 
+  useEffect(() => {
+    setImageFailed(false);
+  }, [resolvedImageUrl]);
+
   const isComplete = useMemo(() => slots.every((s) => s !== null), [slots]);
   const built = useMemo(() => slots.map((x) => x ?? "").join(""), [slots]);
   const expectedStr = useMemo(() => expectedArr.join(""), [expectedArr]);
   const isCorrect = useMemo(() => isComplete && built === expectedStr, [isComplete, built, expectedStr]);
 
-  // Drag helpers
   const onDragStartBank = (e: React.DragEvent<HTMLDivElement>, char: string) => {
     const payload: DragPayload = { source: "bank", char };
     dragPayloadRef.current = payload;
@@ -68,6 +85,7 @@ const DragDrop: React.FC<DragDropProps> = ({
   const onDragStartSlot = (e: React.DragEvent<HTMLDivElement>, slotIndex: number) => {
     const char = slots[slotIndex];
     if (!char) return;
+
     const payload: DragPayload = { source: "drop", slotIndex, char };
     dragPayloadRef.current = payload;
     e.dataTransfer.setData("application/json", JSON.stringify(payload));
@@ -78,29 +96,36 @@ const DragDrop: React.FC<DragDropProps> = ({
     try {
       const raw = e.dataTransfer.getData("application/json") || JSON.stringify(dragPayloadRef.current);
       return raw ? (JSON.parse(raw) as DragPayload) : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   };
 
   const onDropSlot = (e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
     e.preventDefault();
     setDragOverIndex(null);
+
     const payload = readPayload(e);
     if (!payload) return;
 
     if (payload.source === "bank") {
-      // Always overwrite — same item can be placed multiple times
-      setSlots((prev) => { const next = [...prev]; next[targetIndex] = payload.char; return next; });
+      setSlots((prev) => {
+        const next = [...prev];
+        next[targetIndex] = payload.char;
+        return next;
+      });
       return;
     }
 
     if (payload.source === "drop") {
       const from = payload.slotIndex;
       if (from === targetIndex) return;
+
       setSlots((prev) => {
         const next = [...prev];
-        const tmp = next[targetIndex]; // may be null or another char
+        const tmp = next[targetIndex];
         next[targetIndex] = payload.char;
-        next[from] = tmp; // swap: puts displaced char back, or clears if target was empty
+        next[from] = tmp;
         return next;
       });
     }
@@ -108,19 +133,37 @@ const DragDrop: React.FC<DragDropProps> = ({
 
   const onDropBank = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+
     const payload = readPayload(e);
     if (!payload || payload.source !== "drop") return;
-    // Dragging a slot item back to the bank clears that slot
-    setSlots((prev) => { const next = [...prev]; next[payload.slotIndex] = null; return next; });
+
+    setSlots((prev) => {
+      const next = [...prev];
+      next[payload.slotIndex] = null;
+      return next;
+    });
   };
 
   const clearSlot = (i: number) => {
-    setSlots((prev) => { const next = [...prev]; next[i] = null; return next; });
+    setSlots((prev) => {
+      const next = [...prev];
+      next[i] = null;
+      return next;
+    });
   };
 
   const handleCheck = () => {
     setChecked(true);
-    onResult?.({ result: built === expectedStr ? "correct" : "incorrect", detail: { slots, built, expected: expectedStr, expectedArr } });
+
+    onResult?.({
+      result: built === expectedStr ? "correct" : "incorrect",
+      detail: {
+        slots,
+        built,
+        expected: expectedStr,
+        expectedArr,
+      },
+    });
   };
 
   const reset = () => {
@@ -131,47 +174,96 @@ const DragDrop: React.FC<DragDropProps> = ({
 
   const play = () => {
     if (!audioUrl || !audioRef.current) return;
+
     const audio = audioRef.current;
     audio.onended = () => setPlaying(false);
     audio.onerror = () => setPlaying(false);
     audio.currentTime = 0;
+
     setPlaying(true);
     audio.play().catch(() => setPlaying(false));
   };
 
-  return (
-    <Box sx={{ width: "100%", maxWidth: 680, mx: "auto", px: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", gap: 2.5 }}>
+  const shouldShowImage = Boolean(resolvedImageUrl && !imageFailed);
 
-      {/* Prompt */}
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: 680,
+        mx: "auto",
+        px: { xs: 1, sm: 2 },
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2.5,
+      }}
+    >
       <Box sx={{ textAlign: "center" }}>
         <Typography sx={{ fontWeight: 700, fontSize: { xs: "1rem", sm: "1.1rem" }, color: "#1C1917" }}>
           {prompt}
         </Typography>
+
         {caption ? (
-          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>{caption}</Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+            {caption}
+          </Typography>
         ) : null}
       </Box>
 
-      {/* Image + Audio row */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
         <Box
           sx={{
-            width: { xs: 100, sm: 130 },
-            height: { xs: 100, sm: 130 },
-            borderRadius: "16px",
+            width: { xs: 116, sm: 150 },
+            height: { xs: 116, sm: 150 },
+            borderRadius: "18px",
             bgcolor: "#F3F4F6",
             border: "1px solid rgba(0,0,0,0.08)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
+            boxShadow: shouldShowImage ? "0 8px 24px rgba(0,0,0,0.08)" : "none",
           }}
         >
-          <Typography sx={{ fontSize: "2.5rem" }}>🖼️</Typography>
+          {shouldShowImage ? (
+            <Box
+              component="img"
+              src={resolvedImageUrl}
+              alt={prompt || "Drag and drop exercise image"}
+              onError={() => setImageFailed(true)}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.75,
+                color: "text.secondary",
+              }}
+            >
+              <ImageNotSupportedRoundedIcon sx={{ fontSize: { xs: 38, sm: 46 }, opacity: 0.75 }} />
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                No image
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         {audioUrl ? (
           <>
             <audio ref={audioRef} src={audioUrl} preload="auto" />
+
             <IconButton
               onClick={play}
               disabled={playing}
@@ -191,11 +283,12 @@ const DragDrop: React.FC<DragDropProps> = ({
             </IconButton>
           </>
         ) : (
-          <Typography variant="caption" sx={{ color: "text.secondary" }}>No audio</Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            No audio
+          </Typography>
         )}
       </Box>
 
-      {/* Drop strip */}
       <Box
         sx={{
           display: "flex",
@@ -223,7 +316,10 @@ const DragDrop: React.FC<DragDropProps> = ({
               aria-label={`slot ${i + 1}`}
               draggable={char !== null}
               onDragStart={(e) => onDragStartSlot(e, i)}
-              onDragOver={(e) => { e.preventDefault(); setDragOverIndex(i); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverIndex(i);
+              }}
               onDrop={(e) => onDropSlot(e, i)}
               onDragLeave={() => setDragOverIndex(null)}
               onDoubleClick={() => clearSlot(i)}
@@ -232,9 +328,23 @@ const DragDrop: React.FC<DragDropProps> = ({
                 height: { xs: 52, sm: 62 },
                 borderRadius: "12px",
                 border: `2px ${char ? "solid" : "dashed"} ${
-                  isOver ? "#60A5FA" : slotCorrect ? "#059669" : slotWrong ? "#DC2626" : char ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.2)"
+                  isOver
+                    ? "#60A5FA"
+                    : slotCorrect
+                      ? "#059669"
+                      : slotWrong
+                        ? "#DC2626"
+                        : char
+                          ? "rgba(0,0,0,0.15)"
+                          : "rgba(0,0,0,0.2)"
                 }`,
-                bgcolor: slotCorrect ? "rgba(5,150,105,0.06)" : slotWrong ? "rgba(220,38,38,0.06)" : isOver ? "rgba(96,165,250,0.08)" : "#fff",
+                bgcolor: slotCorrect
+                  ? "rgba(5,150,105,0.06)"
+                  : slotWrong
+                    ? "rgba(220,38,38,0.06)"
+                    : isOver
+                      ? "rgba(96,165,250,0.08)"
+                      : "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -252,12 +362,10 @@ const DragDrop: React.FC<DragDropProps> = ({
         })}
       </Box>
 
-      {/* Built word display */}
       <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600 }}>
         {built.length ? `→ ${built}` : "Drag characters into the slots above"}
       </Typography>
 
-      {/* Bank */}
       <Box
         sx={{
           display: "flex",
@@ -294,7 +402,11 @@ const DragDrop: React.FC<DragDropProps> = ({
               justifyContent: "center",
               transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
               boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              "&:hover": { transform: "translateY(-2px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", borderColor: "#B43D20" },
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                borderColor: "#B43D20",
+              },
             }}
           >
             {char}
@@ -302,7 +414,6 @@ const DragDrop: React.FC<DragDropProps> = ({
         ))}
       </Box>
 
-      {/* Controls */}
       <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", justifyContent: "center" }}>
         <Box
           component="button"
@@ -325,6 +436,7 @@ const DragDrop: React.FC<DragDropProps> = ({
         >
           Check
         </Box>
+
         <Box
           component="button"
           onClick={reset}
@@ -346,7 +458,6 @@ const DragDrop: React.FC<DragDropProps> = ({
         </Box>
       </Box>
 
-      {/* Feedback */}
       {checked && (
         <Typography
           sx={{
