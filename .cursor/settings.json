@@ -1,0 +1,22 @@
+{
+  "plugins": {
+    "claude-plugins-official/learning-output-style": {
+      "enabled": true
+    },
+    "claude-plugins-official/commit-commands": {
+      "enabled": true
+    },
+    "claude-plugins-official/github": {
+      "enabled": true
+    },
+    "compound-engineering": {
+      "enabled": true
+    },
+    "claude-plugins-official/typescript-lsp": {
+      "enabled": true
+    },
+    "cursor-team-kit": {
+      "enabled": true
+    }
+  }
+}
