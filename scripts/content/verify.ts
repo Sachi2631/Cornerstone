@@ -74,6 +74,8 @@ async function main() {
   const todos: Problem[] = [];
   /** Listening exercises with nothing to play. Counted on its own line. */
   const silentListening: Problem[] = [];
+  /** "kana" matching screens whose left cards have no clip. Likewise. */
+  const silentKana: Problem[] = [];
   let resolved = 0;
   let termRefs = 0;
   let empty = 0;
@@ -200,16 +202,21 @@ async function main() {
       /*
        * Katakana is withheld for the moment: "kana" now pairs a term's audio
        * (left, no label) with its hiragana form (right) — see RenderBlock's
-       * MatchPairsView. That makes the recording as load-bearing here as it is
-       * for the "audio" pairing, and more so than a missing gloss: the left
-       * card *is* the clip, so a term without one is an unlabelled greyed-out
-       * speaker that nothing distinguishes from the next one. RenderBlock
-       * drops those pairs, so they belong in `missing` alongside the rest.
+       * MatchPairsView. The left card *is* the clip, so a term without one is
+       * an unlabelled greyed-out speaker with nothing to tell it apart from the
+       * next one — RenderBlock drops those pairs rather than render a screen
+       * that cannot be solved.
+       *
+       * Not a structural failure, though, for the same reason `listenAndChoose`
+       * is not: what a "kana" pair needs *structurally* is the written form on
+       * its right, and every term has one. The recording is an editorial gap,
+       * and the fix is ten of them rather than a code change. It gets its own
+       * counted line below instead of being lost among the to-dos.
        */
       const missing = list.filter((t) => {
         if (pairing === "meaning") return !t.meaning;
         if (pairing === "reading") return !t.reading && !t.romaji;
-        if (pairing === "audio" || pairing === "kana") return !t.audio;
+        if (pairing === "audio") return !t.audio;
         return false;
       });
 
@@ -228,6 +235,23 @@ async function main() {
           where,
           detail: `only ${list.length - missing.length} usable pair(s) — a matching exercise needs two`,
         });
+      }
+
+      if (pairing === "kana") {
+        const noAudio = list.filter((t) => !t.audio);
+        if (noAudio.length) {
+          const left = list.length - noAudio.length;
+          silentKana.push({
+            doc,
+            where,
+            detail:
+              `${noAudio.length} of ${list.length} term(s) have no recording ` +
+              `(${noAudio.map((t) => String(t.key)).join(", ")}) — those pairs are dropped, ` +
+              (left < 2
+                ? `leaving ${left}, so the screen renders nothing at all.`
+                : `leaving ${left}.`),
+          });
+        }
       }
     }
 
@@ -391,6 +415,17 @@ async function main() {
     );
     for (const s of silentListening.slice(0, 6)) console.log(`      ${s.doc}  ${s.where}  ${s.detail}`);
     if (silentListening.length > 6) console.log(`      … and ${silentListening.length - 6} more`);
+  }
+
+  if (silentKana.length) {
+    console.log(
+      `\n  ⚠ ${silentKana.length} "kana" matching screen(s) are short of recordings — the left\n` +
+        `    card of that pairing is the clip itself, so a term without one is dropped. Not counted\n` +
+        `    as a structural failure, on the same grounds as the listening exercises above: the fix\n` +
+        `    is recordings, not a code change. A screen left with fewer than two pairs renders\n` +
+        `    nothing — see docs/content-backlog.md.`
+    );
+    for (const s of silentKana) console.log(`      ${s.doc}  ${s.where}\n        ${s.detail}`);
   }
 
   if (todos.length) {
