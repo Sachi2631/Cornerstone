@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, IconButton, Typography } from "@mui/material";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import GraphicEqRoundedIcon from "@mui/icons-material/GraphicEqRounded";
@@ -62,7 +62,10 @@ const DragDropCombination: React.FC<Props> = ({
   // the whole-word clip and the per-tile clips are gated the same way.
   const showResult = checked && isCorrect;
   const showAudio = showResult && Boolean(audioUrl);
-  const showTileAudio = showResult && Boolean(tileAudio?.length);
+  // `tileAudio` has one entry per tile whether or not that tile has a clip, so
+  // its length says nothing — an all-undefined array would still put "Hear each
+  // piece" above a row of inert grey buttons.
+  const showTileAudio = showResult && Boolean(tileAudio?.some(Boolean));
 
   const bankIndices = options.map((_, i) => i).filter((i) => !placedIndices.includes(i));
 
@@ -172,6 +175,11 @@ const DragDropCombination: React.FC<Props> = ({
     setPlayingTile(index);
     audio.play().catch(() => setPlayingTile(null));
   };
+
+  // `playTile` builds a detached `Audio` rather than rendering an element, so
+  // unmounting this exercise does not stop it the way removing the <audio>
+  // below does — without this, a tile plays on over the next screen.
+  useEffect(() => () => tileAudioRef.current?.pause(), []);
 
   const shouldShowImage = Boolean(resolvedImageUrl && !imageFailed);
 
