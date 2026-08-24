@@ -44,15 +44,13 @@ function text(value: string | null | undefined): string | undefined {
 }
 
 /**
- * The written form. A kana entry shows both scripts joined — this is what the
- * old `"あ/ア"` strings encoded with a slash, except the delimiter is now the
- * renderer's decision rather than the schema's.
+ * The written form.
+ *
+ * Katakana is withheld for the moment — see the "kana" pairing skip in
+ * `RenderBlock` for the matching-exercise side of this.
  */
 function written(term: TermLike): string | undefined {
-  const japanese = text(term.japanese);
-  const katakana = text(term.katakana);
-  if (japanese && katakana) return `${japanese} / ${katakana}`;
-  return japanese ?? katakana;
+  return text(term.japanese);
 }
 
 /** Falls through to whatever the term actually has, ending at the key. */

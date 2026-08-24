@@ -116,10 +116,10 @@ test("a missing field falls back rather than rendering a gap in the sentence", (
   }
 });
 
-test("a kana term shows both scripts, which is what the old \"あ/ア\" string encoded", () => {
+test("katakana is withheld for the moment, even when authored", () => {
   const result = renderableTerm(term({ japanese: "あ", katakana: "ア" }), "plain");
 
-  assert.deepEqual(result, { kind: "text", text: "あ / ア" });
+  assert.deepEqual(result, { kind: "text", text: "あ" });
 });
 
 test("a term with nothing but a key renders the key rather than nothing", () => {

@@ -20,6 +20,8 @@ type Props = {
   audioUrl?: string;
   options: string[];
   correctSequence: string[];
+  /** One entry per `options` index — that tile's own audio, if any. */
+  tileAudio?: (string | undefined)[];
   onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
 };
 
@@ -29,6 +31,7 @@ const DragDropCombination: React.FC<Props> = ({
   audioUrl,
   options,
   correctSequence,
+  tileAudio,
   onResult,
 }) => {
   const resolvedImageUrl = String(imageUrl || "").trim();
@@ -39,9 +42,11 @@ const DragDropCombination: React.FC<Props> = ({
   const [bankDragOver, setBankDragOver] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [playingTile, setPlayingTile] = useState<number | null>(null);
 
   const dragPayloadRef = useRef<DragPayload | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const tileAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const placedTiles = placedIndices.map((i) => options[i]);
   const isComplete = placedIndices.length === correctSequence.length;
@@ -53,7 +58,11 @@ const DragDropCombination: React.FC<Props> = ({
       ),
     [placedTiles, correctSequence, isComplete]
   );
-  const showAudio = checked && isCorrect && Boolean(audioUrl);
+  // Positive reinforcement, shown once the sequence is checked and correct —
+  // the whole-word clip and the per-tile clips are gated the same way.
+  const showResult = checked && isCorrect;
+  const showAudio = showResult && Boolean(audioUrl);
+  const showTileAudio = showResult && Boolean(tileAudio?.length);
 
   const bankIndices = options.map((_, i) => i).filter((i) => !placedIndices.includes(i));
 
@@ -152,6 +161,18 @@ const DragDropCombination: React.FC<Props> = ({
     audio.play().catch(() => setPlaying(false));
   };
 
+  const playTile = (index: number) => {
+    const src = tileAudio?.[index];
+    if (!src) return;
+    tileAudioRef.current?.pause();
+    const audio = new Audio(src);
+    tileAudioRef.current = audio;
+    audio.onended = () => setPlayingTile(null);
+    audio.onerror = () => setPlayingTile(null);
+    setPlayingTile(index);
+    audio.play().catch(() => setPlayingTile(null));
+  };
+
   const shouldShowImage = Boolean(resolvedImageUrl && !imageFailed);
 
   return (
@@ -245,6 +266,57 @@ const DragDropCombination: React.FC<Props> = ({
           </Box>
           <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
             Hear the reference pronunciation
+          </Typography>
+        </Box>
+      )}
+
+      {/* One button per tile, in the order they were placed — same
+          reinforcement moment as the reference audio above, but for each
+          piece that went into the answer. A tile with no recording yet still
+          gets a button, greyed out and inert, matching the filler-button
+          convention used everywhere else audio can be missing. */}
+      {showTileAudio && (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.75 }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
+            {placedIndices.map((idx) => {
+              const src = tileAudio?.[idx];
+              const hasAudio = Boolean(src);
+              const isPlayingThis = playingTile === idx;
+              return (
+                <Box
+                  key={`tile-audio-${idx}`}
+                  sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.25 }}
+                >
+                  <IconButton
+                    onClick={() => playTile(idx)}
+                    disabled={!hasAudio}
+                    aria-label={`Play audio for ${options[idx]}`}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: hasAudio ? (isPlayingThis ? "rgba(180,61,32,0.08)" : "#B43D20") : "rgba(0,0,0,0.08)",
+                      color: hasAudio ? (isPlayingThis ? "#B43D20" : "#fff") : "rgba(0,0,0,0.3)",
+                      border: hasAudio && isPlayingThis ? "2px solid #B43D20" : "none",
+                      "&:hover": hasAudio ? { bgcolor: isPlayingThis ? "rgba(180,61,32,0.12)" : "#9D351C" } : {},
+                      "&.Mui-disabled": { bgcolor: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)" },
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    {isPlayingThis ? (
+                      <GraphicEqRoundedIcon sx={{ fontSize: "1.1rem" }} />
+                    ) : (
+                      <VolumeUpRoundedIcon sx={{ fontSize: "1.1rem" }} />
+                    )}
+                  </IconButton>
+                  <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 700 }}>
+                    {options[idx]}
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Box>
+          <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+            Hear each piece
           </Typography>
         </Box>
       )}

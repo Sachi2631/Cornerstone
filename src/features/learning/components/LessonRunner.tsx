@@ -13,7 +13,9 @@ import {
   Typography,
 } from "@mui/material";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import Fact from "@/components/Fact";
 import Reward from "@/components/Rewards";
@@ -26,6 +28,8 @@ import { PRACTICE_BLOCK_SLUGS } from "@/payload/blocks/librarySlugs";
 import { upsertProgress } from "@/features/learning/actions";
 import type { ProgressDoc } from "@/features/learning/types";
 import type { Lesson } from "@/payload/payload-types";
+import { lessonReviewHref } from "@/lib/content/routes";
+import { collectLessonTerms } from "@/lib/content/lessonTerms";
 
 /*
  * One player, for both lesson formats.
@@ -104,6 +108,11 @@ function buildSteps(lesson: Lesson, seed: string): Step[] {
     enabled: lesson.shuffleSteps !== false,
   });
 
+  // Every term the lesson references, so a `buildSentence` screen can look a
+  // tile's own audio up by its written form — the block stores tiles as
+  // plain strings, with no relationship of its own to carry that audio.
+  const lessonTerms = collectLessonTerms(lesson);
+
   const steps: Step[] = authored.map((step, index) => {
     const types = blockTypes(step);
     return {
@@ -115,7 +124,7 @@ function buildSteps(lesson: Lesson, seed: string): Step[] {
       graded: types.some((type) => PRACTICE.has(type)),
       autoAdvance: !types.includes("buildSentence"),
       render: (onResult) => (
-        <RenderExercise blocks={step.components ?? []} onResult={onResult} />
+        <RenderExercise blocks={step.components ?? []} lessonTerms={lessonTerms} onResult={onResult} />
       ),
     };
   });
@@ -152,6 +161,45 @@ function buildSteps(lesson: Lesson, seed: string): Step[] {
       ))
     );
   }
+
+  // Last screen before Finish: every word and character this lesson taught,
+  // with audio and a place to record yourself — a study aid, not a step of
+  // its own, so it carries no grading and nothing to save progress against.
+  steps.push(
+    chrome("lesson:review", "Review", (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: 2,
+          py: 2,
+        }}
+      >
+        <MenuBookRoundedIcon sx={{ fontSize: "2.5rem", color: "#B43D20" }} />
+        <Typography sx={{ fontWeight: 800, fontSize: "1.1rem" }}>Nice work!</Typography>
+        <Typography sx={{ color: "text.secondary", maxWidth: 360 }}>
+          Review every word and character from this lesson — with audio, playback speed,
+          and a place to record yourself.
+        </Typography>
+        <Button
+          component={Link}
+          href={lessonReviewHref(lesson.slug)}
+          variant="outlined"
+          sx={{
+            borderRadius: 999,
+            fontWeight: 700,
+            borderColor: "#B43D20",
+            color: "#B43D20",
+            "&:hover": { borderColor: "#9D351C", bgcolor: "rgba(180,61,32,0.06)" },
+          }}
+        >
+          Review terms
+        </Button>
+      </Box>
+    ))
+  );
 
   return steps;
 }

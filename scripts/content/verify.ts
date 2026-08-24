@@ -197,10 +197,17 @@ async function main() {
         .map((t) => (t && typeof t === "object" ? (t as Record<string, unknown>) : null))
         .filter((t): t is Record<string, unknown> => t !== null);
 
-      /** The field each side of the pair actually reads. */
+      /*
+       * Katakana is withheld for the moment: "kana" now pairs a term's audio
+       * (left, no label) with its hiragana form (right) — see RenderBlock's
+       * MatchPairsView. Audio is not required here the way it is for the
+       * "audio" pairing: a missing recording renders a greyed-out filler
+       * button (the same convention MatchDotsMedia and FlashcardReview use)
+       * rather than dropping the pair, so it is reported as a to-do below,
+       * not folded into `missing`.
+       */
       const missing = list.filter((t) => {
         if (pairing === "meaning") return !t.meaning;
-        if (pairing === "kana") return !t.katakana;
         if (pairing === "reading") return !t.reading && !t.romaji;
         if (pairing === "audio") return !t.audio;
         return false;
@@ -221,6 +228,20 @@ async function main() {
           where,
           detail: `only ${list.length - missing.length} usable pair(s) — a matching exercise needs two`,
         });
+      }
+
+      if (pairing === "kana") {
+        const noAudio = list.filter((t) => !t.audio);
+        if (noAudio.length) {
+          todos.push({
+            doc,
+            where,
+            detail:
+              `pairing is "kana" but ${noAudio.length} of ${list.length} term(s) have no recording ` +
+              `yet (${noAudio.map((t) => String(t.key)).join(", ")}) — the left card shows a filler ` +
+              "audio button until one is added.",
+          });
+        }
       }
     }
 

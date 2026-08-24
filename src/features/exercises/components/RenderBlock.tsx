@@ -66,10 +66,12 @@ export type BlockOf = NonNullable<
 
 export type ResultCallback = (r: { result: "correct" | "incorrect" }) => void;
 
-export const RenderBlock: React.FC<{ block: BlockOf; onResult?: ResultCallback }> = ({
-  block,
-  onResult,
-}) => {
+export const RenderBlock: React.FC<{
+  block: BlockOf;
+  /** Every term the lesson references — see the `buildSentence` case below. */
+  lessonTerms?: Term[];
+  onResult?: ResultCallback;
+}> = ({ block, lessonTerms, onResult }) => {
   switch (block.blockType) {
     case "prose":
       return <ProseView {...block} />;
@@ -88,7 +90,7 @@ export const RenderBlock: React.FC<{ block: BlockOf; onResult?: ResultCallback }
     case "listenAndChoose":
       return <ListenAndChooseView {...block} onResult={onResult} />;
     case "buildSentence":
-      return <BuildSentenceView {...block} onResult={onResult} />;
+      return <BuildSentenceView {...block} lessonTerms={lessonTerms} onResult={onResult} />;
     case "speakAndScore":
       return <SpeakAndScoreView {...block} />;
     case "multipleChoice":
@@ -388,16 +390,22 @@ const MatchPairsView: React.FC<MatchPairsBlock & { onResult?: ResultCallback }> 
    * belongs with the 4b rewrite of that component, not here.
    */
   const pairs: DotMatchPair[] = list
-    .map((t) => ({
-      hiragana: termText(t, "plain"),
-      katakana:
-        pairing === "kana"
-          ? (t.katakana ?? "")
-          : pairing === "reading"
-            ? termText(t, "reading")
-            : termText(t, "meaning"),
-      audio: termAudio(t),
-    }))
+    .map((t) => {
+      const written = termText(t, "plain");
+      const audio = termAudio(t);
+
+      // Katakana is withheld for the moment, so "kana" no longer pairs
+      // hiragana with katakana (t.katakana ?? ""). It now pairs the term's
+      // audio (left, no label — see MatchDots's audio-only card) with its
+      // hiragana form (right).
+      if (pairing === "kana") return { hiragana: "", katakana: written, audio };
+
+      return {
+        hiragana: written,
+        katakana: pairing === "reading" ? termText(t, "reading") : termText(t, "meaning"),
+        audio,
+      };
+    })
     /*
      * Drop pairs whose two sides came out the same.
      *
@@ -408,8 +416,19 @@ const MatchPairsView: React.FC<MatchPairsBlock & { onResult?: ResultCallback }> 
      * terms are in exactly that state. Rendering it would look like a working
      * screen, so it is dropped here and `npm run content:verify` reports it as a
      * failure rather than leaving it to be noticed by a learner.
+     *
+     * The "kana" pairing has an empty `hiragana` by design (its left card is
+     * audio-only), so it only drops pairs missing the written form. A missing
+     * recording renders the card's filler audio button instead — the same
+     * placeholder MatchDotsMedia and FlashcardReview already use — rather than
+     * dropping the pair outright, since the point of this exercise is the
+     * written form, not the recording.
      */
-    .filter((pair) => pair.hiragana !== "" && pair.katakana !== "" && pair.hiragana !== pair.katakana);
+    .filter((pair) =>
+      pairing === "kana"
+        ? pair.katakana !== ""
+        : pair.hiragana !== "" && pair.katakana !== "" && pair.hiragana !== pair.katakana
+    );
 
   // Fewer than two pairs is not a matching exercise. Nothing renders, which is
   // the same choice `RenderBlock` makes everywhere: better an absent screen than
@@ -451,14 +470,9 @@ const ListenAndChooseView: React.FC<ListenAndChooseBlock & { onResult?: ResultCa
   );
 };
 
-const BuildSentenceView: React.FC<BuildSentenceBlock & { onResult?: ResultCallback }> = ({
-  instructions,
-  term: subject,
-  tiles,
-  correctSequence,
-  tileScript,
-  onResult,
-}) => {
+const BuildSentenceView: React.FC<
+  BuildSentenceBlock & { lessonTerms?: Term[]; onResult?: ResultCallback }
+> = ({ instructions, term: subject, tiles, correctSequence, tileScript, lessonTerms, onResult }) => {
   /*
    * The romaji conversion used to happen at render time on a code path chosen by
    * a checkbox named `bonus` — so the same stored tiles produced two different
@@ -468,11 +482,54 @@ const BuildSentenceView: React.FC<BuildSentenceBlock & { onResult?: ResultCallba
   const convert = (values: string[]) =>
     tileScript === "romaji" ? kanaTilesToRomaji(values) : values;
 
+  /*
+   * A tile is authored as a plain string — "あ", not a term reference — so
+   * there is nothing on the block itself to play. Reading/writing lessons
+   * introduce every kana as its own term earlier in the same lesson (the
+   * `vocabList`/`spotlight` steps `collectLessonTerms` also walks), so a
+   * tile's own audio is found by matching its written form against those.
+   * A tile with no matching term, or a term with no recording yet, plays
+   * nothing — same silent-gap handling as every other audio button here.
+   */
+  const audioForTile = (tile: string): string | undefined => {
+    const match = (lessonTerms ?? []).find(
+      (t) => t.japanese === tile || t.romaji === tile || termText(t, "plain") === tile
+    );
+    return termAudio(match);
+  };
+
+  /*
+   * Some authored answers repeat a character — "おおい" needs お twice — but
+   * the tile bank was authored with one of each, which makes the puzzle
+   * impossible to actually place: the second お simply is not there to drag.
+   * Padded rather than fixed in the content, because the same authoring
+   * habit (one tile per distinct kana) is likely elsewhere too and this
+   * makes every instance of it solvable rather than only the ones noticed.
+   * Extra tiles are appended after the authored set so the original bank
+   * order is otherwise unchanged.
+   */
+  const withEnoughTiles = (available: string[], needed: string[]): string[] => {
+    const have = new Map<string, number>();
+    for (const t of available) have.set(t, (have.get(t) ?? 0) + 1);
+
+    const extra: string[] = [];
+    const seen = new Map<string, number>();
+    for (const n of needed) {
+      const count = (seen.get(n) ?? 0) + 1;
+      seen.set(n, count);
+      if (count > (have.get(n) ?? 0)) extra.push(n);
+    }
+    return extra.length ? [...available, ...extra] : available;
+  };
+
+  const resolvedTiles = withEnoughTiles(tiles ?? [], correctSequence ?? []);
+
   return (
     <DragDropCombination
       prompt={instructions || "Drag the tiles into the correct order"}
-      options={convert(tiles ?? [])}
+      options={convert(resolvedTiles)}
       correctSequence={convert(correctSequence ?? [])}
+      tileAudio={resolvedTiles.map(audioForTile)}
       imageUrl={termImage(subject)}
       audioUrl={termAudio(subject)}
       onResult={onResult}
