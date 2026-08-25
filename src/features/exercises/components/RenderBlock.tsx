@@ -498,9 +498,10 @@ const BuildSentenceView: React.FC<
   /*
    * A tile is authored as a plain string — "あ", not a term reference — so
    * there is nothing on the block itself to play. Reading/writing lessons
-   * introduce every kana as its own term earlier in the same lesson (the
-   * `vocabList`/`spotlight` steps `collectLessonTerms` also walks), so a
-   * tile's own audio is found by matching its written form against those.
+   * introduce every kana as its own term earlier in the same lesson — in a
+   * `vocabList`/`spotlight` step, or in prose as a `termRef`, both of which
+   * `collectLessonTerms` walks — so a tile's own audio is found by matching
+   * its written form against those.
    * A tile with no matching term, or a term with no recording yet, plays
    * nothing — same silent-gap handling as every other audio button here.
    */
