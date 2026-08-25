@@ -20,6 +20,11 @@ export function lessonHref(slug: string): string {
   return `/lessons/${slug}`;
 }
 
+/** The term-review page for a lesson — every word and character it taught. */
+export function lessonReviewHref(slug: string): string {
+  return `/lessons/${slug}/review`;
+}
+
 /**
  * The page that renders a document, or null when there isn't one.
  *

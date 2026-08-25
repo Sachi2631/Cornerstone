@@ -197,7 +197,7 @@
           "components": [
             {
               "id": "6a83f02bb78e2c76b66a8656",
-              "instructions": "Match each hiragana to its katakana",
+              "instructions": "Match each audio clip to its hiragana",
               "pairing": "kana",
               "blockName": null,
               "blockType": "matchPairs",
@@ -829,7 +829,7 @@
           "components": [
             {
               "id": "6a83f02cb78e2c76b66a866f",
-              "instructions": "Match each hiragana to its katakana",
+              "instructions": "Match each audio clip to its hiragana",
               "pairing": "kana",
               "blockName": null,
               "blockType": "matchPairs",

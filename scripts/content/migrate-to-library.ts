@@ -493,15 +493,28 @@ function convert(block: Block, ctx: Context): Block[] {
         ctx.quarantine(`kana pairs with no catalogue term: ${missing.join(", ")}`);
         return [];
       }
-      const withoutKatakana = found.filter((t) => !t?.katakana).map((t) => t?.key ?? "?");
-      if (withoutKatakana.length) {
-        ctx.quarantine(`pairs hiragana with katakana, but these terms have no katakana: ${withoutKatakana.join(", ")}`);
-        return [];
-      }
+      /*
+       * No katakana gate any more. "kana" pairs the term's audio with its
+       * hiragana now (katakana is withheld — see RenderBlock's MatchPairsView),
+       * so a missing katakana form no longer stops the exercise from playing,
+       * and quarantining on it would hold back cards that work.
+       *
+       * The recording it needs instead is not checked here: `adopt` attaches
+       * audio to catalogue terms as it walks the snapshot, so at this point in
+       * the run a term may simply not have reached the block that gives it one.
+       * That check belongs to `content:verify`, which reads the finished
+       * content — the same division of labour as the katakana check it replaces.
+       */
       return [
         {
+          /*
+           * The authored prompt is deliberately dropped rather than carried
+           * across. Every one of these was written for "match each hiragana to
+           * its katakana", which is not the exercise this becomes; keeping it
+           * would put a confidently wrong instruction above an audio screen.
+           */
           blockType: "matchPairs",
-          instructions: block.prompt ?? "Match each hiragana to its katakana",
+          instructions: "Match each audio clip to its hiragana",
           terms: found.map((t) => ref(t!.key)),
           pairing: "kana",
         },

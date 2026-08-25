@@ -4,6 +4,7 @@ import React from "react";
 import { Box } from "@mui/material";
 
 import RenderBlock, { type BlockOf, type ResultCallback } from "./RenderBlock";
+import type { Term } from "@/payload/payload-types";
 
 /*
  * One exercise — one screen — as an ordered list of blocks.
@@ -24,8 +25,10 @@ import RenderBlock, { type BlockOf, type ResultCallback } from "./RenderBlock";
  */
 export const RenderExercise: React.FC<{
   blocks: BlockOf[];
+  /** Every term the lesson references — see `RenderBlock`'s `buildSentence` case. */
+  lessonTerms?: Term[];
   onResult?: ResultCallback;
-}> = ({ blocks, onResult }) => (
+}> = ({ blocks, lessonTerms, onResult }) => (
   <Box
     sx={{
       width: "100%",
@@ -40,7 +43,7 @@ export const RenderExercise: React.FC<{
       // Phase 4b keys learner progress on. Index is the fallback for a block
       // streamed by Live Preview before it has been saved and given one.
       <Box key={block.id ?? index} sx={{ width: "100%" }}>
-        <RenderBlock block={block} onResult={onResult} />
+        <RenderBlock block={block} lessonTerms={lessonTerms} onResult={onResult} />
       </Box>
     ))}
   </Box>

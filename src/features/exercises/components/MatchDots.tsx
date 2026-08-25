@@ -3,14 +3,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import GraphicEqRoundedIcon from "@mui/icons-material/GraphicEqRounded";
 import { buildArrangement } from "@/utils/dotMatchArrangement";
 
 export type DotMatchPair = { hiragana: string; katakana: string; audio?: string };
-
-function playAudio(src?: string) {
-  if (!src) return;
-  new Audio(src).play().catch(() => {});
-}
 
 type Connection = { dot1Id: string; dot2Id: string };
 
@@ -20,7 +16,7 @@ type DotMatchProps = {
    * The heading. Defaults to the kana wording this was written for, which is
    * wrong for every other kind of pair — `matchPairs` can pair a word with its
    * meaning, its reading or its audio, and telling a learner to "match each
-   * hiragana to its katakana" on one of those is worse than saying nothing.
+   * audio clip to its hiragana" on one of those is worse than saying nothing.
    */
   heading?: string;
   onResult?: (r: { result: "correct" | "incorrect"; detail?: any }) => void;
@@ -35,11 +31,35 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dotRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [firstId, setFirstId] = useState<string | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+
+  /*
+   * One clip at a time. Each left card builds its own detached `Audio`, so two
+   * cards clicked in quick succession would play over each other — on the one
+   * exercise whose whole task is telling recordings apart. `onerror` is the
+   * same concern: a clip that dies mid-stream never fires `onended`, which
+   * would leave the equalizer icon running on a row that has gone silent.
+   */
+  const playAudio = (index: number, src?: string) => {
+    if (!src) return;
+    audioRef.current?.pause();
+    const audio = new Audio(src);
+    audioRef.current = audio;
+    setPlayingIndex(index);
+    audio.onended = () => setPlayingIndex(null);
+    audio.onerror = () => setPlayingIndex(null);
+    audio.play().catch(() => setPlayingIndex(null));
+  };
+
+  // Detached again, so unmounting the exercise has to stop it explicitly or
+  // the clip carries on over the next screen.
+  useEffect(() => () => audioRef.current?.pause(), []);
 
   // Randomized once per mount so the layout is fresh on every attempt
   // (except the left column when keepLeftOrder is set — see buildArrangement).
@@ -182,7 +202,7 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
   return (
     <Box sx={{ textAlign: "center", p: { xs: 0.5, sm: 1 }, width: "100%", overflowX: "hidden" }}>
       <Typography sx={{ fontWeight: 700, fontSize: { xs: "1rem", sm: "1.1rem" }, mb: 0.5, color: "#1C1917" }}>
-        {heading ?? "Match each hiragana to its katakana"}
+        {heading ?? "Match each audio clip to its hiragana"}
       </Typography>
       <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.25 }}>
         {submitted ? "Done! See your results above." : "Click a dot on the left, then one on the right to connect."}
@@ -220,11 +240,20 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
             const isWrong = submitted && connected && !isCorrect;
 
             const audioSrc = leftAudio[i];
+            // No label means this pairing has nothing to write on the left
+            // card (the "kana" pairing, matching audio to its script form) —
+            // show a centered audio icon instead of a small corner badge. When
+            // the term has no recording yet, the icon still shows but greyed
+            // out and inert — the same filler-button convention MatchDotsMedia
+            // and FlashcardReview use for a missing recording.
+            const audioOnly = label === "";
+            const hasAudio = !!audioSrc;
+            const playing = playingIndex === i;
 
             return (
               <Box key={i} sx={{ height: ROW_HEIGHT, display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Box
-                  onClick={audioSrc ? () => playAudio(audioSrc) : undefined}
+                  onClick={audioSrc ? () => playAudio(i, audioSrc) : undefined}
                   sx={{
                     position: "relative",
                     width: CARD_SIZE,
@@ -241,18 +270,30 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
                     cursor: audioSrc ? "pointer" : "default",
                   }}
                 >
-                  {label}
-                  {audioSrc && (
-                    <VolumeUpRoundedIcon
-                      sx={{
-                        position: "absolute",
-                        top: 2,
-                        right: 2,
-                        fontSize: "0.95rem",
-                        color: "#B43D20",
-                        opacity: 0.75,
-                      }}
-                    />
+                  {audioOnly ? (
+                    playing ? (
+                      <GraphicEqRoundedIcon sx={{ fontSize: "1.8rem", color: "#B43D20" }} />
+                    ) : (
+                      <VolumeUpRoundedIcon
+                        sx={{ fontSize: "1.8rem", color: hasAudio ? "#B43D20" : "rgba(0,0,0,0.25)" }}
+                      />
+                    )
+                  ) : (
+                    <>
+                      {label}
+                      {audioSrc && (
+                        <VolumeUpRoundedIcon
+                          sx={{
+                            position: "absolute",
+                            top: 2,
+                            right: 2,
+                            fontSize: "0.95rem",
+                            color: "#B43D20",
+                            opacity: 0.75,
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </Box>
                 <Box

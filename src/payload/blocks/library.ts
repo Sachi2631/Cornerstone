@@ -370,13 +370,14 @@ export const MatchPairs: Block = {
       options: [
         { label: "Word ↔ English meaning", value: "meaning" },
         { label: "Word ↔ reading", value: "reading" },
-        { label: "Hiragana ↔ katakana", value: "kana" },
+        { label: "Audio ↔ hiragana", value: "kana" },
         { label: "Audio ↔ word", value: "audio" },
       ],
       admin: {
         description:
-          "What the two sides are. Hiragana ↔ katakana is what the old \"あ/ア\" strings encoded " +
-          "with a slash; it reads both scripts off the term now.",
+          "What the two sides are. Audio ↔ hiragana is where the old \"あ/ア\" strings ended up: " +
+          "katakana is withheld for now, so that exercise plays the term's recording on the left " +
+          "and asks for its hiragana. Every term in it needs audio.",
       },
       validate: pairingIsPossible,
     },
@@ -646,7 +647,8 @@ function termHasAudio(value: unknown, { siblingData: _siblingData }: SiblingArgs
 function pairingIsPossible(value: unknown, _args: SiblingArgs) {
   if (typeof value !== "string" || !value) return "Pick what the two sides are.";
   // Same limitation as `termHasAudio`: the terms are ids here, so "do these
-  // words all have a katakana form?" is a `content:verify` question.
+  // words all have the side this pairing reads off them?" is a `content:verify`
+  // question.
   return true;
 }
 
