@@ -7,6 +7,7 @@ import {
   getNextLessonHref,
 } from "@/lib/content/content";
 import { getShuffleIdentity, getProgress } from "@/lib/progress-server";
+import { getNotebook } from "@/lib/notes-server";
 import { getPreviewEditor } from "@/lib/session";
 import LessonPreview from "@/features/learning/components/preview/LessonPreview";
 import LessonRunner from "@/features/learning/components/LessonRunner";
@@ -57,6 +58,7 @@ export default async function Page({
       userId={userId}
       attempt={attempt}
       initialProgress={await getProgress(lesson.slug)}
+      initialNotes={await getNotebook()}
     />
   );
 }

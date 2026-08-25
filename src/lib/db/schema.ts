@@ -66,3 +66,33 @@ export const userProgress = pgTable(
 );
 
 export type UserProgressRow = typeof userProgress.$inferSelect;
+
+/*
+ * One sticky note per learner per lesson — a running "notebook" rather than a
+ * log: writing a second note on a lesson replaces the first, the same way a
+ * real sticky note gets rewritten rather than stacked. `lessonId` is a slug,
+ * matching `userProgress`, for the same reason — both name a lesson the way
+ * the player already does, with no join back to Payload's numeric id needed.
+ *
+ * An empty `body` is not stored as a row at all — the write path deletes the
+ * row instead — so the notebook only ever lists lessons that actually have
+ * something written on them.
+ */
+export const userLessonNotes = pgTable(
+  "user_lesson_notes",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    lessonId: text("lesson_id").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("user_lesson_notes_user_lesson_uq").on(t.userId, t.lessonId)]
+);
+
+export type UserLessonNoteRow = typeof userLessonNotes.$inferSelect;

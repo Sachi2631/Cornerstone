@@ -7,6 +7,7 @@ import {
   Button,
   Chip,
   Container,
+  IconButton,
   LinearProgress,
   Paper,
   Stack,
@@ -14,6 +15,7 @@ import {
 } from "@mui/material";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import StickyNote2RoundedIcon from "@mui/icons-material/StickyNote2Rounded";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -22,11 +24,12 @@ import Reward from "@/components/Rewards";
 import RewardInfo from "@/components/RewardInfo";
 import RenderExercise from "@/features/exercises/components/RenderExercise";
 import RichText from "@/components/richtext/RichText";
+import NotesNotebookDialog from "@/features/learning/components/NotesNotebookDialog";
 
 import { stepSeed, shuffleSteps } from "@/lib/content/shuffle";
 import { PRACTICE_BLOCK_SLUGS } from "@/payload/blocks/librarySlugs";
 import { upsertProgress } from "@/features/learning/actions";
-import type { ProgressDoc } from "@/features/learning/types";
+import type { NotebookEntry, ProgressDoc } from "@/features/learning/types";
 import type { Lesson } from "@/payload/payload-types";
 import { lessonReviewHref } from "@/lib/content/routes";
 import { collectLessonTerms } from "@/lib/content/lessonTerms";
@@ -272,7 +275,9 @@ const LessonRunner: React.FC<{
   attempt?: number;
   /** Resume cursor, fetched on the server. Absent in Live Preview. */
   initialProgress?: ProgressDoc | null;
-}> = ({ lesson, nextHref, userId, attempt = 0, initialProgress = null }) => {
+  /** Every sticky note the signed-in learner has written. Empty when signed out. */
+  initialNotes?: NotebookEntry[];
+}> = ({ lesson, nextHref, userId, attempt = 0, initialProgress = null, initialNotes = [] }) => {
   const router = useRouter();
 
   const [step, setStep] = useState(0);
@@ -282,6 +287,17 @@ const LessonRunner: React.FC<{
   // the next successful save, so a recovered connection removes it.
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  // Lifted out of `initialNotes` for the same reason the lessons list does:
+  // a save updates this lesson's own entry, and the notebook shows it back
+  // without waiting on a page reload.
+  const [notes, setNotes] = useState<NotebookEntry[]>(initialNotes);
+  const handleNoteSaved: React.ComponentProps<typeof NotesNotebookDialog>["onSaved"] = (entry) => {
+    setNotes((prev) => {
+      const rest = prev.filter((n) => n.lessonId !== entry.lessonId);
+      return "cleared" in entry ? rest : [entry, ...rest];
+    });
+  };
 
   const answeredRef = useRef<Record<string, boolean>>({});
   const resumedRef = useRef(false);
@@ -569,6 +585,15 @@ const LessonRunner: React.FC<{
               />
             )}
 
+            <IconButton
+              aria-label="Notes for this lesson"
+              size="small"
+              onClick={() => setNotesOpen(true)}
+              sx={{ color: "rgba(0,0,0,0.45)", "&:hover": { color: "#B43D20" } }}
+            >
+              <StickyNote2RoundedIcon fontSize="small" />
+            </IconButton>
+
             <Button
               startIcon={<LogoutRoundedIcon />}
               variant="contained"
@@ -745,6 +770,17 @@ const LessonRunner: React.FC<{
           </Stack>
         </Container>
       </Box>
+
+      <NotesNotebookDialog
+        open={notesOpen}
+        onClose={() => setNotesOpen(false)}
+        notes={notes}
+        focusLesson={{
+          slug,
+          title: lesson.cardTitle?.trim() || lesson.title,
+        }}
+        onSaved={handleNoteSaved}
+      />
     </Box>
   );
 };

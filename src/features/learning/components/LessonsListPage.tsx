@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Alert, Box, Container, Paper, Stack, Typography } from "@mui/material";
+import React, { useMemo, useState } from "react";
+import { Alert, Box, Container, IconButton, Paper, Stack, Typography } from "@mui/material";
+import StickyNote2RoundedIcon from "@mui/icons-material/StickyNote2Rounded";
 import Link from "next/link";
 
 import { lessonHref } from "@/lib/content/routes";
 import { termText } from "@/features/exercises/components/termText";
+import NotesNotebookDialog from "@/features/learning/components/NotesNotebookDialog";
 import type { Lesson, Term } from "@/payload/payload-types";
-import type { ProgressStatus } from "@/features/learning/types";
+import type { NotebookEntry, ProgressStatus } from "@/features/learning/types";
 
 // A card's color reflects the signed-in user's progress on that specific
 // part, rather than which column (Grammar vs Reading & Writing) it lives in.
@@ -28,6 +30,12 @@ type Part = {
   cardTitle?: string;
   progressStatus?: CardProgressStatus;
 };
+
+/** The title shown on a card, or the "Lesson N.M" fallback — same text a
+ *  learner already sees, reused as the notebook's title for a blank note. */
+function partTitle(p: Part): string {
+  return p.cardTitle || `Lesson ${p.level}.${p.part}`;
+}
 
 // Sections are always shown for at least these levels.
 const BASE_LEVELS = [1, 2, 3];
@@ -140,19 +148,40 @@ const Placeholder: React.FC = () => (
 // field when set — e.g. Grammar lessons — otherwise derived automatically for
 // Reading & Writing, with a placeholder only if neither is available), and
 // "Lesson <level>.<part>" shown as the caption underneath.
-const PartCard: React.FC<{ p: Part }> = ({ p }) => {
+const PartCard: React.FC<{ p: Part; onOpenNotes: (p: Part) => void }> = ({ p, onOpenNotes }) => {
   const status = p.progressStatus ?? "not_started";
   const sx = CARD_STYLE_BY_STATUS[status];
   const captionColor = CAPTION_COLOR_BY_STATUS[status];
 
   return (
-    <Paper component={Link} href={p.to} elevation={0} sx={sx}>
+    <Paper component={Link} href={p.to} elevation={0} sx={{ ...sx, position: "relative" }}>
+      {/* Stops the click from also following the card's own link — the icon
+          opens the note, it does not start the lesson. */}
+      <IconButton
+        size="small"
+        aria-label={`Notes for ${partTitle(p)}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onOpenNotes(p);
+        }}
+        sx={{
+          position: "absolute",
+          top: 4,
+          right: 4,
+          color: status === "completed" ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)",
+          "&:hover": { color: status === "completed" ? "#fff" : "#B43D20" },
+        }}
+      >
+        <StickyNote2RoundedIcon fontSize="small" />
+      </IconButton>
+
       {p.cardTitle ? (
-        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", pr: 3 }}>
           {p.cardTitle}
         </Typography>
       ) : (
-        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", fontStyle: "italic", color: captionColor }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", fontStyle: "italic", color: captionColor, pr: 3 }}>
           Add a title
         </Typography>
       )}
@@ -167,7 +196,8 @@ const PartCard: React.FC<{ p: Part }> = ({ p }) => {
 const LessonColumn: React.FC<{
   heading: string;
   parts: Part[];
-}> = ({ heading, parts }) => {
+  onOpenNotes: (p: Part) => void;
+}> = ({ heading, parts, onOpenNotes }) => {
   const sorted = [...parts].sort((a, b) => a.part - b.part);
 
   return (
@@ -188,7 +218,7 @@ const LessonColumn: React.FC<{
       {sorted.length > 0 ? (
         <Stack gap={1.25}>
           {sorted.map((p) => (
-            <PartCard key={p.to} p={p} />
+            <PartCard key={p.to} p={p} onOpenNotes={onOpenNotes} />
           ))}
         </Stack>
       ) : (
@@ -207,8 +237,21 @@ const LessonsListPage: React.FC<{
    * failed lookup would read to a learner as lost progress.
    */
   progressBySlug: Record<string, ProgressStatus> | null;
-}> = ({ newLessons, lessons: prefLessons, progressBySlug }) => {
+  /** Every sticky note the signed-in learner has written. Empty when signed out. */
+  notes: NotebookEntry[];
+}> = ({ newLessons, lessons: prefLessons, progressBySlug, notes }) => {
   const progressUnavailable = progressBySlug === null;
+  const [notesFor, setNotesFor] = useState<Part | null>(null);
+  // Lifted out of the `notes` prop so a note saved in one card's popup is
+  // reflected immediately if a different card's popup is opened next —
+  // `notes` itself is only ever the server's answer as of page load.
+  const [localNotes, setLocalNotes] = useState<NotebookEntry[]>(notes);
+  const handleSaved: React.ComponentProps<typeof NotesNotebookDialog>["onSaved"] = (entry) => {
+    setLocalNotes((prev) => {
+      const rest = prev.filter((n) => n.lessonId !== entry.lessonId);
+      return "cleared" in entry ? rest : [entry, ...rest];
+    });
+  };
 
   const { grammar, reading } = useMemo(() => {
     const statusOf = (slug: string): CardProgressStatus =>
@@ -282,13 +325,23 @@ const LessonsListPage: React.FC<{
 
                 {/* Two columns side by side; each stacks its parts vertically. */}
                 <Stack direction={{ xs: "column", sm: "row" }} gap={2} alignItems="flex-start">
-                  <LessonColumn heading="Grammar" parts={grammar.get(n) ?? []} />
-                  <LessonColumn heading="Reading & Writing" parts={reading.get(n) ?? []} />
+                  <LessonColumn heading="Grammar" parts={grammar.get(n) ?? []} onOpenNotes={setNotesFor} />
+                  <LessonColumn heading="Reading & Writing" parts={reading.get(n) ?? []} onOpenNotes={setNotesFor} />
                 </Stack>
               </Box>
             ))}
           </Box>
       </Container>
+
+      {notesFor && (
+        <NotesNotebookDialog
+          open
+          onClose={() => setNotesFor(null)}
+          notes={localNotes}
+          focusLesson={{ slug: notesFor.slug, title: partTitle(notesFor), href: notesFor.to }}
+          onSaved={handleSaved}
+        />
+      )}
     </Box>
   );
 };
