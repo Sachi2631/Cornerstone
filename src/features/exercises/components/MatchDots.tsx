@@ -31,6 +31,7 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dotRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [firstId, setFirstId] = useState<string | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -38,13 +39,27 @@ const DotMatch: React.FC<DotMatchProps> = ({ pairs, heading, onResult, keepLeftO
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
+  /*
+   * One clip at a time. Each left card builds its own detached `Audio`, so two
+   * cards clicked in quick succession would play over each other — on the one
+   * exercise whose whole task is telling recordings apart. `onerror` is the
+   * same concern: a clip that dies mid-stream never fires `onended`, which
+   * would leave the equalizer icon running on a row that has gone silent.
+   */
   const playAudio = (index: number, src?: string) => {
     if (!src) return;
+    audioRef.current?.pause();
     const audio = new Audio(src);
+    audioRef.current = audio;
     setPlayingIndex(index);
     audio.onended = () => setPlayingIndex(null);
+    audio.onerror = () => setPlayingIndex(null);
     audio.play().catch(() => setPlayingIndex(null));
   };
+
+  // Detached again, so unmounting the exercise has to stop it explicitly or
+  // the clip carries on over the next screen.
+  useEffect(() => () => audioRef.current?.pause(), []);
 
   // Randomized once per mount so the layout is fresh on every attempt
   // (except the left column when keepLeftOrder is set — see buildArrangement).

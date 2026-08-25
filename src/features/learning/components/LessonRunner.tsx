@@ -67,6 +67,58 @@ import { collectLessonTerms } from "@/lib/content/lessonTerms";
  * reads, and "after the deck" was a position no one chose.
  */
 
+/*
+ * The review screen is the last step and this link is the only thing on it, so
+ * a learner who takes it never reaches "Finish" — which is where the lesson
+ * gets marked completed. Navigating straight away raced that write and usually
+ * lost it, leaving a finished lesson sitting "in progress" on /lessons; the
+ * save is awaited here for the same reason `advance` awaits it on the last step.
+ */
+const ReviewTermsButton: React.FC<{
+  href: string;
+  complete: React.RefObject<(() => Promise<boolean>) | null>;
+}> = ({ href, complete }) => {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const handleClick = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (busy) return;
+
+    setBusy(true);
+    // The runner fills this in on mount, so it is set long before the last
+    // step can be reached; unset, the link is just a link. In the CMS preview
+    // it resolves true without writing — `upsertProgress` reports an editor
+    // with no learner session as ok-but-unsaved.
+    const ok = (await complete.current?.()) ?? true;
+    setBusy(false);
+
+    // Stay put on a failed write. The runner's banner is already up and offers
+    // the retry, and leaving now would lose the completion silently.
+    if (!ok) return;
+    router.push(href);
+  };
+
+  return (
+    <Button
+      component={Link}
+      href={href}
+      onClick={handleClick}
+      disabled={busy}
+      variant="outlined"
+      sx={{
+        borderRadius: 999,
+        fontWeight: 700,
+        borderColor: "#B43D20",
+        color: "#B43D20",
+        "&:hover": { borderColor: "#9D351C", bgcolor: "rgba(180,61,32,0.06)" },
+      }}
+    >
+      Review terms
+    </Button>
+  );
+};
+
 /** One authored row of `lesson.steps`. */
 type AuthoredStep = NonNullable<Lesson["steps"]>[number];
 
@@ -100,7 +152,11 @@ function blockTypes(step: AuthoredStep): string[] {
   return (step.components ?? []).map((block) => block.blockType);
 }
 
-function buildSteps(lesson: Lesson, seed: string): Step[] {
+function buildSteps(
+  lesson: Lesson,
+  seed: string,
+  complete: React.RefObject<(() => Promise<boolean>) | null>
+): Step[] {
   const authored = shuffleSteps(lesson.steps ?? [], {
     seed,
     // The field has existed since the import and nothing has ever read it.
@@ -164,42 +220,35 @@ function buildSteps(lesson: Lesson, seed: string): Step[] {
 
   // Last screen before Finish: every word and character this lesson taught,
   // with audio and a place to record yourself — a study aid, not a step of
-  // its own, so it carries no grading and nothing to save progress against.
-  steps.push(
-    chrome("lesson:review", "Review", (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          gap: 2,
-          py: 2,
-        }}
-      >
-        <MenuBookRoundedIcon sx={{ fontSize: "2.5rem", color: "#B43D20" }} />
-        <Typography sx={{ fontWeight: 800, fontSize: "1.1rem" }}>Nice work!</Typography>
-        <Typography sx={{ color: "text.secondary", maxWidth: 360 }}>
-          Review every word and character from this lesson — with audio, playback speed,
-          and a place to record yourself.
-        </Typography>
-        <Button
-          component={Link}
-          href={lessonReviewHref(lesson.slug)}
-          variant="outlined"
+  // its own, so it carries no grading of its own.
+  //
+  // Skipped when the lesson references no terms at all. The screen is one
+  // sentence and a link, and the page behind that link would only say "This
+  // lesson has no terms to review yet" — an offer worth not making.
+  if (lessonTerms.length) {
+    steps.push(
+      chrome("lesson:review", "Review", (
+        <Box
           sx={{
-            borderRadius: 999,
-            fontWeight: 700,
-            borderColor: "#B43D20",
-            color: "#B43D20",
-            "&:hover": { borderColor: "#9D351C", bgcolor: "rgba(180,61,32,0.06)" },
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: 2,
+            py: 2,
           }}
         >
-          Review terms
-        </Button>
-      </Box>
-    ))
-  );
+          <MenuBookRoundedIcon sx={{ fontSize: "2.5rem", color: "#B43D20" }} />
+          <Typography sx={{ fontWeight: 800, fontSize: "1.1rem" }}>Nice work!</Typography>
+          <Typography sx={{ color: "text.secondary", maxWidth: 360 }}>
+            Review every word and character from this lesson — with audio, playback speed,
+            and a place to record yourself.
+          </Typography>
+          <ReviewTermsButton href={lessonReviewHref(lesson.slug)} complete={complete} />
+        </Box>
+      ))
+    );
+  }
 
   return steps;
 }
@@ -236,11 +285,18 @@ const LessonRunner: React.FC<{
 
   const answeredRef = useRef<Record<string, boolean>>({});
   const resumedRef = useRef(false);
+  /*
+   * How the review screen's link finishes the lesson before it navigates.
+   * Held in a ref rather than passed down because `buildSteps` runs in a memo
+   * that must not re-run when the cursor or the accuracy moves, and the write
+   * needs both — see the effect below that keeps it current.
+   */
+  const completeRef = useRef<(() => Promise<boolean>) | null>(null);
 
   const slug = lesson.slug;
 
   const steps = useMemo(
-    () => buildSteps(lesson, stepSeed({ userId, lessonId: slug, attempt })),
+    () => buildSteps(lesson, stepSeed({ userId, lessonId: slug, attempt }), completeRef),
     [lesson, userId, slug, attempt]
   );
 
@@ -367,6 +423,20 @@ const LessonRunner: React.FC<{
     setStep(next);
     void save("in_progress", next, accuracyPct);
   }
+
+  /*
+   * Deliberately re-assigned on every render: the review link can be clicked at
+   * any point after the last step is reached, and it has to save the cursor and
+   * accuracy as they are then, not as they were when the steps were built.
+   */
+  useEffect(() => {
+    completeRef.current = async () => {
+      setSaving(true);
+      const ok = await save("completed", step, accuracy);
+      setSaving(false);
+      return ok;
+    };
+  });
 
   const handleResult = ({ result }: { result: "correct" | "incorrect" }) => {
     if (!active) return;

@@ -123,8 +123,8 @@ The five kana sets are the biggest block of it:
 
 | Terms with no audio | Where it shows |
 |---|---|
-| `あ-ア` `い-イ` `う-ウ` `え-エ` `お-オ` | 5 listening exercises in `hiragana-l1-v1-hokkaido` |
-| `か-カ` `き-キ` `く-ク` `け-ケ` `こ-コ` | 5 listening exercises in `hiragana-l2-v1-iwate` |
+| `あ-ア` `い-イ` `う-ウ` `え-エ` `お-オ` | 5 listening exercises **and the kana matching screen** in `hiragana-l1-v1-hokkaido` |
+| `か-カ` `き-キ` `く-ク` `け-ケ` `こ-コ` | 5 listening exercises **and the kana matching screen** in `hiragana-l2-v1-iwate` |
 | `desu` `desu-ka` | 2 in `grammar-l1-v2` |
 | `sumimasen-wakarimasen`, `mouichido-onegaishimasu`, `yukkuri-onegaishimasu`, `kore`, `sore`, `are`, `dore`, `kore-ha-nandesuka`, `sore-ha-nandesuka` | the rest, in `grammar-l2-v1` |
 
@@ -132,10 +132,18 @@ A recording on the term fixes every exercise that references it at once — that
 the vocabulary collection. Upload the clip to the term's own Audio field in the CMS
 (Vocabulary → the word → Audio); nothing else needs touching.
 
+The two kana matching screens are new to that list. `matchPairs` with `pairing: "kana"` used to pair
+a term's hiragana with its katakana; katakana is withheld for now, so it pairs the term's *recording*
+with its hiragana instead. That makes the clip the left-hand card rather than a bonus on it: a term
+without one is an unlabelled greyed-out speaker, and five of those in a column is a screen with
+nothing to tell the rows apart. Those pairs are dropped, which leaves both screens with fewer than
+two pairs, so neither renders at all until the ten clips land.
+
 Separately, **11 speaking exercises have no reference audio**, so a learner can record themselves
 but nothing can be scored. Same fix, same field.
 
-`npm run content:verify` prints both counts on their own lines, so they go down as recordings land.
+`npm run content:verify` prints each of these counts on its own line, so they go down as recordings
+land.
 
 ---
 

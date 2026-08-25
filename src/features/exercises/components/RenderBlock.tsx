@@ -418,15 +418,16 @@ const MatchPairsView: React.FC<MatchPairsBlock & { onResult?: ResultCallback }> 
      * failure rather than leaving it to be noticed by a learner.
      *
      * The "kana" pairing has an empty `hiragana` by design (its left card is
-     * audio-only), so it only drops pairs missing the written form. A missing
-     * recording renders the card's filler audio button instead — the same
-     * placeholder MatchDotsMedia and FlashcardReview already use — rather than
-     * dropping the pair outright, since the point of this exercise is the
-     * written form, not the recording.
+     * audio-only), which makes the recording load-bearing rather than
+     * decorative: the clip *is* the left card. A term without one renders a
+     * greyed-out speaker with no label, and a second such term renders an
+     * identical one — nothing distinguishes the rows, so the learner cannot
+     * solve the screen rather than merely getting less out of it. Dropped for
+     * the same reason an identical pair is, and reported by `content:verify`.
      */
     .filter((pair) =>
       pairing === "kana"
-        ? pair.katakana !== ""
+        ? pair.katakana !== "" && Boolean(pair.audio)
         : pair.hiragana !== "" && pair.katakana !== "" && pair.hiragana !== pair.katakana
     );
 
@@ -435,10 +436,22 @@ const MatchPairsView: React.FC<MatchPairsBlock & { onResult?: ResultCallback }> 
   // a broken one, with the report coming from `content:verify`.
   if (pairs.length < 2) return null;
 
+  /*
+   * `DotMatch` defaults its heading to the kana wording it was written for,
+   * which is wrong for the two pairings that also reach it. Blank instructions
+   * get the heading for the pairing on screen instead of that one sentence.
+   */
+  const defaultHeading =
+    pairing === "kana"
+      ? "Match each audio clip to its hiragana"
+      : pairing === "reading"
+        ? "Match each word to its reading"
+        : "Match each word to its meaning";
+
   return (
     <DotMatch
       pairs={pairs}
-      heading={instructions ?? undefined}
+      heading={instructions?.trim() || defaultHeading}
       onResult={onResult}
       keepLeftOrder={pairing === "kana"}
     />
