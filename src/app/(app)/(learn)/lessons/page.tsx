@@ -1,11 +1,12 @@
 import { listLessons, listNewLessons } from "@/lib/content/content";
 import { getProgressBySlug } from "@/lib/progress-server";
+import { getNotebook } from "@/lib/notes-server";
 import LessonsListPage from "@/features/learning/components/LessonsListPage";
 
 export default async function Page() {
   // Fetched independently so a failure in one source still shows the other's
   // column, matching how the CRA page caught each request separately.
-  const [newLessons, lessons, progressBySlug] = await Promise.all([
+  const [newLessons, lessons, progressBySlug, notes] = await Promise.all([
     listNewLessons().catch(() => []),
     listLessons().catch(() => []),
     /*
@@ -18,6 +19,10 @@ export default async function Page() {
       console.error("[lessons] progress lookup failed", error);
       return null;
     }),
+    getNotebook().catch((error) => {
+      console.error("[lessons] notes lookup failed", error);
+      return [];
+    }),
   ]);
 
   return (
@@ -25,6 +30,7 @@ export default async function Page() {
       newLessons={newLessons}
       lessons={lessons}
       progressBySlug={progressBySlug}
+      notes={notes}
     />
   );
 }

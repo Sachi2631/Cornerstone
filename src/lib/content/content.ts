@@ -233,6 +233,8 @@ export const getResources = unstable_cache(
 export type LessonRoute = {
   slug: string;
   title: string;
+  /** The card/header title a learner actually sees, when the lesson has one. */
+  cardTitle?: string;
   /** Which numbered lesson, across courses — the "Lesson 3" heading. */
   level: number;
   /** Which part of it — rendered as "Lesson 3.2". */
@@ -262,6 +264,7 @@ export function getLessonRoute(slugOrLegacyId: string): Promise<LessonRoute | nu
       return {
         slug: lesson.slug,
         title: lesson.title,
+        cardTitle: lesson.cardTitle ?? undefined,
         level: lesson.level,
         part: lesson.part,
         prefecture: lesson.prefecture ?? "",

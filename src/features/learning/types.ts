@@ -21,6 +21,16 @@ export type ProgressDoc = {
   accuracyPct?: number;
 };
 
+/** One lesson's sticky note, enriched with what the notebook needs to show it. */
+export type NotebookEntry = {
+  lessonId: string;
+  /** Falls back to `lessonId` when the lesson itself is gone (renamed, deleted). */
+  title: string;
+  href?: string;
+  body: string;
+  updatedAt: string;
+};
+
 export type UpNextLesson = {
   lessonId: string;
   slug: string;
