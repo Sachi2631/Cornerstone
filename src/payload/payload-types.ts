@@ -670,7 +670,7 @@ export interface MatchPairsBlock {
    */
   terms: (number | Term)[];
   /**
-   * What the two sides are. Hiragana ↔ katakana is what the old "あ/ア" strings encoded with a slash; it reads both scripts off the term now.
+   * What the two sides are. Audio ↔ hiragana is where the old "あ/ア" strings ended up: katakana is withheld for now, so that exercise plays the term's recording on the left and asks for its hiragana. Every term in it needs audio.
    */
   pairing: 'meaning' | 'reading' | 'kana' | 'audio';
   id?: string | null;

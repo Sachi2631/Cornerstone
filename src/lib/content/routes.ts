@@ -26,6 +26,17 @@ export function lessonReviewHref(slug: string): string {
 }
 
 /**
+ * The term-review page for a whole numbered lesson — every part, both
+ * formats, e.g. everything under "Lesson 1" on the list page. `level`
+ * spans courses the same way the list page's own grouping does (see
+ * `LessonsListPage`), so this is the aggregate the per-lesson review page
+ * cannot be: one lesson document only ever holds one format's one part.
+ */
+export function levelReviewHref(level: number): string {
+  return `/lessons/level/${level}/review`;
+}
+
+/**
  * The page that renders a document, or null when there isn't one.
  *
  * Null for a lesson with no slug — a document the editor has not saved yet has

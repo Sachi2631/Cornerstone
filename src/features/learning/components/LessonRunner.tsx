@@ -696,15 +696,26 @@ const LessonRunner: React.FC<{
                 flex: 1,
                 minHeight: 0,
                 overflow: "auto",
-                px: { xs: 1, md: 2 },
-                py: { xs: 1, md: 1.5 },
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                flexDirection: "column",
               }}
             >
+              {/*
+               * `margin: auto` centers a short screen the way `alignItems`/
+               * `justifyContent: center` used to — but unlike those, it degrades
+               * to 0 rather than negative when the content is taller than the
+               * box. `alignItems: center` on a scrolling flex container centers
+               * regardless of overflow, which pushes the top of a tall screen
+               * (the flashcard grid onto more than one row, say) above
+               * `scrollTop: 0` — reachable by no amount of scrolling up, because
+               * the scrollable range starts at the centered position, not the
+               * content's actual top.
+               */}
               {active && (
-                <Box key={`step-${step}`} sx={{ width: "100%" }}>
+                <Box
+                  key={`step-${step}`}
+                  sx={{ width: "100%", margin: "auto", px: { xs: 1, md: 2 }, py: { xs: 1, md: 1.5 } }}
+                >
                   {active.render(handleResult)}
                 </Box>
               )}
