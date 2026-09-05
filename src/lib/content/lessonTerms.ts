@@ -21,6 +21,11 @@ import type { Lesson, Term } from "../../payload/payload-types";
  * comment naming its five types had already drifted. Walking for the keys a
  * term hangs off has neither problem, and `termRef` needs no special case: its
  * relationship sits at `fields.term`, so the same key rule reaches it.
+ *
+ * `keys` is the second, narrower way to ask the same question: pass
+ * `TAUGHT_KEYS` for "what does this lesson teach" rather than "everything a
+ * learner might see attached to this lesson" (the default, which also counts
+ * a term's turn as a wrong-answer distractor).
  */
 
 type LessonStep = NonNullable<Lesson["steps"]>[number];
@@ -33,7 +38,17 @@ type LessonStep = NonNullable<Lesson["steps"]>[number];
  */
 const TERM_KEYS = new Set(["term", "terms", "distractors"]);
 
-export function collectLessonTerms(lesson: Lesson): Term[] {
+/**
+ * Same walk, restricted to the keys that mean "this lesson teaches this
+ * term" — `term` and `terms`, not `distractors`. A distractor is a decoy
+ * shown as a wrong answer, often borrowed from a completely different lesson
+ * to round out a multiple-choice set; counting it as taught would pull
+ * unrelated characters into anything derived from "what this lesson covers"
+ * (see `deriveReadingCardTitle` in `features/learning/lessonTitles.ts`).
+ */
+export const TAUGHT_KEYS = new Set(["term", "terms"]);
+
+export function collectLessonTerms(lesson: Lesson, keys: Set<string> = TERM_KEYS): Term[] {
   const seen = new Set<number>();
   const terms: Term[] = [];
 
@@ -71,7 +86,7 @@ export function collectLessonTerms(lesson: Lesson): Term[] {
     if (!node || typeof node !== "object") return;
 
     for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-      if (TERM_KEYS.has(key)) {
+      if (keys.has(key)) {
         // Terminal: a term's own fields are not somewhere another term hides,
         // and descending into one would collect words this lesson never taught.
         if (Array.isArray(value)) value.forEach(add);

@@ -3,12 +3,13 @@
 import React, { useMemo, useState } from "react";
 import { Alert, Box, Container, IconButton, Paper, Stack, Typography } from "@mui/material";
 import StickyNote2RoundedIcon from "@mui/icons-material/StickyNote2Rounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import Link from "next/link";
 
-import { lessonHref } from "@/lib/content/routes";
-import { termText } from "@/features/exercises/components/termText";
+import { lessonHref, levelReviewHref } from "@/lib/content/routes";
+import { deriveReadingCardTitle } from "@/features/learning/lessonTitles";
 import NotesNotebookDialog from "@/features/learning/components/NotesNotebookDialog";
-import type { Lesson, Term } from "@/payload/payload-types";
+import type { Lesson } from "@/payload/payload-types";
 import type { NotebookEntry, ProgressStatus } from "@/features/learning/types";
 
 // A card's color reflects the signed-in user's progress on that specific
@@ -44,36 +45,6 @@ function pushPart(map: Map<number, Part[]>, level: number, p: Part) {
   const arr = map.get(level) ?? [];
   arr.push(p);
   map.set(level, arr);
-}
-
-// Reading & Writing cards title themselves after the hiragana/katakana pairs
-// they cover (e.g. "あ/ア、い/イ、う/ウ"), matching the format Lesson 1 was
-// given manually. Deriving it from the flashcards means every lesson gets
-// the same treatment without needing a cardTitle typed into MongoDB.
-/*
- * A Reading & Writing card with no title of its own shows the characters it
- * teaches — "あ、い、う…".
- *
- * The strings used to arrive pre-flattened on the list item, because
- * `flashcardDeck.cards` was an array of strings on the block. A deck references
- * catalogue terms now, so the characters come off the terms — which is also why
- * the list read populates to `CONTENT_DEPTH`: at depth 0 every term would be a
- * bare id and every card here would fall back to "Add a title".
- */
-function deriveReadingCardTitle(lesson: Lesson): string | undefined {
-  const characters = (lesson.steps ?? [])
-    .flatMap((step) => step.components ?? [])
-    // A predicate rather than a plain `filter`: `components` is a union of every
-    // block type, and only the narrowed one has `terms`.
-    .filter(
-      (block): block is Extract<typeof block, { blockType: "vocabList" }> =>
-        block.blockType === "vocabList" && block.layout === "flashcards"
-    )
-    .flatMap((block) => block.terms ?? [])
-    .map((term) => termText(term as Term | number))
-    .filter(Boolean);
-
-  return characters.length ? characters.join("、") : undefined;
 }
 
 const cardBase = {
@@ -319,9 +290,20 @@ const LessonsListPage: React.FC<{
             {levels.map((n) => (
               <Box key={n}>
                 {/* Section header */}
-                <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#1C1917", mb: 1.5 }}>
-                  Lesson {n}
-                </Typography>
+                <Stack direction="row" alignItems="center" gap={0.5} sx={{ mb: 1.5 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#1C1917" }}>
+                    Lesson {n}
+                  </Typography>
+                  <IconButton
+                    component={Link}
+                    href={levelReviewHref(n)}
+                    size="small"
+                    aria-label={`Review everything from Lesson ${n}`}
+                    sx={{ color: "rgba(0,0,0,0.35)", "&:hover": { color: "#B43D20" } }}
+                  >
+                    <MenuBookRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
 
                 {/* Two columns side by side; each stacks its parts vertically. */}
                 <Stack direction={{ xs: "column", sm: "row" }} gap={2} alignItems="flex-start">

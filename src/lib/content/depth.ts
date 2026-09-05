@@ -83,6 +83,7 @@ export const MEDIA_POPULATE = {
    */
   terms: {
     key: true,
+    kind: true,
     japanese: true,
     katakana: true,
     reading: true,
