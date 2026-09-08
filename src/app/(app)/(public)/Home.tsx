@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useSession } from "@/lib/auth-client";
 
-const MotionCard = motion(Card);
+const MotionCard = motion.create(Card);
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 const Home = (): React.ReactElement => {
