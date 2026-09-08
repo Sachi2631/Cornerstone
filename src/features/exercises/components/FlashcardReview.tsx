@@ -77,7 +77,7 @@ const SingleCard: React.FC<{ term: FlashcardReviewTerm }> = ({ term }) => {
         width: { xs: "calc(50% - 8px)", sm: 220 },
         minWidth: 130,
         maxWidth: 220,
-        minHeight: 190,
+        minHeight: 210,
         cursor: "pointer",
         flexShrink: 0,
       }}
@@ -186,14 +186,14 @@ const SingleCard: React.FC<{ term: FlashcardReviewTerm }> = ({ term }) => {
               the audio button on the front, so the back is just the term. */}
           {hasVideo && audioButton}
 
-          {/* Term text */}
           <Typography
             sx={{
-              fontSize: "0.82rem",
+              fontSize: hasVideo ? "0.95rem" : { xs: "2.25rem", sm: "2.75rem" },
               fontWeight: 700,
               color: "#1C1917",
               textAlign: "center",
-              lineHeight: 1.3,
+              lineHeight: 1.2,
+              overflowWrap: "anywhere",
             }}
           >
             {term.term}
