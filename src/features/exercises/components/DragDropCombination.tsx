@@ -94,8 +94,21 @@ const DragDropCombination: React.FC<Props> = ({
 
   const onDragStart = (e: React.DragEvent<HTMLDivElement>, payload: DragPayload) => {
     dragPayloadRef.current = payload;
+    // `text/plain` is what Firefox needs to treat this as a real drag.
+    e.dataTransfer.setData("text/plain", options[payload.option] ?? "");
     e.dataTransfer.setData("application/json", JSON.stringify(payload));
     e.dataTransfer.effectAllowed = dropEffect(payload.source);
+    // A cloned ghost keeps the bank tile itself on screen. Native `move`
+    // hides the source node, which is exactly "the tile disappeared."
+    if (payload.source === "bank") {
+      const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
+      ghost.style.position = "absolute";
+      ghost.style.top = "-9999px";
+      ghost.style.pointerEvents = "none";
+      document.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+      window.setTimeout(() => ghost.remove(), 0);
+    }
   };
 
   const readPayload = (e: React.DragEvent<HTMLDivElement>): DragPayload | null => {
@@ -125,10 +138,8 @@ const DragDropCombination: React.FC<Props> = ({
           if (payload.placedAt < pos) pos -= 1;
           break;
         }
-        case "bank": {
-          if (next.length >= correctSequence.length) return next;
+        case "bank":
           break;
-        }
         default: {
           const _exhaustive: never = payload;
           return _exhaustive;
@@ -428,63 +439,62 @@ const DragDropCombination: React.FC<Props> = ({
         )}
       </Box>
 
-      {/* Bank stays fully stocked: dropping copies a tile, it does not consume it. */}
-      {!showTileAudio && (
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1.25,
-            p: 1.5,
-            borderRadius: "14px",
-            bgcolor: bankDragOver ? "rgba(96,165,250,0.08)" : "#F9F7F4",
-            border: `1px solid ${bankDragOver ? "#60A5FA" : "rgba(0,0,0,0.08)"}`,
-            minHeight: 76,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            width: "100%",
-            transition: "border-color 0.2s, background-color 0.2s",
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setBankDragOver(true);
-          }}
-          onDragLeave={() => setBankDragOver(false)}
-          onDrop={onDropBank}
-        >
-          {options.map((label, idx) => (
-            <Box
-              key={`bank-${idx}`}
-              draggable
-              onDragStart={(e) => onDragStart(e, { source: "bank", option: idx })}
-              title="Drag to the box above — you can use this tile more than once"
-              sx={{
-                px: 2.5,
-                py: 1.25,
-                border: "2px solid rgba(0,0,0,0.1)",
-                borderRadius: "12px",
-                cursor: "grab",
-                fontSize: { xs: "0.95rem", sm: "1.05rem" },
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-                userSelect: "none",
-                bgcolor: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  borderColor: "#B43D20",
-                },
-              }}
-            >
-              {label}
-            </Box>
-          ))}
-        </Box>
-      )}
+      {/* Always the full set — dropping copies a tile, it does not consume it. */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.25,
+          p: 1.5,
+          borderRadius: "14px",
+          bgcolor: bankDragOver ? "rgba(96,165,250,0.08)" : "#F9F7F4",
+          border: `1px solid ${bankDragOver ? "#60A5FA" : "rgba(0,0,0,0.08)"}`,
+          minHeight: 76,
+          flexWrap: "wrap",
+          justifyContent: "center",
+          width: "100%",
+          transition: "border-color 0.2s, background-color 0.2s",
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setBankDragOver(true);
+        }}
+        onDragLeave={() => setBankDragOver(false)}
+        onDrop={onDropBank}
+      >
+        {options.map((label, idx) => (
+          <Box
+            key={`bank-${idx}`}
+            draggable
+            onDragStart={(e) => onDragStart(e, { source: "bank", option: idx })}
+            title="Drag to the box above — you can use this tile more than once"
+            sx={{
+              px: 2.5,
+              py: 1.25,
+              border: "2px solid rgba(0,0,0,0.1)",
+              borderRadius: "12px",
+              cursor: "grab",
+              fontSize: { xs: "0.95rem", sm: "1.05rem" },
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              bgcolor: "#fff",
+              opacity: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                borderColor: "#B43D20",
+              },
+            }}
+          >
+            {label}
+          </Box>
+        ))}
+      </Box>
 
       <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", justifyContent: "center" }}>
         <Box
