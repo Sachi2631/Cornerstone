@@ -186,7 +186,6 @@ const DragDropCombination: React.FC<Props> = ({
   };
 
   const handleCheck = () => {
-    if (!isComplete) return;
     setChecked(true);
     onResult?.({
       result: isCorrect ? "correct" : "incorrect",
@@ -500,20 +499,19 @@ const DragDropCombination: React.FC<Props> = ({
         <Box
           component="button"
           onClick={handleCheck}
-          disabled={!isComplete}
           sx={{
             px: 3,
             py: 1.25,
             borderRadius: 999,
             border: "none",
-            bgcolor: isComplete ? "#B43D20" : "rgba(0,0,0,0.08)",
-            color: isComplete ? "#fff" : "rgba(0,0,0,0.35)",
+            bgcolor: "#B43D20",
+            color: "#fff",
             fontWeight: 700,
             fontSize: "0.9rem",
-            cursor: isComplete ? "pointer" : "default",
+            cursor: "pointer",
             transition: "all 0.2s",
-            boxShadow: isComplete ? "0 4px 14px rgba(180,61,32,0.35)" : "none",
-            "&:hover": isComplete ? { bgcolor: "#9D351C" } : {},
+            boxShadow: "0 4px 14px rgba(180,61,32,0.35)",
+            "&:hover": { bgcolor: "#9D351C" },
           }}
         >
           Check
